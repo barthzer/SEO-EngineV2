@@ -21,6 +21,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
 import { SkeletonBriefs } from "@/components/Skeleton";
+import { StatusPill, StatusPillDropdown, STATUS_CONFIG, type Status as BriefStatus } from "@/components/StatusPill";
 import {
   ArrowPathIcon,
   PuzzlePieceIcon,
@@ -190,13 +191,6 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: stri
 };
 
 type Filter = "tous" | BriefType;
-type BriefStatus = "todo" | "doing" | "done";
-
-const STATUS_CONFIG: Record<BriefStatus, { label: string; color: string; bg: string }> = {
-  todo:  { label: "À faire",  color: "var(--text-muted)",   bg: "var(--bg-secondary)" },
-  doing: { label: "En cours", color: "#F59E0B",              bg: "rgba(245,158,11,0.09)" },
-  done:  { label: "Terminé",  color: "#10B981",              bg: "rgba(16,185,129,0.09)" },
-};
 
 function shortLot(lot: string): string {
   return lot.replace(/^Lot\s+/i, "");
@@ -291,7 +285,7 @@ function LotColorDot({ color, onChange }: { color: string; onChange: (c: string)
 
 function ViewSwitch({ value, onChange }: { value: "pages" | "lots"; onChange: (v: "pages" | "lots") => void }) {
   return (
-    <div className="flex h-9 items-center gap-0.5 rounded-full bg-[var(--bg-secondary)] p-1">
+    <div className="flex h-9 items-center gap-0.5 rounded-full bg-[var(--bg-subtle)] p-1">
       {(["pages", "lots"] as const).map((v) => (
         <button
           key={v}
@@ -316,7 +310,7 @@ function SemanticPill({ score }: { score: number }) {
   const color = score >= 70 ? "#10B981" : score >= 40 ? "#F59E0B" : "#E11D48";
   return (
     <span
-      className="inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+      className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-[12px] font-semibold tabular-nums"
       style={{ color, backgroundColor: `${color}18` }}
     >
       {score}
@@ -334,7 +328,7 @@ function StatusBadge({ status, onChange }: { status: BriefStatus; onChange: (s: 
         width={148}
         trigger={
           <button
-            className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity hover:opacity-70 cursor-pointer"
+            className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium transition-opacity hover:opacity-70 cursor-pointer"
             style={{ color: cfg.color, backgroundColor: cfg.bg }}
           >
             {cfg.label}
@@ -439,10 +433,18 @@ function SyntheseTab({ brief }: { brief: Brief }) {
   const areaPath = `M ${toX(0)},${toY(posData[0])} ` + posData.slice(1).map((v, i) => `L ${toX(i + 1)},${toY(v)}`).join(" ") + ` L ${toX(posData.length - 1)},${chartH - pad.b} L ${toX(0)},${chartH - pad.b} Z`;
   const actionDots = [2, 5, 9];
 
+  const NBA_ALTS = [
+    { n: 2, text: "Investiguer une possible cannibalisation", time: "5 min" },
+    { n: 3, text: "Surveiller — position en progression, ne pas modifier le contenu", time: "5 min" },
+    { n: 4, text: "Développer le profil de backlinks", time: "Long terme" },
+  ];
+
   return (
-    <div className="space-y-5">
+    <div className="flex items-start gap-6">
+      {/* ── Colonne principale ── */}
+      <div className="flex-1 min-w-0 space-y-8">
       {/* Hero card */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] p-5" style={{ background: "linear-gradient(to right, rgba(62,80,245,0.07), transparent)" }}>
+      <div className="rounded-2xl border border-[var(--border-medium)] p-7" style={{ background: "linear-gradient(135deg, var(--bg-subtle) 0%, var(--bg-card) 60%)" }}>
         <p className="font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
         <h2 className="mt-2 text-[22px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
           {pos ? `Position #${pos} sur ` : "Mot-clé : "}"{brief.keyword}"
@@ -453,7 +455,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
 
         <div className="mt-3 flex flex-wrap gap-2">
           {actionTags.map((t) => (
-            <span key={t.label} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ color: t.color, backgroundColor: `${t.color}18` }}>
+            <span key={t.label} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: t.color, backgroundColor: `${t.color}18` }}>
               <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
               {t.label}
             </span>
@@ -471,12 +473,13 @@ function SyntheseTab({ brief }: { brief: Brief }) {
 
       {/* VS concurrent */}
       {pos && (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-5">
+          {/* Deux colonnes */}
+          <div className="grid grid-cols-2 gap-4">
             {/* Votre page */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
-              <p className="mb-2.5 text-[12px] font-semibold text-[#3E50F5]">Votre page · #{pos}</p>
-              <p className="text-[15px] font-bold text-[var(--text-primary)]">votre-site.fr <span className="text-[12px] font-normal text-[var(--text-muted)]">(vous)</span></p>
+            <div>
+              <p className="mb-2 text-[12px] font-semibold text-[#3E50F5]">Votre page · #{pos}</p>
+              <p className="text-[14px] font-bold text-[var(--text-primary)]">votre-site.fr <span className="text-[12px] font-normal text-[var(--text-muted)]">(vous)</span></p>
               <p className="mt-0.5 font-mono text-[11px] text-[var(--text-muted)] truncate">{brief.url}</p>
               <div className="mt-3 grid grid-cols-3 gap-1.5">
                 {[
@@ -484,7 +487,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
                   { label: "SOSEO", value: brief.semanticScore > 0 ? String(brief.semanticScore) : "—", sub: `cible ${Math.round(brief.semanticScore * 0.9)}`, subColor: "var(--text-muted)" },
                   { label: "DSEO", value: String(yourDseo), sub: "/100 max", subColor: "var(--text-muted)" },
                 ].map((m) => (
-                  <div key={m.label} className="rounded-xl bg-[var(--bg-secondary)] px-2.5 py-2.5">
+                  <div key={m.label} className="rounded-xl bg-[var(--bg-subtle)] px-2.5 py-2.5">
                     <p className="text-[11px] font-semibold text-[var(--text-muted)]">{m.label}</p>
                     <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-[var(--text-primary)]">{m.value}</p>
                     <p className="text-[11px]" style={{ color: m.subColor }}>{m.sub}</p>
@@ -494,9 +497,9 @@ function SyntheseTab({ brief }: { brief: Brief }) {
             </div>
 
             {/* Concurrent #1 */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
-              <p className="mb-2.5 text-[12px] font-semibold text-[#10B981]">Concurrent #1 SERP</p>
-              <p className="text-[15px] font-bold text-[var(--text-primary)]">concurrent.fr <span className="text-[12px] font-normal text-[var(--text-muted)]">(ranking #1)</span></p>
+            <div>
+              <p className="mb-2 text-[12px] font-semibold text-[#10B981]">Concurrent #1 SERP</p>
+              <p className="text-[14px] font-bold text-[var(--text-primary)]">concurrent.fr <span className="text-[12px] font-normal text-[var(--text-muted)]">(ranking #1)</span></p>
               <p className="mt-0.5 font-mono text-[11px] text-[var(--text-muted)] truncate">/{brief.keyword.replace(/\s+/g, "-")}</p>
               <div className="mt-3 grid grid-cols-3 gap-1.5">
                 {[
@@ -504,7 +507,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
                   { label: "SOSEO", value: String(compSoseo), sub: `−${soseoDeltaPct}% vs vous`, subColor: "#10B981" },
                   { label: "DSEO", value: String(compDseo), sub: "propre", subColor: "var(--text-muted)" },
                 ].map((m) => (
-                  <div key={m.label} className="rounded-xl bg-[var(--bg-secondary)] px-2.5 py-2.5">
+                  <div key={m.label} className="rounded-xl bg-[var(--bg-subtle)] px-2.5 py-2.5">
                     <p className="text-[11px] font-semibold text-[var(--text-muted)]">{m.label}</p>
                     <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-[var(--text-primary)]">{m.value}</p>
                     <p className="text-[11px]" style={{ color: m.subColor }}>{m.sub}</p>
@@ -515,7 +518,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
           </div>
 
           {/* Lecture stratégique */}
-          <div className="rounded-2xl border border-[rgba(62,80,245,0.25)] bg-[rgba(62,80,245,0.04)] p-4">
+          <div className="rounded-xl border border-[rgba(62,80,245,0.2)] bg-[rgba(62,80,245,0.04)] px-4 py-3">
             <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
               <span className="font-semibold text-[#3E50F5]">Lecture stratégique : </span>
               votre page est {Math.round(brief.wordCount / Math.max(compWords, 1))}× plus longue
@@ -529,38 +532,55 @@ function SyntheseTab({ brief }: { brief: Brief }) {
       {/* Roadmap */}
       <div>
         <div className="mb-3 flex items-baseline justify-between">
-          <p className="text-[15px] font-semibold text-[var(--text-secondary)]">Roadmap d'exécution</p>
+          <p className="text-[19px] font-semibold text-[var(--text-primary)]">Roadmap d'exécution</p>
           <p className="text-[12px] text-[var(--text-muted)]">
             {ACTIONS.length} actions · 3h 45 min estimées · Rédaction {redacTime} · {doneCount}/{ACTIONS.length} faites
           </p>
         </div>
-        <div className="space-y-2">
-          {ACTIONS.map((item, i) => (
-            <div key={i} className="flex items-center gap-2.5 rounded-xl bg-[var(--bg-secondary)] px-3 py-2.5">
-              <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ color: item.color, backgroundColor: item.bg }}>{item.p}</span>
-              <span className="flex-1 text-[14px] text-[var(--text-secondary)]">{item.text}</span>
-              <span className="flex-shrink-0 text-[11px] text-[var(--text-muted)]">{item.time}</span>
-              <DropdownMenu
-                trigger={
-                  <button className="flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity hover:opacity-80" style={{ color: STATUS_CONFIG[actionStatuses[i]].color, backgroundColor: STATUS_CONFIG[actionStatuses[i]].bg }}>
-                    {STATUS_CONFIG[actionStatuses[i]].label}
-                  </button>
-                }
-              >
-                {(["todo", "doing", "done"] as BriefStatus[]).map((s) => (
-                  <DropdownItem key={s} onClick={() => setActionStatuses((prev) => { const next = [...prev]; next[i] = s; return next; })}>
-                    <span style={{ color: STATUS_CONFIG[s].color }}>{STATUS_CONFIG[s].label}</span>
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </div>
-          ))}
+        <div className="space-y-3">
+          {ACTIONS.map((item, i) => {
+            const st = actionStatuses[i];
+            const isDone = st === "done";
+            return (
+              <div key={i} className="group rounded-2xl border border-[var(--border-subtle)] transition-colors hover:border-[var(--border-medium)]">
+                {/* colored left bar */}
+                  <div className="flex items-start gap-4 px-5 py-4">
+                  {/* Index squircle + priority */}
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0 pt-0.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-[var(--border-medium)] text-[12px] font-semibold text-[var(--text-primary)]">
+                      {i + 1}
+                    </span>
+                    <span className="text-[9px] font-bold tracking-wide" style={{ color: item.color }}>{item.p}</span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[15px] font-medium leading-snug ${isDone ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)]"}`}>
+                      {item.text}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <span className="text-[12px] text-[var(--text-muted)]">⏱ {item.time}</span>
+                      {item.redac && <span className="text-[12px] text-[var(--text-muted)]">· Rédaction</span>}
+                    </div>
+                  </div>
+
+                  {/* Status pill */}
+                  <div className="flex-shrink-0 pt-0.5">
+                    <StatusPillDropdown
+                      status={st}
+                      onChange={(s) => setActionStatuses((prev) => { const next = [...prev]; next[i] = s; return next; })}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Analyse CTR */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Analyse CTR</p>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Analyse CTR</p>
         <div className="grid grid-cols-3 gap-2 mb-3">
           {[
             { label: "CTR réel", value: `${ctrReel}%`, sub: pos ? `position #${pos}` : "actuel", color: "var(--text-primary)" },
@@ -595,9 +615,9 @@ function SyntheseTab({ brief }: { brief: Brief }) {
       {/* Aperçu SERP + Évolution position */}
       <div className="grid grid-cols-2 gap-3">
         {/* Aperçu SERP */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
-          <p className="mb-3 text-[13px] font-semibold text-[var(--text-secondary)]">Aperçu SERP</p>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3 space-y-1">
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6">
+          <p className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Aperçu SERP</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-3 space-y-1">
             <p className="text-[11px] text-[var(--text-muted)] font-mono truncate">votre-site.fr › {brief.url.replace(/^\//, "")}</p>
             {(() => {
               const title = `${brief.title} — Guide complet ${new Date().getFullYear()}`;
@@ -619,8 +639,8 @@ function SyntheseTab({ brief }: { brief: Brief }) {
         </div>
 
         {/* Évolution position */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
-          <p className="mb-3 text-[13px] font-semibold text-[var(--text-secondary)]">Évolution position</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6">
+          <p className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Évolution position</p>
           <svg width="100%" viewBox={`0 0 ${chartW} ${chartH}`} preserveAspectRatio="xMidYMid meet">
             <defs>
               <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
@@ -658,7 +678,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
 
       {/* Structure H2 */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Structure proposée</p>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Structure proposée</p>
         <ol className="space-y-2">
           {brief.h2s.map((h, i) => (
             <li key={i} className="flex items-start gap-2.5 text-[14px] text-[var(--text-secondary)]">
@@ -670,200 +690,296 @@ function SyntheseTab({ brief }: { brief: Brief }) {
           ))}
         </ol>
       </div>
+      </div>{/* fin colonne principale */}
+
+      {/* ── NBA card sticky ── */}
+      <div className="w-[340px] flex-shrink-0 sticky top-0">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+
+          {/* Header */}
+          <div className="px-5 pt-5 pb-4">
+            <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
+              {pos && pos <= 15
+                ? "Créer des liens internes depuis les pages thématiques"
+                : "Enrichir le contenu et optimiser la balise title"}
+            </p>
+
+            {/* 3 pills métriques */}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {[
+                { icon: "⏱", label: "30 min – 1h" },
+                { icon: "🔗", label: `${brief.internalLinks.length * 82} liens int.` },
+                { icon: "📈", label: "+0 vs méd." },
+              ].map((m) => (
+                <span key={m.label} className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                  {m.icon} {m.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Corps */}
+          <div className="px-5 pb-4 space-y-3">
+            <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              {pos ? `Position #${pos} sur ` : "Mot-clé : "}
+              <span className="font-semibold text-[var(--text-primary)]">"{brief.keyword}"</span>
+              {" "}({brief.volume.toLocaleString()} rech/mois).{" "}
+              {pos && pos <= 15
+                ? "Créer des liens internes depuis les pages thématiques pour viser le Top 3."
+                : "Optimiser la balise title pour améliorer le CTR."}
+            </p>
+
+            {/* Callout signal */}
+            {pos && brief.semanticScore > 30 && (
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-3">
+                <p className="text-[12px] leading-relaxed text-[var(--text-secondary)]">
+                  <span className="font-semibold text-[var(--text-primary)]">↗ Signaux contradictoires — </span>
+                  SOSEO supérieur de {Math.round(brief.semanticScore * 0.6)} pts aux concurrents mais position #{pos}. Levier = autorité + intent.
+                </p>
+              </div>
+            )}
+
+            {/* CTA */}
+            <button className="w-full rounded-xl bg-[var(--text-primary)] px-4 py-2.5 text-[13px] font-semibold text-[var(--bg-primary)] transition-opacity hover:opacity-75">
+              Lancer cette action →
+            </button>
+          </div>
+
+          {/* Alternatives */}
+          <div className="px-5 pb-5">
+            <p className="mb-3 text-[11px] font-semibold text-[var(--text-muted)]">Alternatives possibles</p>
+            <div className="space-y-3">
+              {NBA_ALTS.map((alt) => (
+                <div key={alt.n} className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] text-[9px] font-semibold text-[var(--text-muted)]">{alt.n}</span>
+                  <span className="flex-1 text-[12px] leading-snug text-[var(--text-secondary)]">{alt.text}</span>
+                  <span className="flex-shrink-0 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)]">{alt.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
 
 function ContenuTab({ brief }: { brief: Brief }) {
-  const { color, colorBg } = TYPE_CONFIG[brief.type];
-  const score = brief.semanticScore;
-  const scoreColor = score >= 70 ? "#10B981" : score >= 40 ? "#F59E0B" : "#E11D48";
+  const [aiMode, setAiMode] = useState<"conservateur" | "equilibre" | "agressif">("equilibre");
+
   const circumference = 2 * Math.PI * 36;
-  const dash = score > 0 ? (score / 100) * circumference : 0;
+  const seoScore = 78;
+  const seoDash = (seoScore / 100) * circumference;
 
   const missingTopics = [
-    "Études de cas et exemples concrets",
-    "Comparatif des outils disponibles",
-    "FAQ répondant aux questions longue traîne",
-    "Données statistiques récentes (2024)",
-    "Guide pas-à-pas pour débutants",
+    { word: "ROI contenu B2B",         desc: "Méthodes de calcul et benchmarks sectoriels",     ecart: "+18 pts" },
+    { word: "Content scoring",          desc: "Grilles d'évaluation et outils automatisés",       ecart: "+14 pts" },
+    { word: "Distribution multicanal",  desc: "LinkedIn, newsletter, syndicats de contenu",       ecart: "+12 pts" },
+    { word: "Personas décideurs",       desc: "Cartographie des comités d'achat B2B",             ecart: "+11 pts" },
+    { word: "Case studies format",      desc: "Structures narratives qui convertissent en B2B",   ecart: "+9 pts" },
   ];
 
-  const checklist = [
-    { label: "Mot-clé principal dans le H1", ok: true },
-    { label: "Mot-clé dans les 100 premiers mots", ok: brief.semanticScore > 30 },
-    { label: "Alt text sur toutes les images", ok: false },
-    { label: "Méta description optimisée", ok: brief.semanticScore > 40 },
-    { label: "Liens internes vers pages piliers", ok: brief.internalLinks.length > 1 },
-    { label: "Structure Hn cohérente", ok: brief.h2s.length >= 3 },
+  const aiActions = [
+    "Enrichir la section introduction avec des données B2B récentes (2024)",
+    "Ajouter un tableau comparatif des outils de content marketing",
+    "Développer la sous-section 'Mesurer le ROI' avec 3 méthodes concrètes",
+    "Intégrer 4 exemples de case studies avec résultats chiffrés",
+    "Réécrire la conclusion avec un CTA orienté conversion",
+  ];
+
+  const iaSkills = [
+    { label: "GEO Citability",    score: 62, color: "#F59E0B" },
+    { label: "E-E-A-T signals",   score: 48, color: "#E11D48" },
+    { label: "Architecture",      score: 71, color: "#10B981" },
+    { label: "Patterns UX",       score: 55, color: "#F59E0B" },
+    { label: "Template SEO-UX",   score: 80, color: "#10B981" },
+  ];
+
+  const h2ToAdd = [
+    { text: "ROI et mesure de performance du content marketing", priority: "Critical" },
+    { text: "Distribution et amplification du contenu",          priority: "High"     },
+    { text: "Outils et stack technologique B2B",                 priority: "High"     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Score circle */}
-      <div className="flex items-center gap-5 rounded-2xl border border-[var(--border-subtle)] p-5">
-        <div className="flex-shrink-0">
-          <svg width={88} height={88} viewBox="0 0 88 88">
-            <circle cx={44} cy={44} r={36} fill="none" stroke="var(--bg-card-hover)" strokeWidth={8} />
-            <circle
-              cx={44} cy={44} r={36} fill="none"
-              stroke={score > 0 ? scoreColor : "var(--border-medium)"}
-              strokeWidth={8}
-              strokeDasharray={`${dash} ${circumference}`}
-              strokeLinecap="round"
-              transform="rotate(-90 44 44)"
-            />
-            <text x={44} y={50} textAnchor="middle" fontSize={20} fontWeight={700} fill={score > 0 ? scoreColor : "var(--text-muted)"}>
-              {score > 0 ? score : "—"}
-            </text>
-          </svg>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold text-[var(--text-secondary)]">Score sémantique</p>
-          <p className="mt-1 text-[13px] text-[var(--text-muted)]">
-            {score === 0 ? "Page non encore analysée" : score < 40 ? "Couverture insuffisante — refonte recommandée" : score < 70 ? "Couverture partielle — enrichissement nécessaire" : "Bonne couverture sémantique"}
-          </p>
-          <div className="mt-3 flex gap-2">
-            <div className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-center">
-              <p className="text-[12px] text-[var(--text-muted)]">Mots</p>
-              <p className="text-[14px] font-semibold text-[var(--text-primary)]">{brief.wordCount.toLocaleString()}</p>
+    <div className="flex items-start gap-6">
+      {/* ── Colonne principale ── */}
+      <div className="flex-1 min-w-0 space-y-8">
+      {/* Brief éditorial */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Brief éditorial</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-5">
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(62,80,245,0.08)] text-[#3E50F5]">B2B / Services</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(99,102,241,0.08)] text-[#6366F1]">Informationnelle</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[var(--bg-subtle)] text-[var(--text-secondary)]">Funnel TOFU</span>
+          </div>
+
+          <div>
+            <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Topiques clés à couvrir</p>
+            <div className="flex flex-wrap gap-2">
+              {["Stratégie éditoriale", "Lead nurturing", "Content marketing", "KPIs contenu", "Personas B2B"].map((t) => (
+                <span key={t} className="inline-flex items-center rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">{t}</span>
+              ))}
             </div>
-            <div className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-center">
-              <p className="text-[12px] text-[var(--text-muted)]">Sections H2</p>
-              <p className="text-[14px] font-semibold text-[var(--text-primary)]">{brief.h2s.length}</p>
+          </div>
+
+          <div>
+            <p className="mb-3 text-[13px] font-semibold text-[var(--text-secondary)]">Sections H2 à ajouter</p>
+            <div className="space-y-2">
+              {h2ToAdd.map((h, i) => (
+                <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] px-4 py-3">
+                  <span className="text-[13px] text-[var(--text-primary)]">{h.text}</span>
+                  <span className={`flex-shrink-0 inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium ${h.priority === "Critical" ? "bg-[rgba(225,29,72,0.08)] text-[#E11D48]" : "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"}`}>
+                    {h.priority}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-center">
-              <p className="text-[12px] text-[var(--text-muted)]">Liens int.</p>
-              <p className="text-[14px] font-semibold text-[var(--text-primary)]">{brief.internalLinks.length}</p>
+          </div>
+
+          <div>
+            <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Checklist qualité</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+              {[
+                { label: "Mot-clé dans H1",                ok: true  },
+                { label: "Méta description optimisée",     ok: true  },
+                { label: "Mot-clé dans les 100 premiers mots", ok: true  },
+                { label: "Alt text images",                ok: false },
+                { label: "Liens internes vers piliers",    ok: true  },
+                { label: "Structure Hn cohérente",         ok: false },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-[10px] ${item.ok ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"}`}>
+                    {item.ok ? "✓" : "○"}
+                  </span>
+                  <span className={`text-[12px] ${item.ok ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}>{item.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sujets manquants */}
+      {/* Brief SEO Score */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Sujets manquants à couvrir</p>
-        <div className="space-y-2">
-          {missingTopics.map((topic, i) => (
-            <div key={i} className="flex items-center gap-2.5 rounded-xl bg-[var(--bg-secondary)] px-3 py-2.5">
-              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(225,29,72,0.1)] text-[11px] font-bold text-[#E11D48]">✕</span>
-              <span className="text-[14px] text-[var(--text-secondary)]">{topic}</span>
-            </div>
-          ))}
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Score SEO de la page</p>
+        <div className="flex items-center gap-8 rounded-2xl border border-[var(--border-subtle)] p-6">
+          <div className="flex-shrink-0">
+            <svg width={96} height={96} viewBox="0 0 88 88">
+              <circle cx={44} cy={44} r={36} fill="none" stroke="var(--border-subtle)" strokeWidth={8} />
+              <circle cx={44} cy={44} r={36} fill="none" stroke="#10B981" strokeWidth={8}
+                strokeDasharray={`${seoDash} ${circumference}`} strokeLinecap="round" transform="rotate(-90 44 44)" />
+              <text x={44} y={46} textAnchor="middle" fontSize={19} fontWeight={700} fill="#10B981">{seoScore}</text>
+              <text x={44} y={59} textAnchor="middle" fontSize={10} fill="var(--text-muted)">/100</text>
+            </svg>
+          </div>
+          <div className="flex-1 space-y-3">
+            {[
+              { label: "Sémantique",  val: 71, color: "#F59E0B" },
+              { label: "Structure",   val: 71, color: "#F59E0B" },
+              { label: "Densité",     val: 92, color: "#10B981" },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[12px] text-[var(--text-secondary)]">{m.label}</span>
+                  <span className="text-[12px] font-semibold tabular-nums" style={{ color: m.color }}>{m.val}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[var(--bg-subtle)]">
+                  <div className="h-1.5 rounded-full transition-all" style={{ width: `${m.val}%`, backgroundColor: m.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Plan de contenu */}
+      {/* Densité mot-clé */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Plan de contenu recommandé</p>
-        <ol className="space-y-2">
-          {brief.h2s.map((h, i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold" style={{ backgroundColor: colorBg, color }}>
-                {i + 1}
-              </span>
-              <span className="text-[14px] text-[var(--text-secondary)]">{h}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {/* Checklist qualité */}
-      <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Checklist qualité</p>
-        <div className="space-y-2">
-          {checklist.map((item, i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] ${item.ok ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"}`}>
-                {item.ok ? "✓" : "○"}
-              </span>
-              <span className={`text-[13px] ${item.ok ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}>{item.label}</span>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Densité mot-clé cible</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6">
+          <div className="flex items-end gap-6 mb-4">
+            <div>
+              <p className="text-[12px] text-[var(--text-muted)] mb-1">Votre page</p>
+              <p className="text-[28px] font-semibold tabular-nums text-[#E11D48]">26.9</p>
+              <p className="text-[11px] text-[var(--text-muted)]">occurrences / 1 000 mots</p>
             </div>
-          ))}
+            <div className="pb-1 text-[var(--text-muted)]">vs</div>
+            <div>
+              <p className="text-[12px] text-[var(--text-muted)] mb-1">Concurrents (moy.)</p>
+              <p className="text-[28px] font-semibold tabular-nums text-[var(--text-primary)]">39.7</p>
+              <p className="text-[11px] text-[var(--text-muted)]">occurrences / 1 000 mots</p>
+            </div>
+            <div className="ml-auto">
+              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(225,29,72,0.08)] text-[#E11D48]">−32%</span>
+            </div>
+          </div>
+          <div className="rounded-xl bg-[rgba(225,29,72,0.05)] border border-[rgba(225,29,72,0.12)] px-4 py-3 flex items-start gap-3">
+            <svg width="16" height="16" viewBox="0 0 16 16" className="flex-shrink-0 mt-0.5" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="#E11D48" strokeWidth="1.5"/>
+              <rect x="7.25" y="4.5" width="1.5" height="4.5" rx=".75" fill="#E11D48"/>
+              <circle cx="8" cy="11" r=".75" fill="#E11D48"/>
+            </svg>
+            <p className="text-[12px] text-[#E11D48]">La densité est insuffisante par rapport aux concurrents. Augmenter les occurrences du mot-clé principal dans le corps du texte.</p>
+          </div>
         </div>
       </div>
 
       {/* Maillage interne */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Maillage interne suggéré</p>
-        <div className="space-y-1.5">
-          {brief.internalLinks.map((link) => (
-            <div key={link} className="flex items-center gap-2 rounded-xl bg-[var(--bg-card-hover)] px-3 py-2 font-mono text-[12px] text-[var(--text-secondary)]">
-              <MinusIcon className="h-3 w-3 flex-shrink-0 text-[var(--text-muted)]" />
-              {link}
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Maillage interne</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[22px] font-semibold text-[#10B981]">Excellent</p>
+              <p className="text-[12px] text-[var(--text-muted)]">Score 100/100</p>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AutoriteTab({ brief }: { brief: Brief }) {
-  const tf = brief.position ? Math.max(8, Math.round(30 - brief.position * 0.3)) : 12;
-  const dr = 34;
-  const refDomains = 145;
-
-  const competitors = [
-    { domain: "votre-site.fr", tf, dr, refDomains, isYou: true },
-    { domain: "concurrent1.com", tf: 41, dr: 58, refDomains: 520 },
-    { domain: "concurrent2.fr",  tf: 38, dr: 52, refDomains: 410 },
-    { domain: "concurrent3.com", tf: 35, dr: 47, refDomains: 320 },
-    { domain: "concurrent4.fr",  tf: 29, dr: 43, refDomains: 210 },
-  ];
-
-  const actions = [
-    "Obtenir 5 liens depuis des sites éditoriaux (DR > 40)",
-    "Publier un article invité sur un site thématique",
-    "Contacter les auteurs des pages qui vous citent sans lien",
-    "Créer une ressource linkable (infographie, étude de cas)",
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border-subtle)] p-4">
-          <p className="mb-1 text-[12px] font-medium text-[var(--text-muted)]">Trust Flow</p>
-          <p className="text-[30px] font-semibold tabular-nums text-amber-500">{tf}</p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">Moy. : 36</p>
-        </div>
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border-subtle)] p-4">
-          <p className="mb-1 text-[12px] font-medium text-[var(--text-muted)]">Domain Rating</p>
-          <p className="text-[30px] font-semibold tabular-nums text-[var(--text-primary)]">{dr}</p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">Moy. : 50</p>
-        </div>
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border-subtle)] p-4">
-          <p className="mb-1 text-[12px] font-medium text-[var(--text-muted)]">Domaines réf.</p>
-          <p className="text-[30px] font-semibold tabular-nums text-[var(--text-primary)]">{refDomains}</p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">Moy. : 365</p>
+            <div className="flex gap-6 text-right">
+              <div>
+                <p className="text-[20px] font-semibold tabular-nums text-[var(--text-primary)]">116</p>
+                <p className="text-[11px] text-[var(--text-muted)]">liens entrants <span className="text-[#10B981]">(moy. 75)</span></p>
+              </div>
+              <div>
+                <p className="text-[20px] font-semibold tabular-nums text-[var(--text-primary)]">62</p>
+                <p className="text-[11px] text-[var(--text-muted)]">liens sortants <span className="text-[#10B981]">(moy. 48)</span></p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {[
+              "La page reçoit 55% plus de liens internes que la médiane des concurrents.",
+              "Les ancres de liens sont variées et sémantiquement pertinentes.",
+            ].map((insight, i) => (
+              <div key={i} className="flex items-start gap-2.5 rounded-xl bg-[rgba(16,185,129,0.05)] border border-[rgba(16,185,129,0.12)] px-4 py-3">
+                <span className="flex-shrink-0 text-[#10B981] text-[13px]">✓</span>
+                <p className="text-[12px] text-[var(--text-secondary)]">{insight}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Benchmark SERP */}
+      {/* Top 5 sujets manquants */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Benchmark SERP</p>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Top 5 sujets manquants</p>
         <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-[var(--border-subtle)]">
-                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Domaine</th>
-                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">TF</th>
-                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">DR</th>
-                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">Domaines réf.</th>
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Sujet</th>
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Description</th>
+                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">Écart</th>
               </tr>
             </thead>
             <tbody>
-              {competitors.map((c, i) => (
-                <tr key={i} className={`border-b border-[var(--border-subtle)] last:border-0 ${c.isYou ? "bg-[rgba(62,80,245,0.04)]" : ""}`}>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-[13px] ${c.isYou ? "font-semibold text-[#3E50F5]" : "text-[var(--text-secondary)]"}`}>
-                      {c.domain}{c.isYou ? " (vous)" : ""}
-                    </span>
+              {missingTopics.map((t, i) => (
+                <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
+                  <td className="px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] whitespace-nowrap">{t.word}</td>
+                  <td className="px-4 py-3 text-[12px] text-[var(--text-muted)]">{t.desc}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(225,29,72,0.08)] text-[#E11D48]">{t.ecart}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-right text-[13px] tabular-nums text-[var(--text-primary)]">{c.tf}</td>
-                  <td className="px-4 py-2.5 text-right text-[13px] tabular-nums text-[var(--text-primary)]">{c.dr}</td>
-                  <td className="px-4 py-2.5 text-right text-[13px] tabular-nums text-[var(--text-primary)]">{c.refDomains}</td>
                 </tr>
               ))}
             </tbody>
@@ -871,16 +987,364 @@ function AutoriteTab({ brief }: { brief: Brief }) {
         </div>
       </div>
 
-      {/* Actions recommandées */}
+      {/* Skills IA */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Actions recommandées</p>
-        <div className="space-y-2">
-          {actions.map((action, i) => (
-            <div key={i} className="flex items-start gap-2.5 rounded-xl bg-[var(--bg-secondary)] px-3 py-2.5">
-              <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(62,80,245,0.1)] text-[10px] font-bold text-[#3E50F5]">{i + 1}</span>
-              <span className="text-[14px] text-[var(--text-secondary)]">{action}</span>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Signaux IA &amp; GEO</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-4">
+          {iaSkills.map((s) => (
+            <div key={s.label}>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-[13px] text-[var(--text-secondary)]">{s.label}</span>
+                <span className="text-[13px] font-semibold tabular-nums" style={{ color: s.color }}>{s.score}/100</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[var(--bg-subtle)]">
+                <div className="h-1.5 rounded-full transition-all" style={{ width: `${s.score}%`, backgroundColor: s.color }} />
+              </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Optimiser avec Claude */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Optimiser le contenu avec Claude</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-5">
+          <div className="flex gap-1.5 rounded-xl bg-[var(--bg-subtle)] p-1">
+            {(["conservateur", "equilibre", "agressif"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setAiMode(m)}
+                className={`flex-1 rounded-lg px-3 py-2 text-[12px] font-medium transition-colors ${aiMode === m ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}
+              >
+                {m === "conservateur" ? "Conservateur" : m === "equilibre" ? "Équilibré" : "Agressif"}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {aiActions.map((action, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-xl border border-[var(--border-subtle)] px-4 py-3">
+                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[6px] border border-[var(--border-medium)] text-[11px] font-semibold text-[var(--text-secondary)]">{i + 1}</span>
+                <span className="text-[13px] text-[var(--text-secondary)]">{action}</span>
+              </div>
+            ))}
+          </div>
+          <Button size="sm" className="w-full justify-center gap-2">
+            <SparklesIcon className="h-4 w-4" />
+            Lancer l'optimisation IA
+          </Button>
+        </div>
+      </div>
+      </div>{/* fin colonne principale */}
+
+      {/* ── NBA card sticky ── */}
+      <div className="w-[340px] flex-shrink-0 sticky top-0">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+          <div className="px-5 pt-5 pb-4">
+            <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
+              Enrichir le contenu sur les 5 sujets manquants
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {[{ icon: "⏱", label: "2h – 3h" }, { icon: "📝", label: "5 sujets" }, { icon: "📈", label: "+18 pts écart" }].map((m) => (
+                <span key={m.label} className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                  {m.icon} {m.label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="px-5 pb-4 space-y-3">
+            <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              Le sujet <span className="font-semibold text-[var(--text-primary)]">ROI contenu B2B</span> représente le plus grand écart sémantique (+18 pts). Le couvrir en priorité avec des données chiffrées et des benchmarks sectoriels.
+            </p>
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-3">
+              <p className="text-[12px] leading-relaxed text-[var(--text-secondary)]">
+                <span className="font-semibold text-[var(--text-primary)]">Score SEO 78/100 — </span>
+                Sémantique et structure à 71% sont les deux leviers principaux. L'optimisation IA en mode Équilibré est recommandée.
+              </p>
+            </div>
+            <button className="w-full rounded-xl bg-[var(--text-primary)] px-4 py-2.5 text-[13px] font-semibold text-[var(--bg-primary)] transition-opacity hover:opacity-75">
+              Optimiser avec Claude →
+            </button>
+          </div>
+          <div className="px-5 pb-5">
+            <p className="mb-3 text-[11px] font-semibold text-[var(--text-muted)]">Alternatives possibles</p>
+            <div className="space-y-3">
+              {[
+                { n: 2, text: "Travailler la densité mot-clé (26.9 → 39.7 cible)", time: "1h" },
+                { n: 3, text: "Améliorer les signaux E-E-A-T (score 48/100)", time: "2h" },
+                { n: 4, text: "Ajouter les 3 sections H2 manquantes identifiées", time: "3h" },
+              ].map((alt) => (
+                <div key={alt.n} className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] text-[9px] font-semibold text-[var(--text-muted)]">{alt.n}</span>
+                  <span className="flex-1 text-[12px] leading-snug text-[var(--text-secondary)]">{alt.text}</span>
+                  <span className="flex-shrink-0 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)]">{alt.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AutoriteTab({ brief }: { brief: Brief }) {
+  const [actionStatuses, setActionStatuses] = useState<BriefStatus[]>(["todo", "todo", "todo"]);
+
+  const serpBenchmark = [
+    { pos: "1",  url: "semrush.com/blog/content-marketing-b2b",      mots: "5 800", bas: "DR 92", bl: "847", pv: "12.4K", pt: "8 920", soseo: "94%", dseo: "76%" },
+    { pos: "2",  url: "hubspot.com/marketing/b2b-content",            mots: "4 900", bas: "DR 88", bl: "612", pv: "9.8K",  pt: "7 140", soseo: "91%", dseo: "72%" },
+    { pos: "3",  url: "contentmarketinginstitute.com/b2b-strategy",   mots: "6 200", bas: "DR 84", bl: "394", pv: "7.2K",  pt: "5 800", soseo: "88%", dseo: "68%" },
+    { pos: "4",  url: "marketingprofs.com/b2b-content-guide",         mots: "4 100", bas: "DR 79", bl: "281", pv: "5.4K",  pt: "4 100", soseo: "84%", dseo: "63%" },
+    { pos: "→",  url: "votre-site.fr/blog/content-marketing-b2b",     mots: "2 000", bas: "DR 34", bl: "0",   pv: "—",     pt: "—",     soseo: "—",   dseo: "—",   isYou: true },
+    { pos: "Med", url: "Médiane (pos. 1–10)",                         mots: "4 500", bas: "DR 78", bl: "320", pv: "6.8K",  pt: "5 200", soseo: "86%", dseo: "65%", isMed: true },
+    { pos: "Δ",  url: "Écart vous / médiane",                         mots: "−55%",  bas: "−56%",  bl: "−100%", pv: "n/a", pt: "n/a",  soseo: "n/a", dseo: "n/a", isEcart: true },
+  ];
+
+  const outreachTargets = [
+    { domain: "journalduweb.fr",    dr: 64, fit: 5, contact: "editorial@journalduweb.fr" },
+    { domain: "abondance.com",      dr: 58, fit: 5, contact: "contact@abondance.com"      },
+    { domain: "webmarketing-com.com", dr: 52, fit: 4, contact: "redaction@wm-c.fr"        },
+    { domain: "siecledigital.fr",   dr: 48, fit: 4, contact: "contact@siecledigital.fr"  },
+    { domain: "ecommercemag.fr",    dr: 43, fit: 3, contact: "presse@ecommercemag.fr"    },
+  ];
+
+  const autoriteActions = [
+    { p: "P1", text: "Publier un article invité sur journalduweb.fr (DR 64)", time: "2 sem.", impact: "Haut",  color: "#E11D48" },
+    { p: "P2", text: "Créer une infographie linkable sur les KPIs content B2B",    time: "1 sem.", impact: "Moyen", color: "#F59E0B" },
+    { p: "P3", text: "Contacter 10 auteurs qui citent des ressources similaires",   time: "3 sem.", impact: "Moyen", color: "#6366F1" },
+  ];
+
+  const ancreSegments = [
+    { label: "Exact match",   pct: 20, color: "#E11D48" },
+    { label: "Partial match", pct: 30, color: "#F59E0B" },
+    { label: "Branded",       pct: 20, color: "#3E50F5" },
+    { label: "Générique",     pct: 10, color: "#6366F1" },
+    { label: "URL nue",       pct: 20, color: "#10B981" },
+  ];
+
+  return (
+    <div className="flex items-start gap-6">
+      {/* ── Colonne principale ── */}
+      <div className="flex-1 min-w-0 space-y-8">
+      {/* Score hero */}
+      <div className="flex items-center gap-6 rounded-2xl border border-[var(--border-subtle)] p-6">
+        <div className="flex-shrink-0">
+          <svg width={88} height={88} viewBox="0 0 88 88">
+            <circle cx={44} cy={44} r={36} fill="none" stroke="var(--border-subtle)" strokeWidth={8} />
+            <circle cx={44} cy={44} r={36} fill="none" stroke="#E11D48" strokeWidth={8}
+              strokeDasharray={`${(30 / 100) * 2 * Math.PI * 36} ${2 * Math.PI * 36}`}
+              strokeLinecap="round" transform="rotate(-90 44 44)" />
+            <text x={44} y={46} textAnchor="middle" fontSize={19} fontWeight={700} fill="#E11D48">30</text>
+            <text x={44} y={59} textAnchor="middle" fontSize={10} fill="var(--text-muted)">/100</text>
+          </svg>
+        </div>
+        <div>
+          <p className="text-[19px] font-semibold text-[var(--text-primary)]">Score autorité</p>
+          <p className="mt-1 text-[13px] text-[var(--text-muted)] max-w-sm">Profil de liens très faible face aux concurrents. Aucun backlink détecté — priorité absolue à la construction d'autorité.</p>
+          <div className="mt-3 flex gap-4">
+            <div>
+              <p className="text-[11px] text-[var(--text-muted)]">Backlinks</p>
+              <p className="text-[17px] font-semibold text-[#E11D48]">0</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-[var(--text-muted)]">Domaines réf.</p>
+              <p className="text-[17px] font-semibold text-[var(--text-primary)]">0</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-[var(--text-muted)]">Trust Flow</p>
+              <p className="text-[17px] font-semibold text-[var(--text-primary)]">n/a</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-[var(--text-muted)]">Obj. liens/mois</p>
+              <p className="text-[17px] font-semibold text-[#3E50F5]">2</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Benchmark SERP unifié */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Benchmark SERP</p>
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border-subtle)]">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[var(--border-subtle)]">
+                {["Pos.", "URL", "Mots", "BAS", "BL", "PV", "PT", "SOSEO", "DSEO"].map((h) => (
+                  <th key={h} className={`px-3 py-2.5 text-[11px] font-medium text-[var(--text-muted)] ${h === "URL" ? "" : "text-right"} whitespace-nowrap`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {serpBenchmark.map((row, i) => (
+                <tr key={i} className={`border-b border-[var(--border-subtle)] last:border-0 ${row.isYou ? "bg-[rgba(62,80,245,0.04)]" : row.isMed ? "bg-[var(--bg-subtle)]" : row.isEcart ? "opacity-70" : ""}`}>
+                  <td className="px-3 py-2.5 text-[12px] font-semibold text-[var(--text-muted)] text-right">{row.pos}</td>
+                  <td className={`px-3 py-2.5 text-[12px] font-mono max-w-[200px] truncate ${row.isYou ? "font-semibold text-[#3E50F5]" : row.isMed ? "font-semibold text-[var(--text-secondary)]" : "text-[var(--text-secondary)]"}`}>{row.url}</td>
+                  {[row.mots, row.bas, row.bl, row.pv, row.pt, row.soseo, row.dseo].map((v, j) => (
+                    <td key={j} className={`px-3 py-2.5 text-right text-[12px] tabular-nums ${row.isEcart && v !== "n/a" ? "font-semibold text-[#E11D48]" : "text-[var(--text-secondary)]"}`}>{v}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Profil d'ancres */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Profil d'ancres</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-4">
+          <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-5 text-center">
+            <p className="text-[13px] text-[var(--text-muted)]">Aucun backlink détecté — profil d'ancres non disponible</p>
+            <p className="mt-1 text-[12px] text-[var(--text-muted)]">Cibles de répartition recommandées :</p>
+          </div>
+          <div className="space-y-2.5">
+            {ancreSegments.map((s) => (
+              <div key={s.label}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[12px] text-[var(--text-secondary)]">{s.label}</span>
+                  <span className="text-[12px] font-semibold tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
+                  <div className="h-1.5 rounded-full" style={{ width: `${s.pct}%`, backgroundColor: s.color, opacity: 0.5 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Cibles d'outreach */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Cibles d'outreach</p>
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[var(--border-subtle)]">
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Domaine</th>
+                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">DR</th>
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Fit</th>
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Contact</th>
+                <th className="px-4 py-2.5" />
+              </tr>
+            </thead>
+            <tbody>
+              {outreachTargets.map((t, i) => (
+                <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
+                  <td className="px-4 py-3 text-[13px] font-medium text-[var(--text-primary)]">{t.domain}</td>
+                  <td className="px-4 py-3 text-right text-[13px] tabular-nums text-[var(--text-secondary)]">{t.dr}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-[#F59E0B] text-[12px]">{"★".repeat(t.fit)}{"☆".repeat(5 - t.fit)}</span>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-[var(--text-muted)]">{t.contact}</td>
+                  <td className="px-4 py-3">
+                    <button className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] transition-colors">
+                      Contacter
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Coach IA */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Coach IA — Diagnostic autorité</p>
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SparklesIcon className="h-4 w-4 text-[#3E50F5]" />
+              <span className="text-[13px] font-semibold text-[var(--text-primary)]">Analyse IA</span>
+            </div>
+            <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(16,185,129,0.08)] text-[#10B981]">85% confiance</span>
+          </div>
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+            La page cible un mot-clé compétitif (content marketing B2B) sans profil de liens — classement quasi impossible sans construction d'autorité. Les concurrents en position 1–4 affichent tous un DR &gt; 79 et des centaines de backlinks vers cette URL spécifique.
+          </p>
+          <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+            Stratégie d'ancres recommandée : éviter l'exact match agressif (risque Penguin). Prioriser partial match et branded pour les 6 premiers mois, puis diversifier vers URL nues et génériques.
+          </p>
+        </div>
+      </div>
+
+      {/* Actions recommandées */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Actions recommandées</p>
+        <div className="space-y-3">
+          {autoriteActions.map((item, i) => {
+            const isDone = actionStatuses[i] === "done";
+            return (
+              <div key={i} className="group rounded-2xl border border-[var(--border-subtle)] transition-colors hover:border-[var(--border-medium)]">
+                <div className="flex items-start gap-4 px-5 py-4">
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0 pt-0.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-[var(--border-medium)] text-[12px] font-semibold text-[var(--text-primary)]">{i + 1}</span>
+                    <span className="text-[9px] font-bold tracking-wide" style={{ color: item.color }}>{item.p}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[14px] font-medium leading-snug ${isDone ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)]"}`}>{item.text}</p>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <span className="text-[12px] text-[var(--text-muted)]">⏱ {item.time}</span>
+                      <span className="text-[12px] text-[var(--text-muted)]">· Impact {item.impact}</span>
+                    </div>
+                  </div>
+                  <StatusPillDropdown
+                    status={actionStatuses[i]}
+                    onChange={(s) => setActionStatuses((prev) => { const n = [...prev]; n[i] = s; return n; })}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      </div>{/* fin colonne principale */}
+
+      {/* ── NBA card sticky ── */}
+      <div className="w-[340px] flex-shrink-0 sticky top-0">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+          <div className="px-5 pt-5 pb-4">
+            <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
+              Publier un article invité sur journalduweb.fr
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {[{ icon: "⏱", label: "2 sem." }, { icon: "🔗", label: "DR 64" }, { icon: "📈", label: "Impact haut" }].map((m) => (
+                <span key={m.label} className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                  {m.icon} {m.label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="px-5 pb-4 space-y-3">
+            <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              <span className="font-semibold text-[var(--text-primary)]">0 backlinks</span> sur cette page — impossible de se classer sans autorité externe. Un article invité sur un site DR 60+ est le levier le plus direct.
+            </p>
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-3">
+              <p className="text-[12px] leading-relaxed text-[var(--text-secondary)]">
+                <span className="font-semibold text-[var(--text-primary)]">Objectif : 2 liens/mois — </span>
+                À ce rythme, un profil d'autorité compétitif est atteignable en 6 mois d'après les données SERP.
+              </p>
+            </div>
+            <button className="w-full rounded-xl bg-[var(--text-primary)] px-4 py-2.5 text-[13px] font-semibold text-[var(--bg-primary)] transition-opacity hover:opacity-75">
+              Démarrer l'outreach →
+            </button>
+          </div>
+          <div className="px-5 pb-5">
+            <p className="mb-3 text-[11px] font-semibold text-[var(--text-muted)]">Alternatives possibles</p>
+            <div className="space-y-3">
+              {[
+                { n: 2, text: "Créer une infographie linkable sur les KPIs B2B", time: "1 sem." },
+                { n: 3, text: "Contacter les auteurs citant des ressources similaires", time: "3 sem." },
+                { n: 4, text: "Construire le profil d'ancres recommandé (5 segments)", time: "Long terme" },
+              ].map((alt) => (
+                <div key={alt.n} className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] text-[9px] font-semibold text-[var(--text-muted)]">{alt.n}</span>
+                  <span className="flex-1 text-[12px] leading-snug text-[var(--text-secondary)]">{alt.text}</span>
+                  <span className="flex-shrink-0 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)]">{alt.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -888,38 +1352,63 @@ function AutoriteTab({ brief }: { brief: Brief }) {
 }
 
 function TechniqueTab({ brief }: { brief: Brief }) {
+  const [actionStatuses, setActionStatuses] = useState<BriefStatus[]>(["todo", "todo", "todo", "todo", "todo"]);
+
   const cwv = [
-    { label: "LCP", value: "2.1s",  threshold: "< 2.5s",  ok: true },
-    { label: "CLS", value: "0.08",  threshold: "< 0.1",   ok: true },
-    { label: "INP", value: "180ms", threshold: "< 200ms", ok: true },
-    { label: "FCP", value: "1.4s",  threshold: "< 1.8s",  ok: true },
+    { label: "LCP",  value: "3.90s",  threshold: "< 2.5s",  ok: false },
+    { label: "FCP",  value: "3.75s",  threshold: "< 1.8s",  ok: false },
+    { label: "CLS",  value: "0.08",   threshold: "< 0.1",   ok: true  },
+    { label: "TTFB", value: "53ms",   threshold: "< 800ms", ok: true  },
+  ];
+
+  const auditItems = [
+    { label: "Code statut",      value: "200 OK",        ok: true  },
+    { label: "Balise title",     value: "Optimisée",     ok: true  },
+    { label: "Temps de charg.",  value: "3.9s",          ok: false },
+    { label: "Balise H1",        value: "Présente",      ok: true  },
+    { label: "Meta description", value: "Présente",      ok: true  },
+    { label: "Nombre de mots",   value: "2 000 mots",    ok: false },
+    { label: "Balise canonical", value: "Présente",      ok: true  },
+    { label: "Liens internes",   value: "62 liens",      ok: true  },
+    { label: "Profondeur crawl", value: "3 clics",       ok: true  },
+    { label: "Impressions GSC",  value: "0 (non indexé)", ok: false },
   ];
 
   const structuredData = [
-    { schema: "Article",        status: "absent",  ok: false },
-    { schema: "BreadcrumbList", status: "présent", ok: true },
-    { schema: "FAQ",            status: "absent",  ok: false },
+    { schema: "Answer / FAQPage", status: "Détecté",           ok: true,  note: "Bien structuré" },
+    { schema: "Organization",     status: "Manquant",          ok: false, note: "Critique" },
+    { schema: "Service",          status: "Recommandé",        ok: false, note: "Opportunité" },
+    { schema: "Article",          status: "Recommandé",        ok: false, note: "Opportunité" },
   ];
 
-  const technicalActions = [
-    { p: "P0", text: "Ajouter le balisage Schema Article et FAQ",   color: "#E11D48", bg: "rgba(225,29,72,0.08)" },
-    { p: "P1", text: "Compresser les images (format WebP)",         color: "#F59E0B", bg: "rgba(245,158,11,0.08)" },
-    { p: "P1", text: "Minifier le JavaScript et CSS critiques",     color: "#F59E0B", bg: "rgba(245,158,11,0.08)" },
-    { p: "P2", text: "Implémenter le lazy loading sur les images",  color: "#6366F1", bg: "rgba(99,102,241,0.08)" },
+  const techActions = [
+    { p: "P1", text: "Améliorer le LCP : optimiser les images above-the-fold (WebP + preload)", time: "1 sem.", impact: "Haut",   color: "#E11D48" },
+    { p: "P1", text: "Réduire le FCP : différer le JS non critique, activer le cache navigateur",time: "1 sem.", impact: "Haut",   color: "#E11D48" },
+    { p: "P2", text: "Ajouter les schémas Organization et Service (JSON-LD)",                     time: "2h",     impact: "Moyen", color: "#F59E0B" },
+    { p: "P2", text: "Augmenter le nombre de mots à 3 500+ (benchmark médiane concurrents)",      time: "3h",     impact: "Moyen", color: "#F59E0B" },
+    { p: "P3", text: "Soumettre l'URL dans Google Search Console pour déclencher l'indexation",   time: "15 min.", impact: "Faible", color: "#6366F1" },
+  ];
+
+  const indexPills = [
+    { label: "Sitemap",    ok: true  },
+    { label: "Indexée",    ok: false },
+    { label: "Robots.txt", ok: true  },
+    { label: "Crawl OK",   ok: true  },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex items-start gap-6">
+      {/* ── Colonne principale ── */}
+      <div className="flex-1 min-w-0 space-y-8">
       {/* Statut indexation */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Statut d'indexation</p>
-        <div className="flex gap-2">
-          {[
-            { label: "Indexée", ok: true },
-            { label: "Mobile-friendly", ok: true },
-            { label: "HTTPS", ok: true },
-          ].map((s) => (
-            <span key={s.label} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium ${s.ok ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" : "bg-[rgba(225,29,72,0.1)] text-[#E11D48]"}`}>
+        <div className="mb-5 flex items-center justify-between">
+          <p className="text-[19px] font-semibold text-[var(--text-primary)]">Statut d'indexation</p>
+          <span className="text-[12px] text-[var(--text-muted)]">GSC · dernière vérif. 5 mai 2026</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {indexPills.map((s) => (
+            <span key={s.label} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium ${s.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : "bg-[rgba(225,29,72,0.08)] text-[#E11D48]"}`}>
               <span>{s.ok ? "✓" : "✕"}</span>
               {s.label}
             </span>
@@ -927,16 +1416,32 @@ function TechniqueTab({ brief }: { brief: Brief }) {
         </div>
       </div>
 
+      {/* Audit technique */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Audit technique</p>
+        <div className="grid grid-cols-2 gap-2">
+          {auditItems.map((item) => (
+            <div key={item.label} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
+              <span className="text-[12px] text-[var(--text-muted)]">{item.label}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-medium text-[var(--text-secondary)]">{item.value}</span>
+                <span className={`text-[11px] ${item.ok ? "text-[#10B981]" : "text-[#E11D48]"}`}>{item.ok ? "✓" : "✕"}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Core Web Vitals */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Core Web Vitals</p>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Core Web Vitals</p>
+        <div className="grid grid-cols-2 gap-3 mb-4">
           {cwv.map((m) => (
-            <div key={m.label} className="rounded-2xl border border-[var(--border-subtle)] p-4">
+            <div key={m.label} className="rounded-2xl border border-[var(--border-subtle)] p-6">
               <div className="flex items-center justify-between">
                 <p className="text-[12px] font-medium text-[var(--text-muted)]">{m.label}</p>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${m.ok ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" : "bg-[rgba(225,29,72,0.1)] text-[#E11D48]"}`}>
-                  {m.ok ? "Bon" : "À corriger"}
+                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium ${m.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"}`}>
+                  {m.ok ? "Bon" : "À améliorer"}
                 </span>
               </div>
               <p className="mt-1.5 text-[22px] font-semibold tabular-nums text-[var(--text-primary)]">{m.value}</p>
@@ -944,52 +1449,181 @@ function TechniqueTab({ brief }: { brief: Brief }) {
             </div>
           ))}
         </div>
+        <div className="flex items-start gap-3 rounded-xl bg-[rgba(245,158,11,0.05)] border border-[rgba(245,158,11,0.15)] px-4 py-3">
+          <svg width="16" height="16" viewBox="0 0 16 16" className="flex-shrink-0 mt-0.5" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="#F59E0B" strokeWidth="1.5"/>
+            <rect x="7.25" y="4.5" width="1.5" height="4.5" rx=".75" fill="#F59E0B"/>
+            <circle cx="8" cy="11" r=".75" fill="#F59E0B"/>
+          </svg>
+          <p className="text-[12px] text-[#F59E0B]">LCP et FCP dépassent les seuils Google — impact négatif sur le classement. Optimisation des performances à prioriser en P1.</p>
+        </div>
       </div>
 
       {/* Structure des titres */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Structure des titres</p>
-        <div className="space-y-2 rounded-2xl border border-[var(--border-subtle)] p-4">
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Structure des titres</p>
+        <div className="space-y-1.5 rounded-2xl border border-[var(--border-subtle)] p-6">
           <div className="flex items-start gap-3">
-            <span className="w-7 flex-shrink-0 text-[10px] font-bold text-[#3E50F5]">H1</span>
+            <span className="w-8 flex-shrink-0 text-[10px] font-bold text-[#3E50F5]">H1</span>
             <span className="text-[13px] text-[var(--text-primary)]">{brief.title}</span>
           </div>
           {brief.h2s.map((h, i) => (
             <div key={i} className="flex items-start gap-3 pl-4">
-              <span className="w-7 flex-shrink-0 text-[10px] font-bold text-[var(--text-muted)]">H2</span>
-              <span className="text-[14px] text-[var(--text-secondary)]">{h}</span>
+              <span className="w-8 flex-shrink-0 text-[10px] font-bold text-[var(--text-muted)]">H2</span>
+              <span className="text-[13px] text-[var(--text-secondary)]">{h}</span>
             </div>
           ))}
-          <div className="flex items-start gap-3 pl-4 opacity-60">
-            <span className="w-7 flex-shrink-0 text-[10px] font-bold text-[#E11D48]">H2</span>
-            <span className="text-[13px] italic text-[#E11D48]">Section manquante à ajouter</span>
-          </div>
+          {brief.h2s[0] && (
+            <div className="pl-8 space-y-1">
+              <div className="flex items-start gap-3">
+                <span className="w-8 flex-shrink-0 text-[10px] font-bold text-[var(--text-muted)] opacity-50">H3</span>
+                <span className="text-[12px] text-[var(--text-muted)]">Sous-section détail</span>
+              </div>
+            </div>
+          )}
+          {["ROI et performance du content marketing", "Distribution et amplification", "Outils et stack technologique"].map((missing, i) => (
+            <div key={i} className="flex items-start gap-3 pl-4">
+              <span className="w-8 flex-shrink-0 text-[10px] font-bold text-[#E11D48]">H2</span>
+              <span className="text-[12px] italic text-[#E11D48]">{missing} — à ajouter</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Images */}
+      <div>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Images</p>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          {[
+            { label: "Total images",    value: "14",    ok: true  },
+            { label: "Format WebP",     value: "21%",   ok: false },
+            { label: "Alt manquants",   value: "5",     ok: false },
+            { label: "Poids total",     value: "1.4 MB", ok: false },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
+              <span className="text-[12px] text-[var(--text-muted)]">{item.label}</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-[13px] font-semibold tabular-nums ${item.ok ? "text-[#10B981]" : "text-[#E11D48]"}`}>{item.value}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-start gap-3 rounded-xl bg-[rgba(225,29,72,0.05)] border border-[rgba(225,29,72,0.12)] px-4 py-3">
+          <svg width="16" height="16" viewBox="0 0 16 16" className="flex-shrink-0 mt-0.5" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="#E11D48" strokeWidth="1.5"/>
+            <rect x="7.25" y="4.5" width="1.5" height="4.5" rx=".75" fill="#E11D48"/>
+            <circle cx="8" cy="11" r=".75" fill="#E11D48"/>
+          </svg>
+          <p className="text-[12px] text-[#E11D48]">79% des images ne sont pas en WebP — conversion recommandée pour réduire le poids de page et améliorer le LCP.</p>
         </div>
       </div>
 
       {/* Données structurées */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Données structurées</p>
-        <div className="space-y-2">
-          {structuredData.map((item) => (
-            <div key={item.schema} className="flex items-center justify-between rounded-xl bg-[var(--bg-secondary)] px-3 py-2.5">
-              <span className="font-mono text-[12px] text-[var(--text-secondary)]">{item.schema}</span>
-              <span className={`text-[11px] font-medium ${item.ok ? "text-[#10B981]" : "text-[#E11D48]"}`}>{item.status}</span>
-            </div>
-          ))}
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Données structurées</p>
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[var(--border-subtle)]">
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Schema</th>
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Statut</th>
+                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {structuredData.map((item) => (
+                <tr key={item.schema} className="border-b border-[var(--border-subtle)] last:border-0">
+                  <td className="px-4 py-3 font-mono text-[12px] text-[var(--text-primary)]">{item.schema}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium ${item.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : item.note === "Critique" ? "bg-[rgba(225,29,72,0.08)] text-[#E11D48]" : "bg-[rgba(99,102,241,0.08)] text-[#6366F1]"}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-[12px] text-[var(--text-muted)]">{item.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Actions techniques */}
       <div>
-        <p className="mb-3 text-[15px] font-semibold text-[var(--text-secondary)]">Actions techniques</p>
-        <div className="space-y-2">
-          {technicalActions.map((item, i) => (
-            <div key={i} className="flex items-start gap-2.5 rounded-xl bg-[var(--bg-secondary)] px-3 py-2.5">
-              <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ color: item.color, backgroundColor: item.bg }}>{item.p}</span>
-              <span className="text-[14px] text-[var(--text-secondary)]">{item.text}</span>
+        <p className="mb-5 text-[19px] font-semibold text-[var(--text-primary)]">Actions techniques</p>
+        <div className="space-y-3">
+          {techActions.map((item, i) => {
+            const isDone = actionStatuses[i] === "done";
+            return (
+              <div key={i} className="group rounded-2xl border border-[var(--border-subtle)] transition-colors hover:border-[var(--border-medium)]">
+                <div className="flex items-start gap-4 px-5 py-4">
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0 pt-0.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-[var(--border-medium)] text-[12px] font-semibold text-[var(--text-primary)]">{i + 1}</span>
+                    <span className="text-[9px] font-bold tracking-wide" style={{ color: item.color }}>{item.p}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[14px] font-medium leading-snug ${isDone ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)]"}`}>{item.text}</p>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <span className="text-[12px] text-[var(--text-muted)]">⏱ {item.time}</span>
+                      <span className="text-[12px] text-[var(--text-muted)]">· Impact {item.impact}</span>
+                    </div>
+                  </div>
+                  <StatusPillDropdown
+                    status={actionStatuses[i]}
+                    onChange={(s) => setActionStatuses((prev) => { const n = [...prev]; n[i] = s; return n; })}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      </div>{/* fin colonne principale */}
+
+      {/* ── NBA card sticky ── */}
+      <div className="w-[340px] flex-shrink-0 sticky top-0">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+          <div className="px-5 pt-5 pb-4">
+            <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
+              Optimiser LCP et FCP pour passer les Core Web Vitals
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {[{ icon: "⏱", label: "1 sem." }, { icon: "⚡", label: "LCP 3.9s" }, { icon: "📈", label: "Impact haut" }].map((m) => (
+                <span key={m.label} className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                  {m.icon} {m.label}
+                </span>
+              ))}
             </div>
-          ))}
+          </div>
+          <div className="px-5 pb-4 space-y-3">
+            <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              LCP à <span className="font-semibold text-[var(--text-primary)]">3.90s</span> et FCP à <span className="font-semibold text-[var(--text-primary)]">3.75s</span> dépassent tous les deux les seuils Google. Ces deux métriques ont un impact direct sur le classement.
+            </p>
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-3">
+              <p className="text-[12px] leading-relaxed text-[var(--text-secondary)]">
+                <span className="font-semibold text-[var(--text-primary)]">79% d'images non-WebP — </span>
+                La conversion au format WebP + preload above-the-fold est le levier principal pour réduire le LCP.
+              </p>
+            </div>
+            <button className="w-full rounded-xl bg-[var(--text-primary)] px-4 py-2.5 text-[13px] font-semibold text-[var(--bg-primary)] transition-opacity hover:opacity-75">
+              Lancer l'audit perfs →
+            </button>
+          </div>
+          <div className="px-5 pb-5">
+            <p className="mb-3 text-[11px] font-semibold text-[var(--text-muted)]">Alternatives possibles</p>
+            <div className="space-y-3">
+              {[
+                { n: 2, text: "Ajouter les schémas Organization et Service (JSON-LD)", time: "2h" },
+                { n: 3, text: "Soumettre l'URL dans Google Search Console", time: "15 min." },
+                { n: 4, text: "Augmenter le nombre de mots à 3 500+", time: "3h" },
+              ].map((alt) => (
+                <div key={alt.n} className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] text-[9px] font-semibold text-[var(--text-muted)]">{alt.n}</span>
+                  <span className="flex-1 text-[12px] leading-snug text-[var(--text-secondary)]">{alt.text}</span>
+                  <span className="flex-shrink-0 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)]">{alt.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1041,7 +1675,7 @@ function BriefDrawer({
 
   return createPortal(
     <div
-      className="fixed inset-y-0 right-0 z-50 flex w-[900px] max-w-[90vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl"
+      className="fixed inset-y-0 right-0 z-50 flex w-[1080px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl"
       style={{ animation: "slide-from-right 280ms cubic-bezier(0.16,1,0.3,1) both" }}
     >
       {/* Header */}
@@ -1055,7 +1689,7 @@ function BriefDrawer({
             <button
               onClick={() => hasPrev && onNavigate(briefs[idx - 1])}
               disabled={!hasPrev}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed"
               title="Brief précédent (↑)"
             >
               <ChevronRightIcon className="h-4 w-4 rotate-180" />
@@ -1064,7 +1698,7 @@ function BriefDrawer({
             <button
               onClick={() => hasNext && onNavigate(briefs[idx + 1])}
               disabled={!hasNext}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed"
               title="Brief suivant (↓)"
             >
               <ChevronRightIcon className="h-4 w-4" />
@@ -1072,7 +1706,7 @@ function BriefDrawer({
             <div className="mx-1 h-4 w-px bg-[var(--border-subtle)]" />
             <button
               onClick={onClose}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>
@@ -1082,13 +1716,13 @@ function BriefDrawer({
         {/* Status + Priority — visible on all tabs */}
         <div className="mb-5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Type badge — read-only */}
-          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium"
+          <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium"
             style={{ color: TYPE_CONFIG[brief.type].color, backgroundColor: TYPE_CONFIG[brief.type].colorBg }}>
             {TYPE_CONFIG[brief.type].label}
           </span>
           {/* Priority — editable */}
           <DropdownMenu width={148} trigger={
-            <button className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity hover:opacity-70"
+            <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-opacity hover:opacity-70"
               style={{ color: PRIORITY_CONFIG[priority].color, backgroundColor: PRIORITY_CONFIG[priority].bg }}>
               <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_CONFIG[priority].color }} />
               {PRIORITY_CONFIG[priority].label}
@@ -1102,19 +1736,7 @@ function BriefDrawer({
             ))}
           </DropdownMenu>
           {/* Status — editable */}
-          <DropdownMenu width={148} trigger={
-            <button className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity hover:opacity-70"
-              style={{ color: STATUS_CONFIG[status].color, backgroundColor: STATUS_CONFIG[status].bg }}>
-              {STATUS_CONFIG[status].label}
-            </button>
-          }>
-            {(Object.entries(STATUS_CONFIG) as [BriefStatus, typeof STATUS_CONFIG[BriefStatus]][]).map(([key, c]) => (
-              <DropdownItem key={key} onClick={() => onStatusChange(key)}>
-                <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: c.color === "var(--text-muted)" ? "var(--text-muted)" : c.color }} />
-                <span className={status === key ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
-              </DropdownItem>
-            ))}
-          </DropdownMenu>
+          <StatusPillDropdown status={status} onChange={onStatusChange} />
         </div>
 
         {/* Tab switcher */}
@@ -1146,7 +1768,7 @@ function BriefDrawer({
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-10 py-9">
+      <div className="flex-1 overflow-y-auto px-12 py-10">
         {tab === "synthese"  && <SyntheseTab  brief={brief} />}
         {tab === "contenu"   && <ContenuTab   brief={brief} />}
         {tab === "autorite"  && <AutoriteTab  brief={brief} />}
@@ -1202,10 +1824,10 @@ function ColPill({
     <>
       <button
         onClick={handleClick}
-        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+        className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
           active
-            ? "bg-[var(--bg-secondary)] text-[var(--text-primary)]"
-            : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            ? "bg-[var(--bg-subtle)] text-[var(--text-primary)]"
+            : "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
         }`}
       >
         {label}
@@ -1224,7 +1846,7 @@ function ColPill({
                 <button
                   key={item.value}
                   onClick={() => { onChange!(item.value); close(); }}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13px] transition-colors hover:bg-[var(--bg-secondary)]"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13px] transition-colors hover:bg-[var(--bg-subtle)]"
                 >
                   <span className={value === item.value ? "font-medium text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}>
                     {item.label}
@@ -1375,7 +1997,7 @@ export function BriefsView() {
         {hasActiveFilters && (
           <button
             onClick={resetFilters}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
           >
             <XMarkIcon className="h-3.5 w-3.5" />
             Réinitialiser les filtres
@@ -1494,7 +2116,7 @@ export function BriefsView() {
                         <div className="flex gap-1.5">
                           {[0, 3, 10, 20, 50].map((v) => (
                             <button key={v} onClick={() => { setColPosMax(v); if (v > 0) close(); }}
-                              className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${colPosMax === v ? "bg-[#3E50F5] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
+                              className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${colPosMax === v ? "bg-[#3E50F5] text-white" : "bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
                               {v === 0 ? "Tous" : `#${v}`}
                             </button>
                           ))}
@@ -1524,7 +2146,7 @@ export function BriefsView() {
                         <div className="flex gap-1.5">
                           {[0, 500, 1000, 2000, 5000].map((v) => (
                             <button key={v} onClick={() => { setColVolMin(v); if (v > 0) close(); }}
-                              className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${colVolMin === v ? "bg-[#3E50F5] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
+                              className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${colVolMin === v ? "bg-[#3E50F5] text-white" : "bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
                               {v === 0 ? "Tous" : v >= 1000 ? `${v / 1000}k` : v}
                             </button>
                           ))}
@@ -1579,7 +2201,7 @@ export function BriefsView() {
                         <div className="flex gap-1.5">
                           {[-1, 20, 40, 60, 80].map((v) => (
                             <button key={v} onClick={() => { setColScoreMin(v); if (v >= 0) close(); }}
-                              className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${colScoreMin === v ? "bg-[#3E50F5] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
+                              className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${colScoreMin === v ? "bg-[#3E50F5] text-white" : "bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
                               {v < 0 ? "Tous" : v}
                             </button>
                           ))}
@@ -1622,7 +2244,7 @@ export function BriefsView() {
 
                       <div className="flex flex-1 items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ color, backgroundColor: colorBg }}>
+                          <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color, backgroundColor: colorBg }}>
                             {TYPE_CONFIG[brief.type].label}
                           </span>
                         </div>
@@ -1641,7 +2263,7 @@ export function BriefsView() {
                             <DropdownMenu
                               width={148}
                               trigger={
-                                <button className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity hover:opacity-70" style={{ color: prio.color, backgroundColor: prio.bg }}>
+                                <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color: prio.color, backgroundColor: prio.bg }}>
                                   <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: prio.color }} />
                                   {prio.label}
                                 </button>
@@ -1657,7 +2279,7 @@ export function BriefsView() {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <StatusBadge
+                          <StatusPillDropdown
                             status={briefStatuses[brief.id] ?? "todo"}
                             onChange={(next) => toggleStatus(brief.id, next)}
                           />
@@ -1667,7 +2289,7 @@ export function BriefsView() {
                             <Tooltip label={`${LOT_COUNTS[brief.lot]} URL${LOT_COUNTS[brief.lot] > 1 ? "s" : ""}`} side="top" portal>
                               <button
                                 onClick={(e) => { e.stopPropagation(); setViewMode("lots"); setActiveBrief(null); }}
-                                className="group/lot inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-[var(--bg-secondary)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                                className="group/lot inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                               >
                                 <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: lotColors[brief.lot] ?? "#64748B" }} />
                                 <span className="truncate">{shortLot(brief.lot)}</span>
@@ -1740,7 +2362,7 @@ export function BriefsView() {
                                   <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{brief.title}</p>
                                   <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
                                 </div>
-                                <span className="inline-flex flex-shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ color, backgroundColor: colorBg }}>
+                                <span className="inline-flex flex-shrink-0 items-center rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color, backgroundColor: colorBg }}>
                                   {TYPE_CONFIG[brief.type].label}
                                 </span>
                                 <span className="flex-shrink-0 text-[12px] tabular-nums text-[var(--text-muted)]">

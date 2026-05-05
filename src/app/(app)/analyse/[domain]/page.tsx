@@ -165,7 +165,7 @@ function SeverityBadge({ level, count }: { level: "critique" | "important"; coun
     ? { color: "#E11D48", bg: "rgba(225,29,72,0.09)", label: count === 1 ? "critique" : "critiques" }
     : { color: "#F59E0B", bg: "rgba(245,158,11,0.09)", label: count === 1 ? "important" : "importants" };
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+    <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
       {count} {cfg.label}
     </span>
   );
@@ -211,7 +211,7 @@ function HealthCard({
               </span>
               <span className="flex-1 text-[13px] font-medium leading-snug text-[var(--text-primary)]">{a.label}</span>
               {a.visits && (
-                <span className="flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums" style={{ color, backgroundColor: colorBg }}>
+                <span className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold tabular-nums" style={{ color, backgroundColor: colorBg }}>
                   {a.visits} vis.
                 </span>
               )}
@@ -735,7 +735,7 @@ function TopPages() {
   function PosTag({ pos }: { pos: number }) {
     const color = pos <= 3 ? "#10B981" : pos <= 10 ? "#3E50F5" : pos <= 20 ? "#F59E0B" : "#94A3B8";
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
+      <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
         #{pos.toFixed(1)}
       </span>
     );
@@ -762,7 +762,7 @@ function TopPages() {
               <th className="px-4 py-2.5 text-left">
                 <button
                   onClick={openFilter}
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${urlFilter !== "all" ? "bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${urlFilter !== "all" ? "bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
                 >
                   {activeLabel}
                   <ChevronDownIcon className="h-3 w-3 flex-shrink-0" />
@@ -856,7 +856,7 @@ function ForecastTimeline() {
             <div className="h-px flex-1 border-t border-dashed border-[var(--border-medium)]" />
             <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate text-[13px] text-[var(--text-secondary)]">{s.action}</span>
-              <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-semibold" style={{ color: s.color, backgroundColor: `${s.color}14` }}>
+              <span className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color: s.color, backgroundColor: `${s.color}14` }}>
                 {s.gain}
               </span>
             </div>
@@ -1270,7 +1270,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 {keywords.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {keywords.map((kw) => (
-                      <span key={kw} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-2.5 py-1 text-[12px] font-medium text-[var(--bg-primary)]">
+                      <span key={kw} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--bg-primary)]">
                         {kw}
                         <button onClick={() => setKeywords((p) => p.filter((x) => x !== kw))} className="opacity-60 hover:opacity-100"><XMarkIcon className="h-3 w-3" /></button>
                       </span>
@@ -1368,7 +1368,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                   <AnimateIn show={f.tags.length > 0}>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {f.tags.map((tag) => (
-                        <span key={tag} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-2.5 py-1 text-[12px] font-medium text-[var(--bg-primary)]">
+                        <span key={tag} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--bg-primary)]">
                           {tag}
                           <button onClick={() => f.setTags((p) => p.filter((x) => x !== tag))} className="opacity-60 hover:opacity-100"><XMarkIcon className="h-3 w-3" /></button>
                         </span>
@@ -1653,7 +1653,7 @@ function ProjIntegRow({ name, logo, desc, account, connected, onToggle }: {
         <div>
           <div className="flex items-center gap-2">
             <p className="text-[13px] font-semibold text-[var(--text-primary)]">{name}</p>
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+            <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium"
               style={{ color: connected ? "#10B981" : "var(--text-muted)", backgroundColor: connected ? "rgba(16,185,129,0.09)" : "var(--bg-secondary)" }}>
               {connected ? "Connecté" : "Non connecté"}
             </span>
@@ -1901,7 +1901,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
           <div>
             <div className="mb-4 flex items-center gap-3">
               <p className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Configuration Cuik</p>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-2.5 py-1 text-[12px] font-medium text-[#10B981]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-3 py-1.5 text-[12px] font-medium text-[#10B981]">
                 <SparklesIcon className="h-3 w-3" />
                 Connecté
               </span>
@@ -1972,7 +1972,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
             {tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
-                  <span key={tag} className="flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-2.5 py-1 text-[12px] font-medium text-[var(--bg-primary)]">
+                  <span key={tag} className="flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--bg-primary)]">
                     {tag}
                     <button onClick={() => setTags((p) => p.filter((t) => t !== tag))} className="opacity-60 transition-opacity hover:opacity-100">
                       <XMarkIcon className="h-3 w-3" />
@@ -2316,7 +2316,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                       <span className="text-[11px] font-semibold text-[var(--text-muted)]">{m.key}</span>
                       <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.value}</p>
                       <div className="mt-1.5 flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
+                        <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
                         <span className="text-[11px] text-[var(--text-muted)]">{m.threshold}</span>
                       </div>
                     </div>
@@ -2371,7 +2371,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">Visibilité Haloscan</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-2.5 py-1 text-[12px] font-medium text-emerald-600">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-3 py-1.5 text-[12px] font-medium text-emerald-600">
                     ↗ Visibilité en progression
                   </span>
                 </div>

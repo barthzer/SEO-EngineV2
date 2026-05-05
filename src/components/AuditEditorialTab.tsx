@@ -6,10 +6,10 @@ import { ChevronDownIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from "@heroicons
 import { Button } from "@/components/Button";
 import { Tooltip, ChartTooltip } from "@/components/Tooltip";
 import { FilterTabs } from "@/components/FilterTabs";
+import { StatusPill, StatusPillDropdown, type Status } from "@/components/StatusPill";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
 
-type Status    = "todo" | "doing" | "done";
 type Dimension = "eeat" | "soseo" | "suropt" | "intent" | "hn" | "canib";
 type Severity  = "critique" | "important" | "moyen";
 
@@ -387,7 +387,6 @@ const SEVERITY_CONFIG: Record<Severity, { label: string; color: string; bg: stri
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
 const STATUS_CYCLE: Status[] = ["todo", "doing", "done"];
-const STATUS_LABELS: Record<Status, string> = { todo: "À faire", doing: "En cours", done: "Terminé" };
 
 function nextStatus(s: Status): Status {
   return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
@@ -430,7 +429,7 @@ function ColDropdown({ label, active, children }: {
   return (
     <div ref={triggerRef} className="inline-flex">
       <button onClick={toggle}
-        className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all ${active ? "border-[#3E50F5] bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--text-muted)]"}`}>
+        className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all ${active ? "border-[#3E50F5] bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--text-muted)]"}`}>
         {label}
         <ChevronDownIcon className={`h-3 w-3 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
@@ -471,18 +470,6 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
   );
 }
 
-function StatusBadge({ status }: { status: Status }) {
-  const map = {
-    todo:  "bg-[rgba(225,29,72,0.08)] text-[#E11D48]",
-    doing: "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]",
-    done:  "bg-[rgba(16,185,129,0.1)] text-[#10B981]",
-  };
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${map[status]}`}>
-      {STATUS_LABELS[status]}
-    </span>
-  );
-}
 
 function SectionHead({ num, title, em, meta }: { num: string; title: string; em: string; meta: string }) {
   return (
@@ -596,7 +583,7 @@ function SemUrlList({ urls, extra }: { urls: { url: string; pos: number }[]; ext
 function SemStatusCell({ row }: { row: SemanticKw }) {
   if (row.status === "cannibalisation") return (
     <Tooltip portal rich side="bottom" label={<CannibalTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-semibold"
         style={{ color: "#E11D48", backgroundColor: "rgba(225,29,72,0.08)" }}>
         Cannibalisation ({row.cannibCount})
       </span>
@@ -604,13 +591,13 @@ function SemStatusCell({ row }: { row: SemanticKw }) {
   );
   if (row.status === "couvert") return (
     <Tooltip portal rich side="bottom" label={<CouvertTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-3 py-1.5 text-[12px] font-semibold"
         style={{ color: "#10B981", backgroundColor: "rgba(16,185,129,0.09)" }}>Couvert</span>
     </Tooltip>
   );
   return (
     <Tooltip portal rich side="bottom" label={<OppTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-3 py-1.5 text-[12px] font-semibold"
         style={{ color: "#3E50F5", backgroundColor: "rgba(62,80,245,0.08)" }}>Opportunité</span>
     </Tooltip>
   );
@@ -635,7 +622,7 @@ function IssueCard({ issue, status, onStatusChange }: {
       style={{ borderLeftColor: c.color, borderLeftWidth: 3, borderLeftStyle: "solid" }}>
       <button onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-3 px-6 py-4 text-left cursor-pointer">
-        <span className="rounded-md px-2 py-0.5 text-[11px] font-semibold flex-shrink-0"
+        <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold flex-shrink-0"
           style={{ color: c.color, backgroundColor: c.bg }}>{c.label}</span>
         <StatusDot status={status} onClick={onStatusChange} />
         <span className={`flex-1 text-[14px] font-medium min-w-0 ${status === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
@@ -646,7 +633,7 @@ function IssueCard({ issue, status, onStatusChange }: {
           {issue.visits && (
             <span className="text-[13px] font-medium" style={{ color: c.color }}>{issue.visits} visites</span>
           )}
-          <StatusBadge status={status} />
+          <StatusPill status={status} />
           <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)] transition-transform"
             style={{ transform: open ? "rotate(180deg)" : "none" }} />
         </div>
@@ -726,8 +713,8 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         <div className="grid grid-cols-[2fr_1fr] items-center gap-8">
           <div className="min-w-0">
             <div className="mb-3 flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-2.5 py-0.5 text-[12px] font-semibold text-[#10B981]">GSC connecté</span>
-              <span className="rounded-full bg-[rgba(62,80,245,0.08)] px-2.5 py-0.5 text-[12px] font-semibold text-[#3E50F5]">
+              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#10B981]">GSC connecté</span>
+              <span className="rounded-full bg-[rgba(62,80,245,0.08)] px-3 py-1.5 text-[12px] font-semibold text-[#3E50F5]">
                 {lot.count} pages éditoriales · {lot.pct}% du site
               </span>
               <span className="text-[13px] text-[var(--text-muted)]">27 avril 2026</span>
@@ -812,7 +799,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
                   : { backgroundColor: "transparent", borderColor: "var(--border-subtle)", color: "var(--text-muted)" }
                 }>
                 {l.label}
-                <span className="rounded-full px-1.5 py-0.5 text-[11px]"
+                <span className="rounded-full px-3 py-1.5 text-[12px]"
                   style={{ backgroundColor: active ? "rgba(255,255,255,0.15)" : "var(--bg-secondary)", color: active ? "var(--bg-card)" : "var(--text-muted)" }}>
                   {l.count}
                 </span>
@@ -1115,7 +1102,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
                     </td>
                     <td className="px-4 py-4 align-top">
                       <Tooltip portal rich side="bottom" label={<SourceTip source={kw.source} />}>
-                        <span className="inline-flex w-fit cursor-help rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-semibold text-[var(--text-muted)]">
+                        <span className="inline-flex w-fit cursor-help rounded-full bg-[var(--bg-secondary)] px-3 py-1.5 text-[12px] font-semibold text-[var(--text-muted)]">
                           {kw.source}
                         </span>
                       </Tooltip>
@@ -1148,7 +1135,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
 function CannibalSevBadge({ sev }: { sev: CannibalSev }) {
   const c = CANNIBAL_SEV_CONFIG[sev];
   return (
-    <span className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold"
+    <span className="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold"
       style={{ color: c.color, backgroundColor: c.bg }}>{c.label}</span>
   );
 }
@@ -1206,7 +1193,7 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
           <CannibalActionSelect value={kw.action} />
         </td>
         <td className="pr-6 py-3.5 align-middle">
-          <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+          <span className={`inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold ${
             kw.status === "resolved" ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" :
             kw.status === "ignored"  ? "bg-[var(--bg-secondary)] text-[var(--text-muted)]" :
             "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]"}`}>

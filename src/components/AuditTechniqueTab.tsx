@@ -10,11 +10,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/Button";
 import { Tooltip } from "@/components/Tooltip";
+import { StatusPill, StatusPillDropdown, type Status } from "@/components/StatusPill";
 import type { ElementType } from "react";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
 
-type Status = "todo" | "doing" | "done";
+
 type PilotFilter = "all" | "todo" | "doing" | "done" | "high";
 
 /* ── Data ─────────────────────────────────────────────────────────────── */
@@ -211,7 +212,6 @@ const EXTRA_ACCORDIONS = [
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
 const STATUS_CYCLE: Status[] = ["todo", "doing", "done"];
-const STATUS_LABELS: Record<Status, string> = { todo: "À faire", doing: "En cours", done: "Terminé" };
 
 function nextStatus(s: Status): Status {
   return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
@@ -262,18 +262,6 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
   );
 }
 
-function StatusBadge({ status }: { status: Status }) {
-  const map = {
-    todo:  "bg-[rgba(225,29,72,0.08)] text-[#E11D48]",
-    doing: "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]",
-    done:  "bg-[rgba(16,185,129,0.1)] text-[#10B981]",
-  };
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${map[status]}`}>
-      {STATUS_LABELS[status]}
-    </span>
-  );
-}
 
 function SectionHead({ num, title, em, meta }: { num: string; title: string; em: string; meta: string }) {
   return (
@@ -357,7 +345,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         <div className="grid grid-cols-[2fr_1fr] gap-8 items-center">
           <div className="min-w-0">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-2.5 py-0.5 text-[12px] font-semibold text-[#10B981]">Audit terminé</span>
+              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#10B981]">Audit terminé</span>
               <span className="text-[13px] text-[var(--text-muted)]">31 mars 2026</span>
               <span className="text-[13px] text-[var(--text-muted)]">·</span>
               <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
@@ -450,7 +438,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                 <div className="p-6">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
+                      <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold"
                         style={{ color: accentColor, backgroundColor: isCritique ? "rgba(225,29,72,0.08)" : "rgba(245,158,11,0.1)" }}>
                         {iss.tag}
                       </span>
@@ -468,7 +456,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                     {iss.url}
                   </div>
                   <div className="mt-4 flex items-center justify-between">
-                    <StatusBadge status={status} />
+                    <StatusPill status={status} />
                     <span className="text-[12px] text-[var(--text-muted)]">détecté {iss.date}</span>
                   </div>
                 </div>
@@ -557,7 +545,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                         <p className="text-[12px] text-[var(--text-muted)]">{action.sub}</p>
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-1.5">
-                        <span className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold" style={{ color: priorityColor, backgroundColor: `${priorityColor}15` }}>{action.priority.toUpperCase()}</span>
+                        <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold" style={{ color: priorityColor, backgroundColor: `${priorityColor}15` }}>{action.priority.toUpperCase()}</span>
                         <ChevronDownIcon className="h-3.5 w-3.5 text-[var(--text-muted)] transition-transform" style={{ transform: isOpen ? "rotate(180deg)" : "none" }} />
                       </div>
                     </button>
@@ -597,7 +585,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                       {s.detail && <span className="text-[12px] text-[var(--text-muted)]">{s.detail}</span>}
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-2">
-                      <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                      <span className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
                         style={{ color: statusColors[s.status], backgroundColor: `${statusColors[s.status]}15` }}>
                         {statusLabels[s.status]}
                       </span>
@@ -720,7 +708,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               </p>
               <div className="flex flex-wrap gap-2">
                 {CRAWLERS.map((c) => (
-                  <span key={c.name} className="rounded-full px-2.5 py-1 text-[12px] font-semibold"
+                  <span key={c.name} className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
                     style={{ backgroundColor: c.ok === true ? "rgba(16,185,129,0.1)" : "var(--bg-secondary)", color: c.ok === true ? "#10B981" : "var(--text-muted)" }}>
                     {c.name}{c.ok === true ? " ✓" : ""}
                   </span>
@@ -761,18 +749,18 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                 <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-7 py-3">
                   <div className="flex gap-2">
                     {(["todo", "doing", "done"] as const).map((s) => (
-                      <span key={s} className="rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
+                      <span key={s} className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
                         style={{ backgroundColor: s === "todo" ? "rgba(225,29,72,0.08)" : s === "doing" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
                                  color: s === "todo" ? "#E11D48" : s === "doing" ? "#F59E0B" : "#10B981" }}>
-                        {pilotCounts[s]} {STATUS_LABELS[s].toLowerCase()}
+                        {pilotCounts[s]} {{ todo: "À faire", doing: "En cours", done: "Terminé" }[s].toLowerCase()}
                       </span>
                     ))}
                   </div>
                   <div className="flex gap-1.5">
                     {(["all", "todo", "doing", "done", "high"] as const).map((f) => (
                       <button key={f} onClick={() => setPilotFilter(f)}
-                        className={`rounded-lg px-3 py-1 text-[12px] font-medium transition-colors ${pilotFilter === f ? "bg-[var(--text-primary)] text-[var(--bg-card)]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]"}`}>
-                        {f === "all" ? "Tout" : f === "high" ? "Fort+" : STATUS_LABELS[f]}
+                        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors ${pilotFilter === f ? "bg-[var(--text-primary)] text-[var(--bg-card)]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]"}`}>
+                        {f === "all" ? "Tout" : f === "high" ? "Fort+" : { todo: "À faire", doing: "En cours", done: "Terminé" }[f as Status]}
                       </button>
                     ))}
                   </div>
@@ -798,7 +786,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                         {p.impact.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                       </span>
                       <span className="text-[13px] text-[var(--text-muted)]">{p.diff}</span>
-                      <StatusBadge status={st} />
+                      <StatusPill status={st} />
                       <span className="text-[12px] text-[var(--text-muted)]">{p.date}</span>
                     </div>
                   );

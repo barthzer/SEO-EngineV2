@@ -93,7 +93,7 @@ function TraficChip({ value, dir }: { value: string; dir: Analysis["traficDir"] 
   const isDown = dir === "down";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-medium ${
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium ${
         isUp
           ? "bg-emerald-50 text-emerald-600"
           : isDown
@@ -194,7 +194,7 @@ function StatusPill({
       <DropdownMenu
         width={176}
         trigger={
-          <button className="flex items-center gap-1.5 rounded-full bg-[var(--bg-secondary)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-subtle)]">
+          <button className="flex items-center gap-1.5 rounded-full bg-[var(--bg-secondary)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-subtle)]">
             <span className={`h-1.5 w-1.5 rounded-full ${isActif ? "bg-emerald-500" : "bg-[var(--text-muted)]"}`} />
             {isActif ? "Actif" : "Archivé"}
           </button>

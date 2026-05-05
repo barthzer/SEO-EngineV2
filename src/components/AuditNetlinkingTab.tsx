@@ -145,7 +145,7 @@ function GapBadge({ gap, isYou }: { gap: number; isYou?: boolean }) {
   if (isYou) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
   const positive = gap >= 0;
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${positive ? "bg-[rgba(16,185,129,0.12)] text-[#10B981]" : "bg-[rgba(225,29,72,0.1)] text-[#E11D48]"}`}>
+    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold ${positive ? "bg-[rgba(16,185,129,0.12)] text-[#10B981]" : "bg-[rgba(225,29,72,0.1)] text-[#E11D48]"}`}>
       {positive ? "+" : ""}{gap}
     </span>
   );
@@ -520,7 +520,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
           <div className="grid grid-cols-[2fr_1fr] items-center gap-8">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-2.5 py-0.5 text-[12px] font-semibold text-[#F59E0B]">Netlinking · rapport Majestic</span>
+                <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#F59E0B]">Netlinking · rapport Majestic</span>
                 <span className="text-[13px] text-[var(--text-muted)]">5 mai 2026</span>
                 <span className="text-[13px] text-[var(--text-muted)]">·</span>
                 <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
@@ -742,7 +742,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="py-2.5 text-[var(--text-secondary)]">{row.pays}</td>
                       <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                        <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -773,7 +773,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="py-2.5 text-[var(--text-secondary)]">{row.langue}</td>
                       <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                        <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -805,7 +805,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
               <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
                 <span>Min <strong className="text-[var(--text-primary)]">{tfMin}</strong></span>
                 <span>Max <strong className="text-[var(--text-primary)]">{tfMax}</strong></span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
                   Delta {tfDelta > 0 ? "+" : ""}{tfDelta} ({tfDelta > 0 ? "+" : ""}{Math.round(tfDelta / tfData[0].tf * 100)}%)
                 </span>
               </div>
@@ -868,7 +868,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-6 py-5 flex flex-col items-center gap-4 min-w-[220px]">
               <div className="flex w-full items-center justify-between">
                 <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Répartition</p>
-                <span className="rounded-full bg-[rgba(225,29,72,0.1)] px-2.5 py-0.5 text-[11px] font-semibold text-[#E11D48]">
+                <span className="rounded-full bg-[rgba(225,29,72,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#E11D48]">
                   Risque élevé
                 </span>
               </div>
@@ -1050,13 +1050,13 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                     </td>
                     {/* Type */}
                     <td className="px-4 py-3 text-center align-middle">
-                      <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">
+                      <span className="rounded-full bg-[var(--bg-secondary)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)]">
                         {row.type}
                       </span>
                     </td>
                     {/* Statut */}
                     <td className="pr-4 py-3 text-center align-middle">
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
                         row.statut === "Follow"
                           ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]"
                           : row.statut === "Sponsored"
