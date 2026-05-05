@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Outfit, Instrument_Serif, Manrope, Space_Grotesk } from "next/font/google";
+import { Figtree, Instrument_Serif, Manrope, Space_Grotesk } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
 import "./globals.css";
 
-const outfit = Outfit({
+const figtree = Figtree({
   variable: "--font-outfit",
   subsets: ["latin"],
 });
@@ -38,9 +38,13 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      data-theme="dark"
-      className={`${outfit.variable} ${instrumentSerif.variable} ${manrope.variable} ${spaceGrotesk.variable}`}
+      data-theme="light"
+      className={`${figtree.variable} ${instrumentSerif.variable} ${manrope.variable} ${spaceGrotesk.variable}`}
     >
+      <head>
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap" />
+      </head>
       <body className="min-h-[100dvh] antialiased">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

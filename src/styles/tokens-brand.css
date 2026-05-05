@@ -1,126 +1,121 @@
 /**
  * tokens-brand.css
  * ─────────────────────────────────────────────────────────────────────────
- * Identité visuelle AWI : couleurs, fonts, ombres, logos médias.
- * À overrider entièrement pour un nouveau projet client.
+ * Palette Apple-like : blanc pur, grises neutres, accent rose #3E50F5.
+ * Inspirations : Mobbin, Cosmoos.
  *
- * Pour les échelles agnostiques (motion, typo, statuts) → tokens-core.css
+ * Light = défaut. Dark = Apple dark (000 / 1c1c1e / 2c2c2e).
  */
 
-/* ──────────────── Surfaces & couleurs (dark = défaut) ──────────────── */
+/* ──────────────── Light mode (défaut) ──────────────── */
 :root,
-[data-theme="dark"] {
-  /* Surfaces */
-  --bg-primary: #0e041b;
-  --bg-overlay: #13042f;
-  --bg-card: rgba(32, 13, 66, 0.6);
-  --bg-card-hover: rgba(40, 18, 80, 0.7);
-  --bg-footer: #0c051a;
-  --bg-sidebar: rgba(22, 10, 42, 0.8);
-
-  /* Cards & modales */
-  --card-inner-bg: rgba(255, 255, 255, 0.03);
-  --card-inner-border: rgba(255, 255, 255, 0.06);
-  --modal-bg: rgba(18, 6, 38, 0.95);
-  --input-bg: rgba(255, 255, 255, 0.03);
-
-  /* Bordures */
-  --border-subtle: rgba(79, 64, 109, 0.1);
-  --border-badge: rgba(79, 64, 109, 0.15);
-
-  /* Accents marque */
-  --accent-purple: #5f14fb;
-  --accent-pink: #ec4dcb;
-  --accent-pink-light: #f987e0;
-
-  /* Texte */
-  --text-primary: #ffffff;
-  --text-heading: #ede0ff;
-  --text-secondary: #a3a3b8;
-  --text-muted: rgba(255, 255, 255, 0.4);
-  --text-input: rgba(255, 255, 255, 0.5);
-
-  /* Composants spécifiques */
-  --arc-bg: #2E1856; /* fond des ScoreArc */
-
-  /* Ombres */
-  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --shadow-floating: 0 12px 32px -4px rgba(0, 0, 0, 0.25);
-  --shadow-cta: 0 12px 32px -4px rgba(236, 77, 203, 0.25);
-
-  --color-scheme: dark;
-}
-
-/* ──────────────── Light mode ──────────────── */
 [data-theme="light"] {
   /* Surfaces */
-  --bg-primary: #f6f3fa;
-  --bg-overlay: #ece6f5;
-  --bg-card: rgba(255, 255, 255, 0.5);
-  --bg-card-hover: rgba(255, 255, 255, 0.65);
-  --bg-footer: #eae4f2;
-  --bg-sidebar: rgba(255, 255, 255, 0.85);
+  --bg-primary:      #ffffff;
+  --bg-secondary:    #f2f2f2;
+  --bg-subtle:       #f8f8f8;
+  --bg-card:         #ffffff;
+  --bg-card-hover:   #fafafa;
+  --bg-footer:       #ebebeb;
+  --bg-sidebar:      var(--bg-subtle);
+  --bg-overlay:      #f5f5f5;
 
   /* Cards & modales */
-  --card-inner-bg: rgba(0, 0, 0, 0.02);
+  --card-inner-bg:   rgba(0, 0, 0, 0.025);
   --card-inner-border: rgba(0, 0, 0, 0.06);
-  --modal-bg: rgba(252, 250, 255, 0.97);
-  --input-bg: #f6f3fa;
+  --modal-bg:        rgba(255, 255, 255, 0.98);
+  --dropdown-bg:     rgba(255, 255, 255, 0.72);
+  --input-bg:        #ffffff;
 
   /* Bordures */
-  --border-subtle: rgba(79, 64, 109, 0.12);
-  --border-badge: rgba(79, 64, 109, 0.15);
+  --border-subtle:   rgba(0, 0, 0, 0.07);
+  --border-badge:    rgba(0, 0, 0, 0.10);
+  --border-medium:   rgba(0, 0, 0, 0.13);
 
-  /* Accents marque (mêmes valeurs cross-thème) */
-  --accent-purple: #5f14fb;
-  --accent-pink: #ec4dcb;
-  --accent-pink-light: #f987e0;
+  /* Accent — Rose de marque */
+  --accent-primary:       #3E50F5;
+  --accent-primary-soft:  rgba(62, 80, 245, 0.08);
+  --accent-primary-mid:   rgba(62, 80, 245, 0.16);
 
   /* Texte */
-  --text-primary: #1a1025;
-  --text-heading: #2d1f47;
-  --text-secondary: #5d5d75;
-  --text-muted: rgba(26, 16, 37, 0.4);
-  --text-input: rgba(26, 16, 37, 0.45);
+  --text-primary:    #0a0a0a;
+  --text-heading:    #0a0a0a;
+  --text-secondary:  #6e6e73;
+  --text-muted:      #8e8e93;
+  --text-input:      #8e8e93;
 
   /* Composants spécifiques */
-  --arc-bg: #e8e0f0;
+  --arc-bg:          #f1f1f1;
 
-  /* Ombres (atténuées en light) */
-  --shadow-card: inset 0 1px 0 rgba(0, 0, 0, 0.04);
-  --shadow-floating: 0 12px 32px -4px rgba(0, 0, 0, 0.12);
-  --shadow-cta: 0 12px 32px -4px rgba(236, 77, 203, 0.18);
+  /* Ombres */
+  --shadow-card:     none;
+  --shadow-floating: 0 20px 60px rgba(0,0,0,0.14);
+  --shadow-cta:      0 4px 16px rgba(62, 80, 245, 0.28);
+
+  --floating-bar-bg:   #1a1a1a;
+  --floating-bar-text: #ffffff;
+  --floating-bar-sep:  rgba(255,255,255,0.15);
+  --floating-bar-hover: rgba(255,255,255,0.08);
 
   --color-scheme: light;
 }
 
-/* ──────────────── Fonts (chargées via next/font dans layout.tsx) ──────────────── */
+/* ──────────────── Dark mode — Apple dark ──────────────── */
+[data-theme="dark"] {
+  /* Surfaces */
+  --bg-primary:      #111113;
+  --bg-secondary:    #1c1c1e;
+  --bg-subtle:       #19191b;
+  --bg-card:         #1c1c1e;
+  --bg-card-hover:   #2c2c2e;
+  --bg-footer:       #161618;
+  --bg-sidebar:      #161618;
+  --bg-overlay:      #1c1c1e;
+
+  /* Cards & modales */
+  --card-inner-bg:   rgba(255, 255, 255, 0.04);
+  --card-inner-border: rgba(255, 255, 255, 0.06);
+  --modal-bg:        rgba(28, 28, 30, 0.98);
+  --dropdown-bg:     rgba(28, 28, 30, 0.72);
+  --input-bg:        #3a3a3c;
+
+  /* Bordures */
+  --border-subtle:   rgba(255, 255, 255, 0.08);
+  --border-badge:    rgba(255, 255, 255, 0.10);
+  --border-medium:   rgba(255, 255, 255, 0.14);
+
+  /* Accent */
+  --accent-primary:       #3E50F5;
+  --accent-primary-soft:  rgba(62, 80, 245, 0.14);
+  --accent-primary-mid:   rgba(62, 80, 245, 0.22);
+
+  /* Texte */
+  --text-primary:    #ffffff;
+  --text-heading:    #ffffff;
+  --text-secondary:  #98989d;
+  --text-muted:      #636366;
+  --text-input:      #636366;
+
+  /* Composants spécifiques */
+  --arc-bg:          #2c2c2e;
+
+  /* Ombres */
+  --shadow-card:     0 1px 3px rgba(0,0,0,0.40);
+  --shadow-floating: 0 20px 60px rgba(0,0,0,0.60);
+  --shadow-cta:      0 4px 16px rgba(62, 80, 245, 0.35);
+
+  --floating-bar-bg:   #ffffff;
+  --floating-bar-text: #0a0a0a;
+  --floating-bar-sep:  rgba(0,0,0,0.12);
+  --floating-bar-hover: rgba(0,0,0,0.06);
+
+  --color-scheme: dark;
+}
+
+/* ──────────────── Fonts ──────────────── */
 :root {
-  --font-sans: var(--font-outfit);
-  --font-serif: var(--font-instrument-serif);
+  --font-sans:   var(--font-outfit);
+  --font-serif:  var(--font-instrument-serif);
   --font-manrope: var(--font-manrope);
-  --font-space: var(--font-space-grotesk);
+  --font-space:  var(--font-space-grotesk);
 }
-
-/* ──────────────── Brand quirks ──────────────── */
-/* AWI logo color in light mode */
-[data-theme="light"] .awi-logo {
-  color: #C5064F;
-}
-
-/* Light mode : tint des SVG illustrations en violet de marque */
-[data-theme="light"] svg.text-white {
-  color: var(--accent-purple);
-}
-
-/* Light mode : labels formulaires (override fallback browser) */
-[data-theme="light"] label {
-  color: var(--text-primary);
-}
-
-/* ──────────────── Project-specific quirks ──────────────── */
-/* Ajoute ici les règles ultra-spécifiques à ton projet (logos partenaires,
- * classes one-off, etc.). Exemple GSI : .media-logo, .media-pill-XXX.
- *
- * Pour un nouveau projet : supprime ce bloc s'il n'y a rien à ajouter.
- */

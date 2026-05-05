@@ -3,47 +3,107 @@
 @import "../styles/tokens-brand.css";
 
 /* ──────────────── Tailwind 4 theme bridge ──────────────── */
-/* Expose les tokens CSS aux classes Tailwind (bg-bg-card, text-text-primary, etc.) */
 @theme inline {
   /* Surfaces */
-  --color-bg-primary: var(--bg-primary);
-  --color-bg-overlay: var(--bg-overlay);
-  --color-bg-card: var(--bg-card);
-  --color-bg-card-hover: var(--bg-card-hover);
-  --color-bg-footer: var(--bg-footer);
-  --color-bg-sidebar: var(--bg-sidebar);
-
-  /* Bordures */
-  --color-border-subtle: var(--border-subtle);
-  --color-border-badge: var(--border-badge);
-
-  /* Accents */
-  --color-accent-purple: var(--accent-purple);
-  --color-accent-pink: var(--accent-pink);
-  --color-accent-pink-light: var(--accent-pink-light);
-
-  /* Texte */
-  --color-text-primary: var(--text-primary);
-  --color-text-heading: var(--text-heading);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-text-input: var(--text-input);
+  --color-bg-primary:       var(--bg-primary);
+  --color-bg-secondary:     var(--bg-secondary);
+  --color-bg-overlay:       var(--bg-overlay);
+  --color-bg-card:          var(--bg-card);
+  --color-bg-card-hover:    var(--bg-card-hover);
+  --color-bg-footer:        var(--bg-footer);
+  --color-bg-sidebar:       var(--bg-sidebar);
 
   /* Cards & modales */
-  --color-card-inner-bg: var(--card-inner-bg);
+  --color-card-inner-bg:    var(--card-inner-bg);
   --color-card-inner-border: var(--card-inner-border);
-  --color-modal-bg: var(--modal-bg);
-  --color-input-bg: var(--input-bg);
+  --color-modal-bg:         var(--modal-bg);
+  --color-input-bg:         var(--input-bg);
+
+  /* Bordures */
+  --color-border-subtle:    var(--border-subtle);
+  --color-border-badge:     var(--border-badge);
+  --color-border-medium:    var(--border-medium);
+
+  /* Accent */
+  --color-accent-primary:      var(--accent-primary);
+  --color-accent-primary-soft: var(--accent-primary-soft);
+  --color-accent-primary-mid:  var(--accent-primary-mid);
+
+  /* Texte */
+  --color-text-primary:     var(--text-primary);
+  --color-text-heading:     var(--text-heading);
+  --color-text-secondary:   var(--text-secondary);
+  --color-text-muted:       var(--text-muted);
+  --color-text-input:       var(--text-input);
 
   /* Statuts */
-  --color-success: var(--color-success);
-  --color-danger: var(--color-danger);
-  --color-warning: var(--color-warning);
+  --color-success:          var(--color-success);
+  --color-danger:           var(--color-danger);
+  --color-warning:          var(--color-warning);
 
   /* Fonts */
-  --font-sans: var(--font-outfit);
-  --font-serif: var(--font-instrument-serif);
+  --font-sans:              var(--font-outfit);
+  --font-serif:             var(--font-instrument-serif);
+
+  /* Animations */
+  --animate-fade-in:        fade-in 200ms ease-out both;
+  --animate-slide-down:     slide-down 240ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
+  --animate-slide-up:       slide-up 240ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
 }
+
+/* ──────────────── Skeleton shimmer ──────────────── */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-card-hover) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ──────────────── Keyframes ──────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-from-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ──────────────── Icons stroke ──────────────── */
+svg[stroke="currentColor"][fill="none"] {
+  stroke-width: 2;
+}
+
+/* ──────────────── Headings ──────────────── */
+h1, h2, h3, .tracking-tight {
+  letter-spacing: -0.03em;
+}
+
+/* ──────────────── Page horizontal padding ──────────────── */
+:root { --page-px: 24px; }
+@media (min-width: 768px)  { :root { --page-px: 32px; } }
+@media (min-width: 1280px) { :root { --page-px: 80px; } }
+
 
 /* ──────────────── Base body ──────────────── */
 body {
@@ -51,6 +111,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-sans), system-ui, sans-serif;
   color-scheme: var(--color-scheme);
+  -webkit-font-smoothing: antialiased;
   transition:
     background-color var(--motion-base) var(--ease-out),
     color var(--motion-base) var(--ease-out);
