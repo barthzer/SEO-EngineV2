@@ -11,6 +11,10 @@ import {
 import { Button } from "@/components/Button";
 import { Tooltip } from "@/components/Tooltip";
 import { StatusPill, StatusPillDropdown, type Status } from "@/components/StatusPill";
+import { ScoreRing } from "@/components/ScoreRing";
+import { DonutChart } from "@/components/DonutChart";
+import { SectionHead } from "@/components/SectionHead";
+import { Callout } from "@/components/Callout";
 import type { ElementType } from "react";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -263,45 +267,6 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
 }
 
 
-function SectionHead({ num, title, em, meta }: { num: string; title: string; em: string; meta: string }) {
-  return (
-    <div className="mb-6 flex items-baseline justify-between">
-      <h2 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">
-        <span className="mr-2 text-[13px] font-medium text-[var(--text-muted)]">{num}</span>
-        {title} <em className="not-italic text-[var(--text-primary)]">{em}</em>
-      </h2>
-      <span className="text-[13px] text-[var(--text-muted)]">{meta}</span>
-    </div>
-  );
-}
-
-/* Donut SVG chart */
-function DonutChart({ slices, total }: { slices: { label: string; count: number; color: string }[]; total: number }) {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  let offset = 0;
-  const arcs = slices.map((s) => {
-    const dash = (s.count / total) * circ;
-    const arc = { ...s, dasharray: circ, dashoffset: circ - dash, rotation: offset };
-    offset += (s.count / total) * 360;
-    return arc;
-  });
-  return (
-    <svg width={84} height={84} viewBox="0 0 84 84">
-      <circle cx={42} cy={42} r={r} fill="none" stroke="var(--border-subtle)" strokeWidth={7} />
-      {arcs.map((a, i) => (
-        <circle key={i} cx={42} cy={42} r={r} fill="none"
-          stroke={a.color} strokeWidth={7}
-          strokeDasharray={`${a.dasharray}`}
-          strokeDashoffset={`${a.dashoffset}`}
-          strokeLinecap="butt"
-          style={{ transform: `rotate(${a.rotation - 90}deg)`, transformOrigin: "42px 42px" }}
-        />
-      ))}
-      <text x={42} y={46} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--text-primary)">{total}</text>
-    </svg>
-  );
-}
 
 /* ── Main component ───────────────────────────────────────────────────── */
 
@@ -377,17 +342,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
             </div>
           </div>
           <div className="flex flex-col items-center gap-3">
-            <div className="relative">
-              <svg width={160} height={160} style={{ transform: "rotate(-90deg)" }}>
-                <circle cx={80} cy={80} r={68} fill="none" stroke="var(--border-subtle)" strokeWidth={7} />
-                <circle cx={80} cy={80} r={68} fill="none" stroke="#10B981" strokeWidth={7}
-                  strokeDasharray={2 * Math.PI * 68} strokeDashoffset={2 * Math.PI * 68 * 0.16} strokeLinecap="round" />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[44px] font-semibold leading-none text-[var(--text-primary)]">84</span>
-                <span className="text-[14px] text-[var(--text-muted)]">/100</span>
-              </div>
-            </div>
+            <ScoreRing score={84} size={160} strokeWidth={7} />
             <p className="text-[13px] font-medium text-[var(--text-muted)]">Score technique</p>
             <p className="text-[12px] text-[var(--text-muted)]">Grade <strong style={{ color: "#10B981" }}>B</strong> · médiane secteur 72</p>
           </div>
@@ -418,14 +373,10 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
       <div id="tec-urgences">
         <SectionHead num="01." title="Urgences" em="business" meta="À traiter sous 7 jours" />
 
-        {/* Callout */}
-        <div className="mb-5 flex items-center gap-4 rounded-2xl border border-[rgba(225,29,72,0.25)] bg-[rgba(225,29,72,0.05)] px-6 py-5">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#E11D48] text-[14px] font-bold text-white">!</div>
-          <p className="text-[14px] text-[var(--text-secondary)]">
-            <strong className="text-[#E11D48]">~99 visites/mois à risque</strong>{" "}
-            · 5 urgences techniques détectées impactent directement votre trafic actuel ou votre indexation. Chaque jour de retard équivaut à environ 3 visites perdues.
-          </p>
-        </div>
+        <Callout variant="error" className="mb-5">
+          <strong>~99 visites/mois à risque</strong>{" "}
+          · 5 urgences techniques détectées impactent directement votre trafic actuel ou votre indexation. Chaque jour de retard équivaut à environ 3 visites perdues.
+        </Callout>
 
         <div className="grid grid-cols-2 gap-4">
           {URGENT_ISSUES.map((iss) => {
@@ -516,9 +467,9 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "#10B981" }} />Crawl + impressions GSC · 118 (89%)</span>
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "#F59E0B" }} />Crawlées sans impression · 15 (11%)</span>
           </div>
-          <div className="rounded-2xl border border-[rgba(245,158,11,0.15)] bg-[rgba(245,158,11,0.07)] p-4 text-[14px] leading-relaxed text-[var(--text-secondary)]">
-            <strong className="text-[var(--text-primary)]">À retenir :</strong> ces 15 pages sont bien indexées par Google (pas un blocage technique), mais leur ranking est trop bas pour apparaître en SERP. C'est un signal de pertinence ou de maillage interne insuffisant — à diagnostiquer page par page.
-          </div>
+          <Callout variant="warning">
+            <strong>À retenir :</strong> ces 15 pages sont bien indexées par Google (pas un blocage technique), mais leur ranking est trop bas pour apparaître en SERP. C'est un signal de pertinence ou de maillage interne insuffisant — à diagnostiquer page par page.
+          </Callout>
         </div>
 
         {/* Actions + Schemas */}
@@ -641,7 +592,12 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
             <div key={chart.label} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
               <p className="mb-4 text-[13px] font-semibold text-[var(--text-primary)]">{chart.label}</p>
               <div className="flex items-center gap-6">
-                <DonutChart slices={chart.slices} total={chart.total} />
+                <DonutChart
+                  slices={chart.slices.map(s => ({ label: s.label, value: s.count, color: s.color }))}
+                  size={84}
+                  strokeWidth={7}
+                  center={<span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>{chart.total}</span>}
+                />
                 <div className="flex flex-1 flex-col gap-2">
                   <div className="flex items-center justify-between text-[12px] font-semibold text-[var(--text-muted)]">
                     <span>Total</span>

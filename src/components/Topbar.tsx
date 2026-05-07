@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BellIcon, UserCircleIcon, Cog6ToothIcon, ArrowRightStartOnRectangleIcon, BoltIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { BellIcon } from "@heroicons/react/24/outline";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
+import { UserCircle, Settings, LogOut, Zap, Users } from "lucide-react";
 
 const NOTIFS = [
   { id: 1, text: "Analyse de leboncoin.fr terminée", time: "il y a 2 min", unread: true },
@@ -70,27 +71,12 @@ export function Topbar() {
           </div>
         </div>
         <DropdownSeparator />
-        <DropdownItem onClick={() => router.push("/parametres")}>
-          <UserCircleIcon className="h-4 w-4" />
-          Mon profil
-        </DropdownItem>
-        <DropdownItem onClick={() => router.push("/parametres")}>
-          <Cog6ToothIcon className="h-4 w-4" />
-          Paramètres du compte
-        </DropdownItem>
-        <DropdownItem onClick={() => router.push("/production")}>
-          <BoltIcon className="h-4 w-4" />
-          Production
-        </DropdownItem>
-        <DropdownItem onClick={() => router.push("/equipe")}>
-          <UserGroupIcon className="h-4 w-4" />
-          Équipe
-        </DropdownItem>
+        <DropdownItem icon={UserCircle} onClick={() => router.push("/parametres")}>Mon profil</DropdownItem>
+        <DropdownItem icon={Settings}   onClick={() => router.push("/parametres")}>Paramètres du compte</DropdownItem>
+        <DropdownItem icon={Zap}        onClick={() => router.push("/production")}>Production</DropdownItem>
+        <DropdownItem icon={Users}      onClick={() => router.push("/equipe")}>Équipe</DropdownItem>
         <DropdownSeparator />
-        <DropdownItem danger onClick={() => router.push("/")}>
-          <ArrowRightStartOnRectangleIcon className="h-4 w-4" />
-          Se déconnecter
-        </DropdownItem>
+        <DropdownItem icon={LogOut} danger onClick={() => router.push("/")}>Se déconnecter</DropdownItem>
       </DropdownMenu>
     </header>
   );

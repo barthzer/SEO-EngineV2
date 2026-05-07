@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, ArrowUpIcon, ArrowDownIcon, XMarkIcon, ChevronDownIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { Upload, FileSpreadsheet, Plus } from "lucide-react";
 import { Button } from "@/components/Button";
+import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 import { SearchInput } from "@/components/SearchInput";
 import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
+import { Sparkline } from "@/components/Sparkline";
+import { AreaChart } from "@/components/AreaChart";
 
 /* ── Types ── */
 
@@ -201,29 +205,9 @@ function DeltaCell({ delta }: { delta: number | null }) {
   );
 }
 
-function Sparkline({ data }: { data: number[] }) {
-  if (data.length < 2) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const W = 56, H = 22;
-  // invert Y: lower position number = better = higher on chart
-  const pts = data
-    .map((v, i) => `${(i / (data.length - 1)) * W},${H - ((max - v) / range) * H}`)
-    .join(" ");
-  return (
-    <svg width={W} height={H} className="overflow-visible">
-      <polyline points={pts} fill="none" stroke="#3E50F5" strokeWidth={1.5}
-        strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-/* ── Position history chart ── */
+/* Sparkline → DS · PositionChart → AreaChart DS (inverted=true) */
 
 function PositionChart({ history }: { history: HistoryPoint[] }) {
-  const [tooltip, setTooltip] = useState<{ i: number; x: number; y: number } | null>(null);
-
   if (history.length < 2) {
     return (
       <EmptyState
@@ -238,97 +222,20 @@ function PositionChart({ history }: { history: HistoryPoint[] }) {
     );
   }
 
-  const W = 1000, H = 140, PAD_X = 48, PAD_Y = 16;
-  const positions = history.map(d => d.pos);
-  const minPos = Math.max(1, Math.min(...positions) - 2);
-  const maxPos = Math.min(50, Math.max(...positions) + 3);
-  const range  = maxPos - minPos || 1;
-
-  const px = (i: number) => PAD_X + (i / (history.length - 1)) * (W - PAD_X * 2);
-  const py = (pos: number) => PAD_Y + ((pos - minPos) / range) * (H - PAD_Y * 2);
-
-  const line = history.map((d, i) => `${px(i)},${py(d.pos)}`).join(" ");
-  const area = `${px(0)},${H} ` + history.map((d, i) => `${px(i)},${py(d.pos)}`).join(" ") + ` ${px(history.length - 1)},${H}`;
-
-  const yLabels = [minPos, Math.round((minPos + maxPos) / 2), maxPos];
-  const hovered = tooltip?.i ?? null;
-
+  const data = history.map((d) => ({ label: d.date, value: d.pos }));
   return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full overflow-visible"
-        style={{ height: 160 }}
-        onMouseLeave={() => setTooltip(null)}
-      >
-        <defs>
-          <linearGradient id="pos-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3E50F5" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="#3E50F5" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {/* Y-axis grid lines + labels */}
-        {yLabels.map(label => (
-          <g key={label}>
-            <line
-              x1={PAD_X} y1={py(label)} x2={W - PAD_X} y2={py(label)}
-              stroke="var(--border-subtle)" strokeWidth="1" strokeDasharray="4,4"
-            />
-            <text x={PAD_X - 10} y={py(label)} textAnchor="end" dominantBaseline="middle"
-              fontSize="13" fill="var(--text-muted)" fontFamily="inherit">
-              #{label}
-            </text>
-          </g>
-        ))}
-
-        {/* Area + line */}
-        <polygon points={area} fill="url(#pos-grad)" />
-        <polyline points={line} fill="none" stroke="#3E50F5" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round" />
-
-        {/* Hit targets + hover dots */}
-        {history.map((d, i) => (
-          <g key={i}>
-            <rect
-              x={px(i) - (W / history.length) / 2}
-              width={W / history.length}
-              y={0} height={H}
-              fill="transparent"
-              onMouseEnter={(e) => setTooltip({ i, x: e.clientX, y: e.clientY })}
-              onMouseMove={(e)  => setTooltip({ i, x: e.clientX, y: e.clientY })}
-            />
-            {hovered === i && (
-              <>
-                <line x1={px(i)} y1={PAD_Y} x2={px(i)} y2={H}
-                  stroke="var(--border-medium)" strokeWidth="1" strokeDasharray="3,3" />
-                <circle cx={px(i)} cy={py(d.pos)} r="5" fill="#3E50F5" />
-                <circle cx={px(i)} cy={py(d.pos)} r="9" fill="#3E50F5" fillOpacity="0.15" />
-              </>
-            )}
-          </g>
-        ))}
-      </svg>
-
-      {/* Tooltip via portal — échappe à overflow:hidden */}
-      {tooltip !== null && typeof document !== "undefined" && createPortal(
-        <div
-          className="pointer-events-none fixed z-[9999] -translate-x-1/2 -translate-y-full rounded-lg bg-[rgba(20,20,20,0.88)] px-2.5 py-1.5 text-[12px] text-white shadow-lg backdrop-blur-md"
-          style={{ left: tooltip.x, top: tooltip.y - 10 }}
-        >
-          <span className="font-semibold">#{history[tooltip.i].pos}</span>
-          <span className="ml-1.5 opacity-60">{history[tooltip.i].date}</span>
-        </div>,
-        document.body
+    <AreaChart
+      data={data}
+      inverted
+      height={160}
+      gradientId="pos-history-grad"
+      formatTooltip={(p) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[11px] text-white/60">{p.label}</span>
+          <span className="text-[13px] font-semibold text-white">#{p.value}</span>
+        </div>
       )}
-
-      {/* X-axis labels */}
-      <div className="mt-1 flex justify-between px-[5%]">
-        {history.filter((_, i) => i === 0 || i === history.length - 1 || i % Math.ceil(history.length / 4) === 0).map((d, i) => (
-          <span key={i} className="text-[10px] text-[var(--text-muted)]">{d.date}</span>
-        ))}
-      </div>
-    </div>
+    />
   );
 }
 
@@ -375,7 +282,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
         {/* Header — sticky */}
         <div className="flex flex-shrink-0 items-start justify-between gap-4 px-6 py-5">
           <div className="min-w-0">
-            <h2 className="truncate text-[18px] font-semibold text-[var(--text-primary)]">
+            <h2 className="truncate text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">
               {kw.keyword}
             </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -412,7 +319,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
         {/* Chart section — sticky, not scrollable */}
         <div className="flex-shrink-0 px-6 pb-5">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Historique de position</p>
+            <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Historique de position</p>
             <FilterTabs tabs={TIME_RANGE_TABS} value={timeRange} onChange={setTimeRange} />
           </div>
           <PositionChart history={visibleHistory} />
@@ -565,18 +472,21 @@ function AddKwModal({ onClose, onAdd }: {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-[var(--text-secondary)]">Fréquence de vérification</label>
-            <div className="relative">
-              <select
-                value={freq}
-                onChange={e => setFreq(e.target.value)}
-                className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 pr-9 text-[14px] text-[var(--text-primary)] focus:border-[#3E50F5] focus:outline-none transition-colors"
-              >
-                {FREQ_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-            </div>
+            <DropdownMenu
+              matchTrigger
+              trigger={
+                <button className="flex h-10 w-full items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
+                  <span>{FREQ_OPTIONS.find(o => o.value === freq)?.label ?? "Fréquence"}</span>
+                  <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)]" />
+                </button>
+              }
+            >
+              {FREQ_OPTIONS.map(o => (
+                <DropdownItem key={o.value} onClick={() => setFreq(o.value)}>
+                  <span className={freq === o.value ? "font-semibold text-[var(--text-primary)]" : ""}>{o.label}</span>
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
           </div>
         </div>
 
@@ -584,6 +494,178 @@ function AddKwModal({ onClose, onAdd }: {
           <Button size="sm" variant="secondary" onClick={onClose}>Annuler</Button>
           <Button size="sm" onClick={handleAdd} disabled={count === 0}>
             Ajouter {count} mot{count > 1 ? "s" : ""}-clé{count > 1 ? "s" : ""}
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/* ── Import CSV modal ── */
+
+function ImportCsvModal({ onClose, onImport }: {
+  onClose: () => void;
+  onImport: (kws: TrackedKw[]) => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [parsed, setParsed] = useState<{ keyword: string; tag: string | null }[]>([]);
+  const [defaultTag, setDefaultTag] = useState("");
+  const [defaultFreq, setDefaultFreq] = useState("7j");
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(f: File) {
+    setError(null);
+    if (!/\.csv$/i.test(f.name)) {
+      setError("Le fichier doit être au format .csv");
+      return;
+    }
+    setFile(f);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = String(e.target?.result ?? "");
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      // Skip header row if first cell looks like "keyword" / "mot-clé"
+      const startIdx = /keyword|mot[-\s]?cl(é|e)/i.test(lines[0] ?? "") ? 1 : 0;
+      const rows = lines.slice(startIdx).map(line => {
+        const [kw, tg] = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+        return { keyword: kw ?? "", tag: tg && tg.length > 0 ? tg : null };
+      }).filter(r => r.keyword.length > 0);
+      if (rows.length === 0) {
+        setError("Aucun mot-clé valide détecté dans le fichier.");
+        setParsed([]);
+        return;
+      }
+      setParsed(rows);
+    };
+    reader.readAsText(f);
+  }
+
+  function handleImport() {
+    if (parsed.length === 0) return;
+    const kws: TrackedKw[] = parsed.map(p => ({
+      keyword: p.keyword,
+      pos: null, delta: null, url: null,
+      volume: null, freq: defaultFreq,
+      tag: p.tag ?? (defaultTag.trim() || null),
+      spark: [], history: [], serp: [],
+    }));
+    onImport(kws);
+    onClose();
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
+
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
+          <h2 className="text-[17px] font-semibold tracking-subheading text-[var(--text-primary)]">Importer des mots-clés depuis un CSV</h2>
+          <button onClick={onClose}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-secondary)]">
+            <XMarkIcon className="h-4 w-4 text-[var(--text-muted)]" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 px-6 py-5">
+          {/* Dropzone */}
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => {
+              e.preventDefault();
+              setDragOver(false);
+              const f = e.dataTransfer.files[0];
+              if (f) handleFile(f);
+            }}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 transition-colors ${dragOver ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"}`}
+          >
+            {file ? (
+              <>
+                <FileSpreadsheet className="h-8 w-8 text-[#10B981]" />
+                <p className="text-[14px] font-medium text-[var(--text-primary)]">{file.name}</p>
+                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">
+                  {parsed.length} mot{parsed.length > 1 ? "s" : ""}-clé{parsed.length > 1 ? "s" : ""} détecté{parsed.length > 1 ? "s" : ""} · cliquez pour changer
+                </p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 text-[var(--text-muted)]" />
+                <p className="text-[14px] font-medium text-[var(--text-primary)]">Glissez un fichier CSV ou cliquez pour parcourir</p>
+                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">Format attendu : une colonne <code className="font-mono text-[11px]">keyword</code>, optionnellement une colonne <code className="font-mono text-[11px]">tag</code></p>
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+            />
+          </div>
+
+          {error && (
+            <p className="text-[12px] tracking-caption text-[#E11D48]">{error}</p>
+          )}
+
+          {/* Defaults — applied to rows without explicit tag */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[var(--text-secondary)]">
+                Tag par défaut <span className="text-[var(--text-muted)]">(optionnel)</span>
+              </label>
+              <input
+                value={defaultTag}
+                onChange={e => setDefaultTag(e.target.value)}
+                placeholder="ex : produit"
+                className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[#3E50F5] focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[var(--text-secondary)]">Fréquence</label>
+              <DropdownMenu
+                matchTrigger
+                trigger={
+                  <button className="flex h-10 w-full items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
+                    <span>{FREQ_OPTIONS.find(o => o.value === defaultFreq)?.label ?? "Fréquence"}</span>
+                    <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)]" />
+                  </button>
+                }
+              >
+                {FREQ_OPTIONS.map(o => (
+                  <DropdownItem key={o.value} onClick={() => setDefaultFreq(o.value)}>
+                    <span className={defaultFreq === o.value ? "font-semibold text-[var(--text-primary)]" : ""}>{o.label}</span>
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Preview */}
+          {parsed.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[13px] font-medium text-[var(--text-secondary)]">Aperçu ({Math.min(5, parsed.length)} premier{parsed.length > 1 ? "s" : ""} sur {parsed.length})</p>
+              <div className="rounded-xl border border-[var(--border-subtle)] divide-y divide-[var(--border-subtle)]">
+                {parsed.slice(0, 5).map((p, i) => (
+                  <div key={i} className="flex items-center justify-between px-3 py-2 text-[13px]">
+                    <span className="truncate text-[var(--text-primary)]">{p.keyword}</span>
+                    {p.tag && (
+                      <span className="ml-3 flex-shrink-0 rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] tracking-caption text-[var(--text-muted)]">{p.tag}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] px-6 py-4">
+          <Button size="sm" variant="secondary" onClick={onClose}>Annuler</Button>
+          <Button size="sm" onClick={handleImport} disabled={parsed.length === 0}>
+            Importer {parsed.length > 0 ? `${parsed.length} mot${parsed.length > 1 ? "s" : ""}-clé${parsed.length > 1 ? "s" : ""}` : ""}
           </Button>
         </div>
       </div>
@@ -611,20 +693,7 @@ const VIS_DATA = [
 ];
 
 function VisibilityChart() {
-  const [hovered, setHovered] = useState<number | null>(null);
-
-  const W = 1000, H = 120, PAD_X = 0, PAD_Y = 12;
   const vals = VIS_DATA.map(d => d.value);
-  const max = Math.max(...vals);
-  const min = Math.min(...vals) * 0.6;
-  const range = max - min;
-
-  const px = (i: number) => PAD_X + (i / (VIS_DATA.length - 1)) * (W - PAD_X * 2);
-  const py = (v: number) => PAD_Y + (1 - (v - min) / range) * (H - PAD_Y * 2);
-
-  const line = VIS_DATA.map((d, i) => `${px(i)},${py(d.value)}`).join(" ");
-  const area = `${px(0)},${H} ` + VIS_DATA.map((d, i) => `${px(i)},${py(d.value)}`).join(" ") + ` ${px(VIS_DATA.length - 1)},${H}`;
-
   const delta = vals[vals.length - 1] - vals[0];
   const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
 
@@ -632,7 +701,7 @@ function VisibilityChart() {
     <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <p className="text-[14px] font-semibold text-[var(--text-primary)]">Visibilité organique</p>
+          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité organique</p>
           <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">90 derniers jours</p>
         </div>
         <div className="text-right">
@@ -643,62 +712,17 @@ function VisibilityChart() {
           <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">score de visibilité</p>
         </div>
       </div>
-
-      <div className="relative">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="w-full overflow-visible"
-          style={{ height: 120 }}
-          onMouseLeave={() => setHovered(null)}
-        >
-          <defs>
-            <linearGradient id="vis-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3E50F5" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#3E50F5" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <polygon points={area} fill="url(#vis-grad)" />
-          <polyline points={line} fill="none" stroke="#3E50F5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          {VIS_DATA.map((d, i) => (
-            <g key={i}>
-              <rect
-                x={px(i) - (W / VIS_DATA.length) / 2}
-                width={W / VIS_DATA.length}
-                y={0} height={H}
-                fill="transparent"
-                onMouseEnter={() => setHovered(i)}
-              />
-              {hovered === i && (
-                <>
-                  <line x1={px(i)} y1={0} x2={px(i)} y2={H} stroke="var(--border-medium)" strokeWidth="1" strokeDasharray="3,3" />
-                  <circle cx={px(i)} cy={py(d.value)} r="4" fill="#3E50F5" />
-                  <circle cx={px(i)} cy={py(d.value)} r="7" fill="#3E50F5" fillOpacity="0.15" />
-                </>
-              )}
-            </g>
-          ))}
-        </svg>
-
-        {hovered !== null && (
-          <div
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-lg bg-[rgba(20,20,20,0.85)] px-2.5 py-1.5 text-[12px] text-white shadow-lg backdrop-blur-md"
-            style={{
-              left: `${(hovered / (VIS_DATA.length - 1)) * 100}%`,
-              top: `${(py(VIS_DATA[hovered].value) / H) * 100}%`,
-              marginTop: -10,
-            }}
-          >
-            <span className="font-semibold">{VIS_DATA[hovered].value}</span>
-            <span className="ml-1.5 opacity-60">{VIS_DATA[hovered].label}</span>
+      <AreaChart
+        data={VIS_DATA}
+        height={120}
+        gradientId="vis-tracker-grad"
+        formatTooltip={(p) => (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[13px] font-semibold text-white">{p.value}</span>
+            <span className="text-[11px] text-white/60">{p.label}</span>
           </div>
         )}
-      </div>
-
-      <div className="mt-2 flex justify-between">
-        {VIS_DATA.filter((_, i) => i % 3 === 0 || i === VIS_DATA.length - 1).map((d, i) => (
-          <span key={i} className="text-[10px] text-[var(--text-muted)]">{d.label}</span>
-        ))}
-      </div>
+      />
     </div>
   );
 }
@@ -710,6 +734,7 @@ export function RankTracker() {
   const [filter,   setFilter]   = useState<RankFilter>("all");
   const [search,   setSearch]   = useState("");
   const [modal,    setModal]    = useState(false);
+  const [csvModal, setCsvModal] = useState(false);
   const [selIdx,   setSelIdx]   = useState<number | null>(null);
 
   const top1  = kws.filter(k => k.pos === 1).length;
@@ -741,25 +766,28 @@ export function RankTracker() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Header */}
+      {/* Header — title is rendered by parent tab, only meta + actions here */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">
-            Suivi de positions
-          </h3>
-          <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">
-            {kws.length} mot{kws.length > 1 ? "s" : ""}-clé{kws.length > 1 ? "s" : ""}
-            {" · "}Dernier check : 04 mai, 14:00
-          </p>
-        </div>
+        <p className="text-[13px] text-[var(--text-muted)]">
+          {kws.length} mot{kws.length > 1 ? "s" : ""}-clé{kws.length > 1 ? "s" : ""}
+          {" · "}Dernier check : 04 mai, 14:00
+        </p>
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Button size="sm" variant="secondary">CSV</Button>
           <Button size="sm" variant="secondary">Export</Button>
           <Button size="sm" variant="secondary">Checker</Button>
-          <Button size="sm" onClick={() => setModal(true)}>
-            <PlusIcon className="h-4 w-4" />
-            Ajouter
-          </Button>
+          <DropdownMenu
+            width={200}
+            trigger={
+              <Button size="sm">
+                <PlusIcon className="h-4 w-4" />
+                Importer
+                <ChevronDownIcon className="h-3.5 w-3.5" />
+              </Button>
+            }
+          >
+            <DropdownItem icon={FileSpreadsheet} onClick={() => setCsvModal(true)}>Depuis un CSV</DropdownItem>
+            <DropdownItem icon={Plus} onClick={() => setModal(true)}>Ajouter manuellement</DropdownItem>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -791,7 +819,7 @@ export function RankTracker() {
           value={filter}
           onChange={setFilter}
         />
-        <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un mot-clé…" expandedWidth={200} />
+        <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un mot-clé…" alwaysExpanded />
       </div>
 
       {/* Table */}
@@ -875,6 +903,14 @@ export function RankTracker() {
         <AddKwModal
           onClose={() => setModal(false)}
           onAdd={kw => setKws(prev => [...prev, kw])}
+        />
+      )}
+
+      {/* Import CSV modal */}
+      {csvModal && typeof document !== "undefined" && (
+        <ImportCsvModal
+          onClose={() => setCsvModal(false)}
+          onImport={imported => setKws(prev => [...prev, ...imported])}
         />
       )}
 

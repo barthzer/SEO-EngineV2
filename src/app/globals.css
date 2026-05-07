@@ -85,8 +85,8 @@
 }
 
 @keyframes slide-from-right {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+  from { transform: translateX(4%); opacity: 0; }
+  to   { transform: translateX(0);  opacity: 1; }
 }
 
 /* ──────────────── Icons stroke ──────────────── */
@@ -94,10 +94,31 @@ svg[stroke="currentColor"][fill="none"] {
   stroke-width: 2;
 }
 
-/* ──────────────── Headings ──────────────── */
-h1, h2, h3, .tracking-tight {
-  letter-spacing: -0.03em;
+/* ──────────────── Kerning scale ────────────────
+   Plus le texte est grand → plus le kerning est resserré (négatif).
+   Plus le texte est petit → moins de kerning, voire neutre.
+   Variables exposées pour usage inline ; classes utilitaires plus bas. */
+:root {
+  --tracking-display:    -0.05em;   /* 28px+ — h1, hero values */
+  --tracking-heading:    -0.04em;   /* 20–26px — h2, KPI value 26px */
+  --tracking-subheading: -0.03em;   /* 15–18px — h3, card titles, in-chart titles */
+  --tracking-body:       -0.02em;   /* 13–14px — body, card labels */
+  --tracking-caption:    -0.01em;   /* 11–12px — captions, axis labels */
+  --tracking-micro:      -0.005em;  /* ≤10px — micro-labels, all-caps if any */
 }
+
+.tracking-display    { letter-spacing: var(--tracking-display); }
+.tracking-heading    { letter-spacing: var(--tracking-heading); }
+.tracking-subheading { letter-spacing: var(--tracking-subheading); }
+.tracking-body       { letter-spacing: var(--tracking-body); }
+.tracking-caption    { letter-spacing: var(--tracking-caption); }
+.tracking-micro      { letter-spacing: var(--tracking-micro); }
+
+/* Auto-apply by tag — peut être surchargé par les classes ci-dessus */
+h1 { letter-spacing: var(--tracking-display); }
+h2 { letter-spacing: var(--tracking-heading); }
+h3 { letter-spacing: var(--tracking-subheading); }
+.tracking-tight { letter-spacing: var(--tracking-heading); }
 
 /* ──────────────── Page horizontal padding ──────────────── */
 :root { --page-px: 24px; }

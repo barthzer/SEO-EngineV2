@@ -8,35 +8,53 @@ interface Props {
   onChange: (v: string) => void;
   placeholder?: string;
   expandedWidth?: number;
+  /** When true, the input is always full-width — no expand-on-click behavior. */
+  alwaysExpanded?: boolean;
+  className?: string;
 }
 
-export function SearchInput({ value, onChange, placeholder = "Rechercher…", expandedWidth = 220 }: Props) {
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = "Rechercher…",
+  expandedWidth = 220,
+  alwaysExpanded = false,
+  className = "",
+}: Props) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isActive = open || value !== "";
+  const isActive = alwaysExpanded || open || value !== "";
 
   function handleOpen() {
+    if (alwaysExpanded) return;
     setOpen(true);
     setTimeout(() => inputRef.current?.focus(), 10);
   }
 
   function handleBlur() {
+    if (alwaysExpanded) return;
     if (value === "") setOpen(false);
   }
 
   function handleClear() {
     onChange("");
-    setOpen(false);
+    if (!alwaysExpanded) setOpen(false);
   }
+
+  const widthStyle: React.CSSProperties = alwaysExpanded
+    ? { width: "100%", maxWidth: 360 }
+    : {
+        width: isActive ? `${expandedWidth + 56}px` : "40px",
+        transitionTimingFunction: "var(--ease-expo)",
+      };
 
   return (
     <div
       onClick={!isActive ? handleOpen : undefined}
-      className="flex h-10 flex-shrink-0 cursor-pointer items-center overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[var(--bg-secondary)] transition-all duration-300"
+      className={`flex h-10 ${alwaysExpanded ? "" : "flex-shrink-0"} items-center overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[var(--card-inner-bg)] transition-all duration-300 ${className}`}
       style={{
-        width: isActive ? `${expandedWidth + 56}px` : "40px",
-        transitionTimingFunction: "var(--ease-expo)",
+        ...widthStyle,
         cursor: isActive ? "default" : "pointer",
       }}
     >

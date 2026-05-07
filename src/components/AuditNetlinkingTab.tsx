@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useRef, useLayoutEffect } from "react";
+import { useState, useRef } from "react";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { ChartTooltip } from "@/components/Tooltip";
 import { FilterTabs } from "@/components/FilterTabs";
 import { Button } from "@/components/Button";
+import { AreaChart } from "@/components/AreaChart";
+import { DonutChart } from "@/components/DonutChart";
+import { Callout } from "@/components/Callout";
+import { DeltaBadge } from "@/components/DeltaBadge";
+import { SectionHead } from "@/components/SectionHead";
 
 /* ── Benchmark data ───────────────────────────────────────────────────── */
 
@@ -31,20 +36,18 @@ const concurrents = COMPETITORS.filter((c) => !c.isYou);
 const COMP_AVG_TF = Math.round(concurrents.reduce((s, c) => s + c.tf, 0) / concurrents.length * 10) / 10;
 const COMP_AVG_RD = Math.round(concurrents.reduce((s, c) => s + c.refDomains, 0) / concurrents.length);
 
-/* ── TF Evolution data ────────────────────────────────────────────────── */
+/* ── TF Evolution data (AreaChartPoint) ───────────────────────────────── */
 
-type TfPoint = { label: string; tf: number };
-
-const TF_DATA_1AN: TfPoint[] = [
-  { label: "Mai 25",  tf: 17 }, { label: "Juin 25",  tf: 17 }, { label: "Juil 25",  tf: 17 },
-  { label: "Août 25", tf: 16 }, { label: "Sept 25",  tf: 17 }, { label: "Oct 25",   tf: 16 },
-  { label: "Nov 25",  tf: 16 }, { label: "Déc 25",   tf: 17 }, { label: "Janv 26",  tf: 16 },
-  { label: "Févr 26", tf: 16 }, { label: "Mars 26",  tf: 15 }, { label: "Avr 26",   tf: 16 },
-  { label: "Mai 26",  tf: 15 },
+const TF_DATA_1AN = [
+  { label: "Mai 25",  value: 17 }, { label: "Juin 25",  value: 17 }, { label: "Juil 25",  value: 17 },
+  { label: "Août 25", value: 16 }, { label: "Sept 25",  value: 17 }, { label: "Oct 25",   value: 16 },
+  { label: "Nov 25",  value: 16 }, { label: "Déc 25",   value: 17 }, { label: "Janv 26",  value: 16 },
+  { label: "Févr 26", value: 16 }, { label: "Mars 26",  value: 15 }, { label: "Avr 26",   value: 16 },
+  { label: "Mai 26",  value: 15 },
 ];
 
-const TF_DATA_6M: TfPoint[] = TF_DATA_1AN.slice(-7);
-const TF_DATA_3M: TfPoint[] = TF_DATA_1AN.slice(-4);
+const TF_DATA_6M = TF_DATA_1AN.slice(-7);
+const TF_DATA_3M = TF_DATA_1AN.slice(-4);
 
 /* ── Topical TTF ──────────────────────────────────────────────────────── */
 
@@ -129,40 +132,7 @@ const VISIBILITY: VisRow[] = [
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
-function SectionHead({ num, title, em, meta }: { num: string; title: string; em: string; meta: string }) {
-  return (
-    <div className="mb-6 flex items-baseline justify-between">
-      <h2 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">
-        <span className="mr-2 text-[13px] font-medium text-[var(--text-muted)]">{num}</span>
-        {title} <em className="not-italic text-[var(--text-primary)]">{em}</em>
-      </h2>
-      <span className="text-[13px] text-[var(--text-muted)]">{meta}</span>
-    </div>
-  );
-}
-
-function GapBadge({ gap, isYou }: { gap: number; isYou?: boolean }) {
-  if (isYou) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
-  const positive = gap >= 0;
-  return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold ${positive ? "bg-[rgba(16,185,129,0.12)] text-[#10B981]" : "bg-[rgba(225,29,72,0.1)] text-[#E11D48]"}`}>
-      {positive ? "+" : ""}{gap}
-    </span>
-  );
-}
-
-function InfoCallout({ text }: { text: string }) {
-  return (
-    <div className="mt-5 flex items-start gap-3 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-5 py-4">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 flex-shrink-0" aria-hidden>
-        <circle cx="8" cy="8" r="7" stroke="var(--text-muted)" strokeWidth="1.5" />
-        <rect x="7.25" y="6.5" width="1.5" height="5" rx="0.75" fill="var(--text-muted)" />
-        <circle cx="8" cy="4.5" r="0.85" fill="var(--text-muted)" />
-      </svg>
-      <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">{text}</p>
-    </div>
-  );
-}
+/* SectionHead, Callout, DeltaBadge, AreaChart, DonutChart → DS components */
 
 /* ── Radar Chart ──────────────────────────────────────────────────────── */
 
@@ -321,174 +291,10 @@ function RadarChart() {
   );
 }
 
-/* ── Anchor Donut (3 segments) ────────────────────────────────────────── */
+/* AnchorDonut → DonutChart DS · TfAreaChart → AreaChart DS */
 
-function AnchorDonut() {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(null);
-
-  const R = 44, SW = 9, CX = 56, CY = 56, gap = 8;
-  const toRad = (deg: number) => (deg - 90) * Math.PI / 180;
-  const dpt = (deg: number) => ({
-    x: CX + R * Math.cos(toRad(deg)),
-    y: CY + R * Math.sin(toRad(deg)),
-  });
-
-  let cursor = 0;
-  const arcs = ANCHOR_SEGS.map((seg, idx) => {
-    const span = seg.pct / 100 * 360 - gap;
-    const start = cursor + gap / 2;
-    const end = start + span;
-    cursor += seg.pct / 100 * 360;
-    const s = dpt(start), e = dpt(end);
-    const large = span > 180 ? 1 : 0;
-    return { ...seg, idx, path: `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}` };
-  });
-
-  const total = ANCHOR_SEGS.reduce((s, a) => s + a.count, 0);
-
-  const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const r = svgRef.current?.getBoundingClientRect();
-    if (!r) return;
-    setTipPos({ x: e.clientX - r.left, y: e.clientY - r.top });
-  };
-
-  return (
-    <div className="relative" onMouseLeave={() => { setHovered(null); setTipPos(null); }}>
-      <svg ref={svgRef} width={112} height={112} viewBox="0 0 112 112" onMouseMove={onMove}>
-        {arcs.map((arc) => (
-          <path
-            key={arc.label}
-            d={arc.path}
-            fill="none"
-            stroke={arc.color}
-            strokeWidth={SW}
-            strokeLinecap="round"
-            opacity={hovered !== null && hovered !== arc.idx ? 0.3 : 1}
-            style={{ cursor: "pointer", transition: "opacity 0.15s" }}
-            onMouseEnter={() => setHovered(arc.idx)}
-          />
-        ))}
-        <text x={CX} y={CY - 6} textAnchor="middle" fontSize={18} fontWeight={700} fill="var(--text-primary)">{total}</text>
-        <text x={CX} y={CY + 11} textAnchor="middle" fontSize={11} fill="var(--text-muted)">ancres</text>
-      </svg>
-      {hovered !== null && tipPos && (
-        <ChartTooltip x={tipPos.x} y={tipPos.y}>
-          <span className="text-[12px] text-white">
-            {ANCHOR_SEGS[hovered].label} · <strong>{ANCHOR_SEGS[hovered].pct}%</strong> ({ANCHOR_SEGS[hovered].count})
-          </span>
-        </ChartTooltip>
-      )}
-    </div>
-  );
-}
-
-/* ── TF Area Chart ────────────────────────────────────────────────────── */
-
-function TfAreaChart({ data }: { data: TfPoint[] }) {
-  const [hovered, setHovered] = useState<{ idx: number; x: number; y: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [containerW, setContainerW] = useState(0);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setContainerW(entry.contentRect.width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const chartH = 160, lm = 36, tm = 12, bm = 28;
-  const chartW = Math.max(1, containerW - lm - 10);
-  const svgH = chartH + tm + bm;
-  // aliases so handleMouseMove math stays unchanged (vbW = containerW, vbH = svgH when no viewBox)
-  const vbW = containerW, vbH = svgH;
-
-  const vals = data.map((d) => d.tf);
-  const yMin = Math.min(...vals) - 2;
-  const yMax = Math.max(...vals) + 2;
-
-  const pts = data.map((d, i) => ({
-    ...d,
-    x: lm + (i / (data.length - 1)) * chartW,
-    y: tm + chartH * (1 - (d.tf - yMin) / (yMax - yMin)),
-  }));
-
-  let linePath = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length; i++) {
-    const cpX = (pts[i - 1].x + pts[i].x) / 2;
-    linePath += ` C ${cpX} ${pts[i - 1].y}, ${cpX} ${pts[i].y}, ${pts[i].x} ${pts[i].y}`;
-  }
-  const areaPath = `${linePath} L ${pts[pts.length - 1].x} ${tm + chartH} L ${pts[0].x} ${tm + chartH} Z`;
-
-  const yTicks = Array.from({ length: yMax - yMin + 1 }, (_, i) => yMin + i).filter((v) => v >= yMin && v <= yMax);
-  const displayTicks = yTicks.filter((_, i) => i % 2 === 0);
-
-  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    const svgEl = svgRef.current;
-    const containerEl = containerRef.current;
-    if (!svgEl || !containerEl) return;
-    const rect = svgEl.getBoundingClientRect();
-    const svgX = ((e.clientX - rect.left) / rect.width) * vbW;
-    let nearestIdx = 0;
-    let minDist = Math.abs(pts[0].x - svgX);
-    pts.forEach((pt, i) => {
-      const d = Math.abs(pt.x - svgX);
-      if (d < minDist) { minDist = d; nearestIdx = i; }
-    });
-    const cRect = containerEl.getBoundingClientRect();
-    setHovered({
-      idx: nearestIdx,
-      x: e.clientX - cRect.left,
-      y: (pts[nearestIdx].y / vbH) * rect.height,
-    });
-  }
-
-  const hovPt = hovered !== null ? pts[hovered.idx] : null;
-
-  return (
-    <div ref={containerRef} className="relative" onMouseLeave={() => setHovered(null)}>
-      <svg ref={svgRef} width={containerW || undefined} height={svgH} className="overflow-visible" onMouseMove={handleMouseMove}>
-        <defs>
-          <linearGradient id="tf-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3E50F5" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="#3E50F5" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {displayTicks.map((v) => {
-          const y = tm + chartH * (1 - (v - yMin) / (yMax - yMin));
-          return (
-            <g key={v}>
-              <line x1={lm} y1={y} x2={lm + chartW} y2={y} stroke="var(--border-subtle)" strokeWidth="1" />
-              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{v}</text>
-            </g>
-          );
-        })}
-        {pts.map((pt) => (
-          <text key={pt.label} x={pt.x} y={tm + chartH + 18} textAnchor="middle" fontSize={11} fill="var(--text-muted)">{pt.label}</text>
-        ))}
-        <path d={areaPath} fill="url(#tf-grad)" />
-        <path d={linePath} fill="none" stroke="#3E50F5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {hovPt && (
-          <>
-            <line x1={hovPt.x} y1={tm} x2={hovPt.x} y2={tm + chartH} stroke="var(--border-subtle)" strokeWidth="1" strokeDasharray="4 3" />
-            <circle cx={hovPt.x} cy={hovPt.y} r={4} fill="#3E50F5" stroke="white" strokeWidth="2" />
-          </>
-        )}
-      </svg>
-      {hovered !== null && hovPt && (
-        <ChartTooltip x={hovered.x} y={hovered.y}>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] text-white opacity-60">{hovPt.label}</span>
-            <span className="text-[13px] font-semibold text-white">TF {hovPt.tf}</span>
-          </div>
-        </ChartTooltip>
-      )}
-    </div>
-  );
-}
+const ANCHOR_DONUT_SLICES = ANCHOR_SEGS.map((s) => ({ label: s.label, value: s.count, color: s.color }));
+const anchorTotal = ANCHOR_SEGS.reduce((a, s) => a + s.count, 0);
 
 /* ── Score ring helper ────────────────────────────────────────────────── */
 
@@ -504,9 +310,9 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
   const [tfPeriod, setTfPeriod] = useState<"3m" | "6m" | "1an">("6m");
 
   const tfData = tfPeriod === "3m" ? TF_DATA_3M : tfPeriod === "6m" ? TF_DATA_6M : TF_DATA_1AN;
-  const tfMin  = Math.min(...tfData.map((d) => d.tf));
-  const tfMax  = Math.max(...tfData.map((d) => d.tf));
-  const tfDelta = tfData[tfData.length - 1].tf - tfData[0].tf;
+  const tfMin  = Math.min(...tfData.map((d) => d.value));
+  const tfMax  = Math.max(...tfData.map((d) => d.value));
+  const tfDelta = tfData[tfData.length - 1].value - tfData[0].value;
 
   const you = COMPETITORS.find((c) => c.isYou)!;
   const score = 48;
@@ -625,10 +431,10 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="px-4 py-3 text-center align-middle text-[var(--text-secondary)]">{c.refDomains.toLocaleString("fr-FR")}</td>
                       <td className="px-4 py-3 text-center align-middle text-[var(--text-secondary)]">{c.backlinks.toLocaleString("fr-FR")}</td>
                       <td className="px-4 py-3 text-center align-middle">
-                        <GapBadge gap={gapTf} isYou={c.isYou} />
+                        {c.isYou ? <span className="text-[13px] text-[var(--text-muted)]">—</span> : <DeltaBadge value={gapTf} />}
                       </td>
                       <td className="pr-4 py-3 text-center align-middle">
-                        <GapBadge gap={gapRd} isYou={c.isYou} />
+                        {c.isYou ? <span className="text-[13px] text-[var(--text-muted)]">—</span> : <DeltaBadge value={gapRd} />}
                       </td>
                     </tr>
                   );
@@ -639,7 +445,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
 
           {/* Radar with context */}
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-6 py-5">
-            <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Vue radar — 5 axes normalisés</p>
+            <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Vue radar — 5 axes normalisés</p>
             <p className="mt-1 mb-5 text-[12px] text-[var(--text-muted)]">
               Chaque axe est normalisé par rapport au maximum observé parmi les 11 sites. Plus la surface est grande, meilleur est le profil netlinking.
             </p>
@@ -784,7 +590,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             </div>
           </div>
 
-          <InfoCallout text="La sous-représentation française (45.2% vs 58.4% pour les concurrents) indique un profil de liens trop international pour un site ciblant le marché FR. Prioriser des partenariats avec des éditeurs .fr ou des médias spécialisés français." />
+          <Callout variant="info">La sous-représentation française (45.2% vs 58.4% pour les concurrents) indique un profil de liens trop international pour un site ciblant le marché FR. Prioriser des partenariats avec des éditeurs .fr ou des médias spécialisés français.</Callout>
         </div>
 
         {/* ── 03. ÉVOLUTION TRUST FLOW ──────────────────────────────────── */}
@@ -793,6 +599,13 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
 
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-6 py-5">
             <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
+                <span>Min <strong className="text-[var(--text-primary)]">{tfMin}</strong></span>
+                <span>Max <strong className="text-[var(--text-primary)]">{tfMax}</strong></span>
+                <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                  Delta {tfDelta > 0 ? "+" : ""}{tfDelta} ({tfDelta > 0 ? "+" : ""}{Math.round(tfDelta / tfData[0].value * 100)}%)
+                </span>
+              </div>
               <FilterTabs
                 tabs={[
                   { key: "3m",  label: "3 mois" },
@@ -802,15 +615,16 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                 value={tfPeriod}
                 onChange={(k) => setTfPeriod(k as "3m" | "6m" | "1an")}
               />
-              <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
-                <span>Min <strong className="text-[var(--text-primary)]">{tfMin}</strong></span>
-                <span>Max <strong className="text-[var(--text-primary)]">{tfMax}</strong></span>
-                <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
-                  Delta {tfDelta > 0 ? "+" : ""}{tfDelta} ({tfDelta > 0 ? "+" : ""}{Math.round(tfDelta / tfData[0].tf * 100)}%)
-                </span>
-              </div>
             </div>
-            <TfAreaChart data={tfData} />
+            <AreaChart
+                data={tfData}
+                formatTooltip={(p) => (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] text-white/60">{p.label}</span>
+                    <span className="text-[13px] font-semibold text-white">TF {p.value}</span>
+                  </div>
+                )}
+              />
           </div>
         </div>
 
@@ -855,7 +669,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             </div>
           </div>
 
-          <InfoCallout text="La thématique « Actualités Web » est présente chez 7/10 concurrents mais absente de votre profil. Des liens depuis des médias tech/marketing (BDM, FrenchWeb, JDN) renforceraient cette dimension et diversifieraient les sources thématiques." />
+          <Callout variant="info">La thématique « Actualités Web » est présente chez 7/10 concurrents mais absente de votre profil. Des liens depuis des médias tech/marketing (BDM, FrenchWeb, JDN) renforceraient cette dimension et diversifieraient les sources thématiques.</Callout>
         </div>
 
         {/* ── 05. DISTRIBUTION DES ANCRES ──────────────────────────────── */}
@@ -872,7 +686,20 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                   Risque élevé
                 </span>
               </div>
-              <AnchorDonut />
+              <DonutChart
+                slices={ANCHOR_DONUT_SLICES}
+                size={112}
+                strokeWidth={9}
+                center={
+                  <div className="flex flex-col items-center">
+                    <span className="text-[18px] font-bold leading-none text-[var(--text-primary)]">{anchorTotal}</span>
+                    <span className="text-[11px] text-[var(--text-muted)]">ancres</span>
+                  </div>
+                }
+                formatTooltip={(s, pct) => (
+                  <span className="text-[12px] text-white">{s.label} · <strong>{pct}%</strong> ({s.value})</span>
+                )}
+              />
               <div className="flex flex-col gap-1.5 self-stretch">
                 {ANCHOR_SEGS.map((s) => (
                   <div key={s.label} className="flex items-center justify-between text-[12px]">
@@ -918,7 +745,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             </div>
           </div>
 
-          <InfoCallout text="59% d'ancres de marque est élevé (idéal : 30–40%). Un sur-ancrage exact-match de marque peut diluer la valeur thématique transmise. Diversifier vers des ancres de type « agence marketing digital Paris » ou « formation SEO certifiée » pour renforcer la pertinence." />
+          <Callout variant="warning">59% d'ancres de marque est élevé (idéal : 30–40%). Un sur-ancrage exact-match de marque peut diluer la valeur thématique transmise. Diversifier vers des ancres de type « agence marketing digital Paris » ou « formation SEO certifiée ».</Callout>
         </div>
 
         {/* ── 06. BENCHMARK VISIBILITÉ SEO ─────────────────────────────── */}

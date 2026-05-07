@@ -31,6 +31,7 @@ export function FilterTabs<T extends string = string>({ tabs, value, onChange }:
             onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-secondary)"; }}
             onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
           >
+            {tab.color && <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tab.color }} />}
             {tab.label}
             {tab.count !== undefined && (
               <span className="text-[11px] opacity-60">{tab.count}</span>

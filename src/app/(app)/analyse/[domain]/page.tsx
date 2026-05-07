@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { use } from "react";
 import { Button } from "@/components/Button";
@@ -12,6 +13,9 @@ import { BriefsView, LotList } from "@/components/BriefsView";
 import { AuditTechniqueTab } from "@/components/AuditTechniqueTab";
 import { AuditEditorialTab } from "@/components/AuditEditorialTab";
 import { AuditNetlinkingTab } from "@/components/AuditNetlinkingTab";
+import { Stepper } from "@/components/Stepper";
+import { CannibalView } from "@/components/CannibalView";
+import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
 import { AuditToc, type TocItem } from "@/components/AuditToc";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
@@ -19,9 +23,6 @@ import { SkeletonAnalyseHeader, SkeletonTabs, SkeletonAnalyseGeneral } from "@/c
 import {
   ChevronRightIcon,
   ArrowRightIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  MinusIcon,
   ArrowTopRightOnSquareIcon,
   XMarkIcon,
   EllipsisHorizontalIcon,
@@ -43,11 +44,39 @@ import {
   ArrowUpTrayIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import {
+  TrendingUp,
+  ChartBar as LChartBar,
+  Trophy,
+  Eye,
+  Euro,
+  Banknote,
+  TriangleAlert,
+  FilePlus,
+  FileText,
+  CircleCheck,
+  FolderOpen as LFolderOpen,
+  Link as LLink,
+  Search as LSearch,
+  MousePointerClick,
+  Download,
+  Upload,
+  Trash2,
+  X as LX,
+  Sparkles as LSparkles,
+  Settings,
+  FileSpreadsheet,
+} from "lucide-react";
 import { CheckCircleIcon as CheckCircleSolid, SparklesIcon } from "@heroicons/react/24/solid";
+import { AIInsight } from "@/components/AIInsight";
+import { KpiCard } from "@/components/KpiCard";
+import { EmptyState } from "@/components/EmptyState";
+import { AreaChart } from "@/components/AreaChart";
+import { FilterTabs } from "@/components/FilterTabs";
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
-type Tab = "general" | "briefs" | "seo" | "sea" | "forecast" | "netlinking" | "audit";
+type Tab = "general" | "briefs" | "seo" | "tracking" | "sea" | "forecast" | "netlinking" | "audit" | "cannibal" | "univers" | "recommandations";
 
 
 
@@ -194,11 +223,8 @@ function HealthCard({
       </div>
 
       {quote && (
-        <div className="mx-7 mb-4 rounded-2xl bg-[var(--bg-card-hover)] p-3.5">
-          <div className="flex items-start gap-2">
-            <SparklesIcon className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)]" />
-            <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">{quote}</p>
-          </div>
+        <div className="mx-7 mb-4">
+          <AIInsight>{quote}</AIInsight>
         </div>
       )}
       <div className="px-7 pb-4">
@@ -329,77 +355,133 @@ function PositionBarChart() {
   );
 }
 
-/* ── ProfileDonutChart ───────────────────────────────────────────────── */
+/* ── Concurrents organiques ──────────────────────────────────────────── */
 
-const PROFILE_DATA = [
-  { label: "Données partielles", value: 4, color: "#F59E0B" },
-  { label: "Quick Win",          value: 2, color: "#10B981" },
-  { label: "Déficit contenu",    value: 2, color: "#EF4444" },
-  { label: "Volume faible",      value: 2, color: "#3B82F6" },
-  { label: "Mature",             value: 1, color: "#8B5CF6" },
+type OrganicRow = { domain: string; tf: number; cf: number; bas: number; refDomains: number; isYou?: boolean };
+
+const ORGANIC_YOU: OrganicRow = { domain: "votre-site.fr", tf: 28, cf: 41, bas: 12, refDomains: 520, isYou: true };
+
+const ORGANIC_COMPETITORS: OrganicRow[] = [
+  { domain: "noiise.com",                                 tf: 49, cf: 48, bas: 0,  refDomains: 1637 },
+  { domain: "lk-interactive.fr",                          tf: 19, cf: 38, bas: 47, refDomains: 308 },
+  { domain: "cybercite.fr",                               tf: 42, cf: 44, bas: 9,  refDomains: 902 },
+  { domain: "eskimoz.fr",                                 tf: 21, cf: 47, bas: 13, refDomains: 1427 },
+  { domain: "seo.fr",                                     tf: 51, cf: 46, bas: 16, refDomains: 1640 },
+  { domain: "alioze.com",                                 tf: 14, cf: 42, bas: 0,  refDomains: 833 },
+  { domain: "agencebespoke.com",                          tf: 13, cf: 42, bas: 48, refDomains: 369 },
+  { domain: "adveris.fr",                                 tf: 37, cf: 45, bas: 47, refDomains: 736 },
+  { domain: "axess.fr",                                   tf: 44, cf: 47, bas: 3,  refDomains: 1232 },
+  { domain: "centre-formation-referencement-naturel.com", tf: 16, cf: 34, bas: 52, refDomains: 136 },
 ];
 
-function ProfileDonutChart() {
-  const [hovered, setHovered] = useState<{ label: string; value: number; color: string; x: number; y: number } | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const total = 11, r = 82, sw = 7, cx = 92, cy = 92, gapDeg = 7;
-  const toRad = (deg: number) => (deg - 90) * Math.PI / 180;
-  const pt = (deg: number) => ({ x: cx + r * Math.cos(toRad(deg)), y: cy + r * Math.sin(toRad(deg)) });
-  let angle = 0;
-  const arcs = PROFILE_DATA.map(d => {
-    const span = (d.value / total) * 360;
-    const midDeg = angle + span / 2;
-    const s = pt(angle + gapDeg / 2);
-    const e = pt(angle + span - gapDeg / 2);
-    const large = span - gapDeg > 180 ? 1 : 0;
-    const path = `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
-    angle += span;
-    return { ...d, path, midDeg };
-  });
-
-  function handleMouseEnter(_e: React.MouseEvent<SVGPathElement>, d: typeof arcs[0]) {
-    const svgEl = svgRef.current;
-    if (!svgEl) return;
-    const svgRect = svgEl.getBoundingClientRect();
-    const mid = pt(d.midDeg);
-    const scaleX = svgRect.width / 184;
-    const scaleY = svgRect.height / 184;
-    setHovered({ label: d.label, value: d.value, color: d.color, x: mid.x * scaleX, y: mid.y * scaleY - sw * scaleY });
+function DomainSquircle({ domain }: { domain: string }) {
+  const [error, setError] = useState(false);
+  if (error) {
+    return (
+      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[8px] bg-[var(--bg-subtle)] text-[10px] font-semibold uppercase tracking-micro text-[var(--text-muted)]">
+        {domain.charAt(0)}
+      </div>
+    );
   }
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+      alt={domain}
+      width={28}
+      height={28}
+      onError={() => setError(true)}
+      className="h-7 w-7 flex-shrink-0 rounded-[8px] border border-[var(--border-subtle)] bg-[var(--bg-card)] object-contain p-0.5"
+    />
+  );
+}
+
+function DeltaIndicator({ value, ref: refValue }: { value: number; ref: number }) {
+  if (value === refValue) {
+    return <span className="ml-1.5 inline-block w-2 text-center text-[10px] tracking-micro text-[var(--text-muted)]">—</span>;
+  }
+  const isUp = value > refValue;
+  // Higher is better for all 4 metrics (TF/CF/BAS/RefDomains) — competitor higher = bad for you (red), lower = good (green)
+  const color = isUp ? "#E11D48" : "#10B981";
+  return (
+    <svg
+      viewBox="0 0 10 10"
+      className="ml-1.5 inline-block h-2.5 w-2.5"
+      style={{ fill: color }}
+      aria-hidden="true"
+    >
+      {isUp ? <polygon points="5,1.5 9,8 1,8" /> : <polygon points="5,8.5 1,2 9,2" />}
+    </svg>
+  );
+}
+
+function OrganicCompetitorsTable() {
+  const rows = [ORGANIC_YOU, ...ORGANIC_COMPETITORS];
+  const youCols = ORGANIC_YOU;
 
   return (
-    <div className="flex items-center gap-8">
-      <div className="relative flex-shrink-0">
-        <svg ref={svgRef} width="184" height="184" viewBox="0 0 184 184" onMouseLeave={() => setHovered(null)}>
-          {arcs.map((d, i) => (
-            <path
-              key={i} d={d.path} fill="none" stroke={d.color} strokeWidth={sw} strokeLinecap="round"
-              opacity={hovered && hovered.label !== d.label ? 0.35 : 1}
-              style={{ cursor: "pointer", transition: "opacity 0.15s" }}
-              onMouseEnter={(e) => handleMouseEnter(e, d)}
-            />
-          ))}
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[24px] font-semibold leading-none text-[var(--text-primary)]">11</span>
-          <span className="mt-0.5 text-[11px] text-[var(--text-muted)]">URLs</span>
-        </div>
-        {hovered && (
-          <ChartTooltip x={hovered.x} y={hovered.y}>
-            <p className="text-[12px] font-semibold text-white">{hovered.label}</p>
-            <p className="text-[11px] text-white/60">
-              <span className="font-semibold text-white">{hovered.value}</span> URL{hovered.value > 1 ? "s" : ""} — {Math.round(hovered.value / total * 100)}%
-            </p>
-          </ChartTooltip>
-        )}
+    <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+      <div className="px-7 pt-6 pb-4">
+        <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Concurrents organiques</p>
+        <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Comparaison Trust Flow · Citation Flow · BAS · Domaines référents</p>
       </div>
-      <div className="flex flex-col gap-2.5">
-        {PROFILE_DATA.map((d) => (
-          <div key={d.label} className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
-            <span className="text-[13px] text-[var(--text-secondary)]">{d.label}</span>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-y border-[var(--border-subtle)] text-[11px] tracking-caption font-semibold text-[var(--text-muted)]">
+              <th className="px-7 py-3 text-left">Domaine</th>
+              <th className="px-4 py-3 text-right">TF</th>
+              <th className="px-4 py-3 text-right">CF</th>
+              <th className="px-4 py-3 text-right">BAS</th>
+              <th className="pr-7 pl-4 py-3 text-right">Ref Domains</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((c, i) => (
+              <tr
+                key={c.domain}
+                className={`text-[13px] transition-colors ${c.isYou ? "bg-[rgba(62,80,245,0.06)]" : "hover:bg-[var(--bg-card-hover)]"} ${i < rows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
+              >
+                <td className="px-7 py-3 text-[var(--text-primary)]">
+                  <div className="flex items-center gap-3">
+                    <DomainSquircle domain={c.domain} />
+                    <span className={`truncate ${c.isYou ? "font-semibold text-[#3E50F5]" : "font-medium"}`}>
+                      {c.domain}
+                    </span>
+                    {c.isYou && (
+                      <span className="flex-shrink-0 rounded-full bg-[#3E50F5] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-micro text-white">
+                        Vous
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
+                    {c.tf}
+                    {!c.isYou && <DeltaIndicator value={c.tf} ref={youCols.tf} />}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
+                    {c.cf}
+                    {!c.isYou && <DeltaIndicator value={c.cf} ref={youCols.cf} />}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
+                    {c.bas}
+                    {!c.isYou && <DeltaIndicator value={c.bas} ref={youCols.bas} />}
+                  </span>
+                </td>
+                <td className="pr-7 pl-4 py-3 text-right tabular-nums">
+                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
+                    {c.refDomains.toLocaleString("fr-FR")}
+                    {!c.isYou && <DeltaIndicator value={c.refDomains} ref={youCols.refDomains} />}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -425,7 +507,14 @@ const VISIBILITY_DATA = [
 // Fluctuations déterministes pour les 4 sous-points entre chaque mois
 const FLUC = [1, 0, 2, 0, 0, -2, 0, 1, 0, 3, 0, -1, 0, 0, 2, 0, -3, 0, 0, 1, 0, 2, 0, 0, -1, 0, 0, -2, 1, 0, 0, 3, 0, -1, 0, 0, 2, 0, -2, 0, 0, 1, 0, -3];
 
+const VISIBILITY_BY_PERIOD = {
+  "3m":  VISIBILITY_DATA.slice(-3),
+  "6m":  VISIBILITY_DATA.slice(-6),
+  "1an": VISIBILITY_DATA,
+} as const;
+
 function VisibilityLineChart() {
+  const [period, setPeriod] = useState<"3m" | "6m" | "1an">("1an");
   const [hovered, setHovered] = useState<{ idx: number; mouseX: number; mouseY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -439,6 +528,10 @@ function VisibilityLineChart() {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => setHovered(null), [period]);
+
+  const visData = VISIBILITY_BY_PERIOD[period];
+
   const chartH = 200, lm = 38, tm = 12, bm = 26;
   const chartW = Math.max(1, containerW - lm - 10);
   const svgH = chartH + tm + bm;
@@ -448,11 +541,11 @@ function VisibilityLineChart() {
 
   // Expand: 4 sub-points between each monthly anchor
   const expanded: { value: number; month?: string; isMonth: boolean }[] = [];
-  for (let i = 0; i < VISIBILITY_DATA.length; i++) {
-    expanded.push({ value: VISIBILITY_DATA[i].value, month: VISIBILITY_DATA[i].month, isMonth: true });
-    if (i < VISIBILITY_DATA.length - 1) {
-      const v0 = VISIBILITY_DATA[i].value;
-      const v1 = VISIBILITY_DATA[i + 1].value;
+  for (let i = 0; i < visData.length; i++) {
+    expanded.push({ value: visData[i].value, month: visData[i].month, isMonth: true });
+    if (i < visData.length - 1) {
+      const v0 = visData[i].value;
+      const v1 = visData[i + 1].value;
       for (let j = 0; j < 4; j++) {
         const t = (j + 1) / 5;
         const base = v0 + (v1 - v0) * t;
@@ -495,7 +588,15 @@ function VisibilityLineChart() {
   const hovMonth = hovered !== null ? expanded.slice(0, hovered.idx + 1).reverse().find(d => d.isMonth)?.month : null;
 
   return (
-    <div ref={containerRef} className="relative" onMouseLeave={() => setHovered(null)}>
+    <div>
+      <div className="mb-4 flex justify-end">
+        <FilterTabs
+          tabs={[{ key: "3m", label: "3m" }, { key: "6m", label: "6m" }, { key: "1an", label: "1 an" }]}
+          value={period}
+          onChange={setPeriod}
+        />
+      </div>
+      <div ref={containerRef} className="relative" onMouseLeave={() => setHovered(null)}>
       <svg ref={svgRef} width={containerW || undefined} height={svgH} className="overflow-visible" onMouseMove={handleMouseMove}>
         <defs>
           <linearGradient id="vis-grad" x1="0" y1="0" x2="0" y2="1">
@@ -527,6 +628,7 @@ function VisibilityLineChart() {
           <p className="text-[13px] font-semibold text-white">{hovPt.value}</p>
         </ChartTooltip>
       )}
+      </div>
     </div>
   );
 }
@@ -606,21 +708,78 @@ function BlocCard({ bloc, index }: { bloc: BlocDef; index: number }) {
   );
 }
 
-/* ── Metric card ─────────────────────────────────────────────────────── */
+/* ── Traffic chart ───────────────────────────────────────────────────── */
 
-function MetricCard({ label, value, sub, trend }: { label: string; value: string; sub?: string; trend?: "up" | "down" | "neutral" }) {
-  const TrendIcon = trend === "up" ? ArrowUpIcon : trend === "down" ? ArrowDownIcon : MinusIcon;
-  const trendColor = trend === "up" ? "#10B981" : trend === "down" ? "#E11D48" : "var(--text-muted)";
+const TRAFFIC_BY_PERIOD = {
+  "3m": [
+    { label: "S1 Fév", value: 2840 },
+    { label: "S2 Fév", value: 3120 },
+    { label: "S3 Fév", value: 2980 },
+    { label: "S4 Fév", value: 3340 },
+    { label: "S1 Mar", value: 3690 },
+    { label: "S2 Mar", value: 3470 },
+    { label: "S3 Mar", value: 3810 },
+    { label: "S4 Mar", value: 3750 },
+    { label: "S1 Avr", value: 4020 },
+    { label: "S2 Avr", value: 4280 },
+    { label: "S3 Avr", value: 3960 },
+    { label: "S4 Avr", value: 4490 },
+  ],
+  "6m": [
+    { label: "S1 Nov", value: 1820 },
+    { label: "S2 Nov", value: 1950 },
+    { label: "S3 Nov", value: 2080 },
+    { label: "S4 Nov", value: 2010 },
+    { label: "S1 Déc", value: 2140 },
+    { label: "S2 Déc", value: 2280 },
+    { label: "S3 Déc", value: 2190 },
+    { label: "S4 Déc", value: 2350 },
+    { label: "S1 Jan", value: 2420 },
+    { label: "S2 Jan", value: 2580 },
+    { label: "S3 Jan", value: 2510 },
+    { label: "S4 Jan", value: 2680 },
+    { label: "S1 Fév", value: 2840 },
+    { label: "S2 Fév", value: 3120 },
+    { label: "S3 Fév", value: 2980 },
+    { label: "S4 Fév", value: 3340 },
+    { label: "S1 Mar", value: 3690 },
+    { label: "S2 Mar", value: 3470 },
+    { label: "S3 Mar", value: 3810 },
+    { label: "S4 Mar", value: 3750 },
+    { label: "S1 Avr", value: 4020 },
+    { label: "S2 Avr", value: 4280 },
+    { label: "S3 Avr", value: 3960 },
+    { label: "S4 Avr", value: 4490 },
+  ],
+  "1an": [
+    { label: "Mai 25",  value: 1240 },
+    { label: "Juin 25", value: 1380 },
+    { label: "Juil 25", value: 1520 },
+    { label: "Août 25", value: 1490 },
+    { label: "Sept 25", value: 1680 },
+    { label: "Oct 25",  value: 1840 },
+    { label: "Nov 25",  value: 1960 },
+    { label: "Déc 25",  value: 2190 },
+    { label: "Jan 26",  value: 2540 },
+    { label: "Fév 26",  value: 3070 },
+    { label: "Mar 26",  value: 3680 },
+    { label: "Avr 26",  value: 4190 },
+  ],
+};
+
+function TrafficChart() {
+  const [period, setPeriod] = useState<"3m" | "6m" | "1an">("3m");
   return (
-    <div className="p-2">
-      <p className="text-[14px] font-medium text-[var(--text-muted)]">{label}</p>
-      <p className="mt-2 text-[26px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{value}</p>
-      {sub && (
-        <div className="mt-2 flex items-center gap-1" style={{ color: trendColor }}>
-          {trend && <TrendIcon className="h-3 w-3" />}
-          <span className="text-[12px]">{sub}</span>
-        </div>
-      )}
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution du trafic organique</p>
+        <FilterTabs
+          tabs={[{ key: "3m", label: "3m" }, { key: "6m", label: "6m" }, { key: "1an", label: "1 an" }]}
+          value={period}
+          onChange={setPeriod}
+        />
+      </div>
+      <AreaChart data={TRAFFIC_BY_PERIOD[period]} height={128} gradientId="traffic-organic-grad" />
     </div>
   );
 }
@@ -901,12 +1060,35 @@ function ImpactBar({ value }: { value: number }) {
 const TABS: { key: Tab; label: string }[] = [
   { key: "general",          label: "Général" },
   { key: "briefs",           label: "URLs" },
-  { key: "seo",              label: "SEO Organique" },
+  { key: "seo",              label: "Analytics SEO" },
+  { key: "tracking",         label: "Tracking" },
   { key: "sea",              label: "SEA & Paid" },
   { key: "forecast",         label: "Forecast" },
   { key: "netlinking",       label: "Netlinking" },
+  { key: "cannibal",         label: "Cannibalisation" },
+  { key: "univers",          label: "Univers sémantique" },
+  { key: "recommandations",  label: "Recommandations" },
   { key: "audit",            label: "Audit" },
 ];
+
+const TAB_TITLES: Record<Tab, string> = {
+  general:    "Vue d'ensemble",
+  briefs:     "URLs",
+  seo:        "Analytics SEO",
+  tracking:   "Tracking",
+  sea:        "SEA & Paid",
+  forecast:   "Forecast",
+  netlinking: "Netlinking",
+  cannibal:   "Cannibalisation",
+  univers:        "Univers sémantique",
+  recommandations: "Recommandations",
+  audit:          "Audit",
+};
+
+const TAB_SUBTITLES: Partial<Record<Tab, string>> = {
+  cannibal: "Pages en conflit de positionnement — dilution du trafic et des signaux de pertinence.",
+  univers:  "Identifiez les opportunités de contenu et résolvez les cannibalisations pour améliorer votre SEO.",
+};
 
 /* ── GSC Import ──────────────────────────────────────────────────────── */
 
@@ -921,7 +1103,143 @@ const IMPORT_TYPES: { key: ImportType; icon: React.ElementType; label: string; d
 
 const QUICK_WINS_OPTIONS = ["Top 10 articles", "Pages les moins visibles", "Meilleur CTR", "Fort potentiel", "Positions 11–20"];
 const TYPOLOGY_OPTIONS   = ["Articles de blog", "Pages produits", "Pages catégories", "Landing pages", "Pages guides", "Pages FAQ"];
-const SEGMENTS = ["Vache à lait", "Étoiles montantes", "En chute", "Pages zombies", "Nouveau contenu"];
+const SEGMENT_INFO: { label: string; info: ReactNode }[] = [
+  {
+    label: "Vache à lait",
+    info: (
+      <div className="space-y-2">
+        <p className="font-semibold text-white">Vache à lait (Cash Cows)</p>
+        <p className="text-white/70">Pages qui rapportent gros, à protéger.</p>
+        <div className="space-y-0.5 text-white/80">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
+          <p>· Position ≤ 3 (Top 3 Google)</p>
+          <p>· Clics ≥ 50 sur la période</p>
+          <p>· &gt; 180 jours sans modif → flag "à rafraîchir"</p>
+        </div>
+        <p className="text-white/50 italic">Protéger · rafraîchir si vieillissant</p>
+      </div>
+    ),
+  },
+  {
+    label: "Étoiles montantes",
+    info: (
+      <div className="space-y-2">
+        <p className="font-semibold text-white">Étoiles montantes (Rising Stars)</p>
+        <p className="text-white/70">Quick Wins — pages proches du Top 3.</p>
+        <div className="space-y-0.5 text-white/80">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
+          <p>· Position 4–10 (page 1 hors Top 3)</p>
+          <p>· Impressions ≥ 100</p>
+          <p>· ≥ 2 positions gagnées vs N-1 → vraie Rising Star</p>
+        </div>
+        <p className="text-white/50 italic">Optimiser en priorité (fort ROI, faible effort)</p>
+      </div>
+    ),
+  },
+  {
+    label: "En chute",
+    info: (
+      <div className="space-y-2">
+        <p className="font-semibold text-white">En chute (Drops)</p>
+        <p className="text-white/70">Pages qui perdent du trafic — urgent.</p>
+        <div className="space-y-0.5 text-white/80">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères (au moins un)</p>
+          <p>· Clics ↓ ≥ 20 % vs N-1</p>
+          <p>· Chute réelle : clics ↓ + position ↓ 3 places</p>
+          <p>· Zero-click : clics ↓ mais position stable</p>
+        </div>
+        <p className="text-white/50 italic">Diagnostic technique/contenu urgent</p>
+      </div>
+    ),
+  },
+  {
+    label: "Pages zombies",
+    info: (
+      <div className="space-y-2">
+        <p className="font-semibold text-white">Pages zombies</p>
+        <p className="text-white/70">Pages mortes — visibles mais sans clic.</p>
+        <div className="space-y-0.5 text-white/80">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
+          <p>· Clics ≤ 10</p>
+          <p>· CTR ≤ 1 %</p>
+          <p>· Impressions ≥ 50 (sinon = invisible)</p>
+        </div>
+        <p className="text-white/50 italic">Pruning · désindexation · redirection · refonte</p>
+      </div>
+    ),
+  },
+  {
+    label: "Nouveau contenu",
+    info: (
+      <div className="space-y-2">
+        <p className="font-semibold text-white">Nouveau contenu</p>
+        <p className="text-white/70">Pages récentes (&lt; 30 jours) — patience.</p>
+        <p className="text-white/50 italic">Surveiller sans sur-optimiser</p>
+      </div>
+    ),
+  },
+];
+
+const SEGMENT_PRIORITY_INFO = (
+  <div className="space-y-2">
+    <p className="font-semibold text-white">Ordre de priorité d'attribution</p>
+    <p className="text-white/60">Si une page coche plusieurs segments :</p>
+    <div className="space-y-0.5 text-white/80">
+      <p>1. Cannibals <span className="text-white/40">(bloque tout)</span></p>
+      <p>2. En chute <span className="text-white/40">(urgent)</span></p>
+      <p>3. Étoiles montantes <span className="text-white/40">(opportunité)</span></p>
+      <p>4. Pages zombies <span className="text-white/40">(nettoyage)</span></p>
+      <p>5. Vache à lait <span className="text-white/40">(protection)</span></p>
+      <p>6. Nouveau contenu <span className="text-white/40">(&lt; 30 jours)</span></p>
+      <p>7. Stable <span className="text-white/40">(par défaut)</span></p>
+    </div>
+  </div>
+);
+
+const INFO_ICON_SVG = (
+  <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5">
+    <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
+    <path d="M8 7v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    <circle cx="8" cy="5.2" r="0.8" fill="currentColor" />
+  </svg>
+);
+
+function InfoIcon({ content }: { content: ReactNode }) {
+  return (
+    <Tooltip label={content} rich portal side="top">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        className="flex items-center justify-center text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+      >
+        {INFO_ICON_SVG}
+      </button>
+    </Tooltip>
+  );
+}
+
+function SegmentPill({ label, info, active, onToggle }: { label: string; info: ReactNode; active: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all ${
+        active
+          ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--bg-primary)]"
+          : "border-[var(--border-medium)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]"
+      }`}
+    >
+      {label}
+      <Tooltip label={info} rich portal side="top">
+        <span
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          className="flex items-center justify-center opacity-40 transition-opacity hover:opacity-80"
+        >
+          {INFO_ICON_SVG}
+        </span>
+      </Tooltip>
+    </button>
+  );
+}
 
 const MOCK_PAGES = [
   { url: "/blog/seo-local",         clicks: 3240, impressions: 48200, position: 4.2 },
@@ -986,15 +1304,17 @@ function ModalShell({ onClose, children }: { onClose: () => void; children: Reac
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [onClose]);
-  return (
-    <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div role="presentation" className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" className="relative w-full max-w-[480px] rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
         <button onClick={onClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
           <XMarkIcon className="h-5 w-5" />
         </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1015,17 +1335,55 @@ const fieldCls = "w-full rounded-xl border border-[var(--border-subtle)] bg-[var
 
 /* ── Import CSV Modal ────────────────────────────────────────────────── */
 
+type ParsedUrl = { url: string; keyword: string | null; volume: number | null };
+
 function ImportCSVModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<"csv" | "paste">("csv");
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [parsed, setParsed] = useState<ParsedUrl[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [pasted, setPasted] = useState("");
-  const canImport = tab === "csv" ? !!file : pasted.trim().length > 0;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(f: File) {
+    setError(null);
+    if (!/\.csv$/i.test(f.name)) {
+      setError("Le fichier doit être au format .csv");
+      return;
+    }
+    setFile(f);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = String(e.target?.result ?? "");
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const startIdx = /url|page/i.test(lines[0]?.split(",")[0] ?? "") ? 1 : 0;
+      const rows = lines.slice(startIdx).map(line => {
+        const cells = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+        const vol = cells[2] ? Number(cells[2].replace(/\s/g, "")) : null;
+        return {
+          url: cells[0] ?? "",
+          keyword: cells[1] && cells[1].length > 0 ? cells[1] : null,
+          volume: vol !== null && Number.isFinite(vol) ? vol : null,
+        };
+      }).filter(r => r.url.length > 0);
+      if (rows.length === 0) {
+        setError("Aucune URL valide détectée dans le fichier.");
+        setParsed([]);
+        return;
+      }
+      setParsed(rows);
+    };
+    reader.readAsText(f);
+  }
+
+  const pastedCount = pasted.split(/\r?\n/).map(l => l.trim()).filter(Boolean).length;
+  const canImport = tab === "csv" ? parsed.length > 0 : pastedCount > 0;
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">Importer des URLs</h2>
-      <p className="mt-1 text-[13px] text-[var(--text-muted)]">Choisissez votre méthode d'importation</p>
+      <h2 className="pr-10 text-[22px] font-semibold tracking-heading text-[var(--text-primary)]">Importer des URLs</h2>
+      <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">Choisissez votre méthode d'importation</p>
 
       <div className="mt-5 flex items-center gap-1 rounded-2xl bg-[var(--bg-secondary)] p-1">
         {([["csv", "Importer CSV"], ["paste", "Coller des URLs"]] as const).map(([key, label]) => (
@@ -1037,19 +1395,55 @@ function ImportCSVModal({ onClose }: { onClose: () => void }) {
       </div>
 
       {tab === "csv" && (
-        <div
-          className={`mt-5 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${dragging ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]" : "border-[var(--border-subtle)] bg-[var(--bg-secondary)]"}`}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) setFile(f); }}
-        >
-          <ArrowUpTrayIcon className="h-8 w-8 text-[var(--text-muted)]" />
-          <p className="text-[14px] font-medium text-[var(--text-primary)]">{file ? file.name : "Glissez votre fichier CSV ici"}</p>
-          <label className="cursor-pointer rounded-full border border-[var(--border-subtle)] px-4 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]">
-            Parcourir
-            <input type="file" accept=".csv" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
-          </label>
-          <p className="text-[11px] text-[var(--text-muted)]">Colonnes requises : url · keyword (optionnel : volume)</p>
+        <div className="mt-5 flex flex-col gap-4">
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 transition-colors ${dragging ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"}`}
+          >
+            {file ? (
+              <>
+                <FileSpreadsheet className="h-8 w-8 text-[#10B981]" />
+                <p className="text-[14px] font-medium text-[var(--text-primary)]">{file.name}</p>
+                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">
+                  {parsed.length} URL{parsed.length > 1 ? "s" : ""} détectée{parsed.length > 1 ? "s" : ""} · cliquez pour changer
+                </p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 text-[var(--text-muted)]" />
+                <p className="text-[14px] font-medium text-[var(--text-primary)]">Glissez un fichier CSV ou cliquez pour parcourir</p>
+                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">Colonnes : <code className="font-mono text-[11px]">url</code> · <code className="font-mono text-[11px]">keyword</code> (optionnel) · <code className="font-mono text-[11px]">volume</code> (optionnel)</p>
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+            />
+          </div>
+
+          {error && <p className="text-[12px] tracking-caption text-[#E11D48]">{error}</p>}
+
+          {parsed.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[13px] font-medium text-[var(--text-secondary)]">Aperçu ({Math.min(5, parsed.length)} premier{parsed.length > 1 ? "s" : ""} sur {parsed.length})</p>
+              <div className="rounded-xl border border-[var(--border-subtle)] divide-y divide-[var(--border-subtle)]">
+                {parsed.slice(0, 5).map((p, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
+                    <span className="truncate font-mono text-[12px] text-[var(--text-primary)]">{p.url}</span>
+                    {p.keyword && (
+                      <span className="ml-3 flex-shrink-0 rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] tracking-caption text-[var(--text-muted)]">{p.keyword}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {tab === "paste" && (
@@ -1058,13 +1452,15 @@ function ImportCSVModal({ onClose }: { onClose: () => void }) {
             placeholder={"https://exemple.com/page-1\nhttps://exemple.com/page-2"}
             className="w-full resize-none rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 font-mono text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)] transition-colors"
             rows={7} autoFocus />
-          <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">Une URL par ligne</p>
+          <p className="mt-1.5 text-[11px] tracking-caption text-[var(--text-muted)]">Une URL par ligne · {pastedCount} détectée{pastedCount > 1 ? "s" : ""}</p>
         </div>
       )}
 
       <div className="mt-6 flex items-center justify-end gap-3">
         <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
-        <Button disabled={!canImport} onClick={onClose}>Importer</Button>
+        <Button disabled={!canImport} onClick={onClose}>
+          Importer {tab === "csv" && parsed.length > 0 ? `${parsed.length} URL${parsed.length > 1 ? "s" : ""}` : tab === "paste" && pastedCount > 0 ? `${pastedCount} URL${pastedCount > 1 ? "s" : ""}` : ""}
+        </Button>
       </div>
     </ModalShell>
   );
@@ -1215,17 +1611,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
     <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
 
-        {/* Stepper + close */}
-        <div className="mb-7 flex items-center gap-4">
-          <div className="flex flex-1 items-center gap-2">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${s <= step ? "bg-[var(--text-primary)]" : "bg-[var(--border-subtle)]"}`} />
-            ))}
-          </div>
-          <button onClick={onClose} className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)]">
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
+        <Stepper steps={3} current={step} onClose={onClose} />
 
         {/* ── Step 1 — Méthode ── */}
         {step === 1 && (
@@ -1379,17 +1765,20 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               ))}
 
               <div>
-                <label className="mb-2 block text-[11px] font-medium text-[var(--text-muted)]">Filtrer par segments GSC</label>
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-[var(--text-muted)]">Filtrer par segments GSC</span>
+                  <InfoIcon content={SEGMENT_PRIORITY_INFO} />
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {SEGMENTS.map((s) => {
-                    const active = segments.includes(s);
-                    return (
-                      <button key={s} onClick={() => setSegments((p) => active ? p.filter((x) => x !== s) : [...p, s])}
-                        className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all ${active ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--bg-primary)]" : "border-[var(--border-medium)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]"}`}>
-                        {s}
-                      </button>
-                    );
-                  })}
+                  {SEGMENT_INFO.map(({ label, info }) => (
+                    <SegmentPill
+                      key={label}
+                      label={label}
+                      info={info}
+                      active={segments.includes(label)}
+                      onToggle={() => setSegments((p) => p.includes(label) ? p.filter((x) => x !== label) : [...p, label])}
+                    />
+                  ))}
                 </div>
               </div>
 
@@ -1583,19 +1972,10 @@ function ConnBadge({ tool, connected, onClick, onImport }: { tool: Tool; connect
           </Tooltip>
         }
       >
-        <DropdownItem onClick={onImport}>
-          <ArrowDownTrayIcon className="h-5 w-5 text-[var(--text-muted)]" />
-          Importer des pages GSC
-        </DropdownItem>
-        <DropdownItem>
-          <TrashIcon className="h-5 w-5 text-[var(--text-muted)]" />
-          Supprimer des pages GSC
-        </DropdownItem>
+        <DropdownItem icon={Download} onClick={onImport}>Importer des pages GSC</DropdownItem>
+        <DropdownItem icon={Trash2}>Supprimer des pages GSC</DropdownItem>
         <DropdownSeparator />
-        <DropdownItem danger onClick={onClick}>
-          <XMarkIcon className="h-5 w-5" />
-          Déconnecter GSC
-        </DropdownItem>
+        <DropdownItem danger icon={LX} onClick={onClick}>Déconnecter GSC</DropdownItem>
       </DropdownMenu>
     );
   }
@@ -2001,6 +2381,176 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
   );
 }
 
+/* ── Recommandations ──────────────────────────────────────────────────── */
+
+function SemrushFileField({
+  label,
+  required = false,
+  file,
+  onFile,
+}: {
+  label: string;
+  required?: boolean;
+  file: File | null;
+  onFile: (f: File | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-[13px] font-medium text-[var(--text-secondary)]">
+        {label} {required && <span className="text-[#E11D48]">*</span>}
+      </label>
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const f = e.dataTransfer.files[0];
+          if (f) onFile(f);
+        }}
+        onClick={() => inputRef.current?.click()}
+        className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed px-5 py-4 transition-colors ${
+          dragOver
+            ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]"
+            : file
+            ? "border-[var(--border-medium)] bg-[var(--bg-secondary)]"
+            : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"
+        }`}
+      >
+        {file ? (
+          <>
+            <FileSpreadsheet className="h-6 w-6 flex-shrink-0 text-[#10B981]" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{file.name}</p>
+              <p className="text-[11px] tracking-caption text-[var(--text-muted)]">{(file.size / 1024).toFixed(1)} Ko · cliquez pour changer</p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onFile(null); }}
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+              aria-label="Retirer"
+            >
+              <LX className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            <Upload className="h-6 w-6 flex-shrink-0 text-[var(--text-muted)]" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-medium text-[var(--text-primary)]">Aucun fichier choisi</p>
+              <p className="text-[11px] tracking-caption text-[var(--text-muted)]">Glissez un export CSV / XLSX ou cliquez pour parcourir</p>
+            </div>
+          </>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,text/csv"
+          className="hidden"
+          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; onLaunch: () => void }) {
+  const [clientFile, setClientFile] = useState<File | null>(null);
+  const [compFile,   setCompFile]   = useState<File | null>(null);
+
+  const canLaunch = clientFile !== null;
+
+  function handleLaunch() {
+    if (!canLaunch) return;
+    onLaunch();
+    onClose();
+  }
+
+  return (
+    <ModalShell onClose={onClose}>
+      <h2 className="pr-10 text-[22px] font-semibold tracking-heading text-[var(--text-primary)]">Identifier les pages manquantes</h2>
+      <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">
+        Détectez les mots-clés que vos concurrents ont et que vous n'avez pas.
+      </p>
+
+      <div className="mt-6 flex flex-col gap-4">
+        <SemrushFileField
+          label="Export Semrush — positions organiques du client"
+          required
+          file={clientFile}
+          onFile={setClientFile}
+        />
+        <SemrushFileField
+          label="Export Semrush — concurrent (optionnel)"
+          file={compFile}
+          onFile={setCompFile}
+        />
+      </div>
+
+      <div className="mt-6 flex items-center justify-end gap-3">
+        <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
+        <Button disabled={!canLaunch} onClick={handleLaunch}>
+          <LSparkles className="h-4 w-4" />
+          Lancer l'étude de mots-clés
+        </Button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function RecommandationsView() {
+  const [studyOpen, setStudyOpen] = useState(false);
+  const [studyDone, setStudyDone] = useState(false);
+
+  return (
+    <>
+      {!studyDone ? (
+        <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+          <EmptyState
+            icon={<LSparkles className="h-7 w-7" />}
+            title="Aucune étude de mots-clés"
+            description="Lancez une étude pour identifier les pages manquantes et les opportunités face à vos concurrents."
+            action={
+              <Button onClick={() => setStudyOpen(true)}>
+                <LSparkles className="h-4 w-4" />
+                Lancer une étude de mots-clés
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[14px] tracking-body text-[var(--text-secondary)]">
+                Dernière étude lancée à l'instant · résultats en cours d'analyse
+              </p>
+            </div>
+            <Button size="sm" variant="secondary" onClick={() => setStudyOpen(true)}>
+              <LSparkles className="h-4 w-4" />
+              Relancer une étude
+            </Button>
+          </div>
+          <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+            <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Pages manquantes détectées</p>
+            <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">Le rapport apparaîtra ici une fois l'analyse terminée (3–5 min).</p>
+          </div>
+        </div>
+      )}
+
+      {studyOpen && (
+        <KeywordStudyModal
+          onClose={() => setStudyOpen(false)}
+          onLaunch={() => setStudyDone(true)}
+        />
+      )}
+    </>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function AnalysePage({ params }: { params: Promise<{ domain: string }> }) {
@@ -2089,7 +2639,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                     <div className="mt-0.5 flex items-center gap-2 text-[14px] text-[var(--text-muted)]">
                       <span>Mis à jour aujourd'hui</span>
                       <span className="h-3 w-px bg-[var(--border-medium)]" />
-                      <span>1 048 URLs</span>
+                      <span>133 pages crawlées</span>
                     </div>
                   )}
                 </div>
@@ -2117,28 +2667,13 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                 align="right"
                 width={220}
               >
-                <DropdownItem onClick={() => setUrlModal("import-csv")}>
-                  <ArrowUpTrayIcon className="h-4 w-4" />
-                  Importer des URLs
-                </DropdownItem>
-                <DropdownItem onClick={() => setUrlModal("add-url")}>
-                  <LinkIcon className="h-4 w-4" />
-                  Ajouter une URL
-                </DropdownItem>
-                <DropdownItem onClick={() => setUrlModal("new-brief")}>
-                  <SparklesIcon className="h-4 w-4" />
-                  Nouveau brief
-                </DropdownItem>
+                <DropdownItem icon={Upload}     onClick={() => setUrlModal("import-csv")}>Importer des URLs</DropdownItem>
+                <DropdownItem icon={LLink}      onClick={() => setUrlModal("add-url")}>Ajouter une URL</DropdownItem>
+                <DropdownItem icon={LSparkles}  onClick={() => setUrlModal("new-brief")}>Nouveau brief</DropdownItem>
                 <DropdownSeparator />
-                <DropdownItem onClick={() => setParametresOpen(true)}>
-                  <Cog6ToothIcon className="h-4 w-4" />
-                  Paramètres du projet
-                </DropdownItem>
+                <DropdownItem icon={Settings}   onClick={() => setParametresOpen(true)}>Paramètres du projet</DropdownItem>
                 <DropdownSeparator />
-                <DropdownItem danger>
-                  <TrashIcon className="h-4 w-4" />
-                  Supprimer le projet
-                </DropdownItem>
+                <DropdownItem icon={Trash2} danger>Supprimer le projet</DropdownItem>
               </DropdownMenu>
             </div>
           </div>
@@ -2177,21 +2712,32 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
       </div>
 
       {/* ── Tab content ── */}
-      <div className="w-full px-[var(--page-px)] py-6">
+      <div className={`w-full py-6 ${tab !== "briefs" ? "px-[var(--page-px)]" : ""}`}>
         {loading ? <SkeletonAnalyseGeneral /> : null}
         <div className={loading ? "hidden" : "animate-fade-in"}>
+
+        {/* Unified view title — same size + tight subtitle for every tab */}
+        <div className={`mb-6 ${tab === "briefs" ? "px-[var(--page-px)]" : ""}`}>
+          <h2 className="text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">
+            {TAB_TITLES[tab]}
+          </h2>
+          {TAB_SUBTITLES[tab] && (
+            <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
+              {TAB_SUBTITLES[tab]}
+            </p>
+          )}
+        </div>
 
         {/* Général tab */}
         {tab === "general" && (
           <div className="flex flex-col gap-8">
 
             {/* Stats globales */}
-            <div className="grid grid-cols-5 gap-x-2 gap-y-4">
-              <MetricCard label="Trafic organique / mois" value="42 800" sub="+8,4 % vs mois dernier" trend="up" />
-              <MetricCard label="Lots créés" value="18" sub="6 actifs · 12 terminés" />
-              <MetricCard label="URLs générées" value="147" sub="63 livrées (43 %)" />
-              <MetricCard label="Score GEO Meteoria" value="65" sub="+7 pts ce mois" trend="up" />
-              <MetricCard label="Score maillage global" value="62 %" sub="23 orphelines" trend="down" />
+            <div className="grid grid-cols-4 gap-3">
+              <KpiCard icon={TrendingUp} label="Trafic organique / mois" value="42 800" sub="+8,4 % vs N−1" trend="up" />
+              <KpiCard icon={LFolderOpen} label="Lots créés"              value="18"     sub="6 actifs · 12 terminés" />
+              <KpiCard icon={FileText}    label="Briefs générés"          value="147"    sub="63 livrés (43 %)" />
+              <KpiCard icon={LLink}       label="Score maillage global"   value="62 %"   sub="23 orphelines" trend="down" />
             </div>
 
             {/* 4 blocs stratégiques */}
@@ -2289,18 +2835,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
             {/* Core Web Vitals */}
             <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-              <div className="flex items-center gap-2.5 p-7">
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl">
-                  <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M2 13A8 8 0 1 1 18 13" />
-                    <path d="M10 13L13.5 9.5" strokeWidth="1.75" />
-                    <circle cx="10" cy="13" r="1.25" fill="currentColor" stroke="none" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">Core Web Vitals</p>
-                  <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
-                </div>
+              <div className="p-7">
+                <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
+                <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
               </div>
               <div className="flex px-7 pb-7 gap-4">
                 {[
@@ -2325,15 +2862,15 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               </div>
             </div>
 
-            {/* Distribution des positions + Profils de pages */}
+            {/* Distribution des positions + Visibilité — 2 colonnes */}
             <div className="grid grid-cols-2 gap-4">
 
-              {/* Bar chart */}
+              {/* Distribution des positions — bar chart */}
               <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">Distribution des positions</p>
-                    <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">Visibilité Haloscan</p>
+                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
+                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
                   </div>
                   <Tooltip
                     side="top"
@@ -2353,31 +2890,25 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                 <PositionBarChart />
               </div>
 
-              {/* Donut chart */}
+              {/* Visibilité et trafic organique */}
               <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
-                <p className="mb-4 text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">
-                  Profils d'URLs <span className="text-[var(--text-muted)]">(11)</span>
-                </p>
-                <ProfileDonutChart />
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
+                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => setTab("seo")}>
+                    Voir Analytics SEO
+                    <ArrowRightIcon className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <VisibilityLineChart />
               </div>
 
             </div>
 
-            {/* Visibilité et trafic organique */}
-            <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">Visibilité et trafic organique</p>
-                  <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">Visibilité Haloscan</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-3 py-1.5 text-[12px] font-medium text-emerald-600">
-                    ↗ Visibilité en progression
-                  </span>
-                </div>
-              </div>
-              <VisibilityLineChart />
-            </div>
+            {/* Concurrents organiques */}
+            <OrganicCompetitorsTable />
 
             {/* Lots actifs */}
             <div>
@@ -2413,7 +2944,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
         {/* Briefs tab */}
         {tab === "briefs" && (
-          <div className="flex h-[calc(100vh-280px)] flex-col">
+          <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
             <BriefsView />
           </div>
         )}
@@ -2421,17 +2952,54 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* SEO tab */}
         {tab === "seo" && (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
-              <MetricCard label="Trafic organique (30j)" value="14 280" sub="+12 % vs mois préc." trend="up" />
-              <MetricCard label="Position moyenne" value="18,4" sub="−2,1 pts ce mois" trend="up" />
-              <MetricCard label="CTR moyen" value="3,2 %" sub="stable" trend="neutral" />
-              <MetricCard label="Mots-clés top 10" value="312" sub="+8 ce mois" trend="up" />
-              <MetricCard label="Pages indexées" value="1 048" />
-              <MetricCard label="Impressions (30j)" value="447 000" sub="+8 % vs mois préc." trend="up" />
+            <div className="grid grid-cols-3 gap-3">
+              <KpiCard icon={TrendingUp}        label="Trafic organique (30j)" value="14 280"  sub="+12 % vs mois préc." trend="up" />
+              <KpiCard icon={LChartBar}          label="Position moyenne"      value="18,4"    sub="−2,1 pts ce mois"    trend="up" />
+              <KpiCard icon={MousePointerClick} label="CTR moyen"             value="3,2 %"   sub="stable"              trend="neutral" />
+              <KpiCard icon={Trophy}            label="Mots-clés top 10"      value="312"     sub="+8 ce mois"          trend="up" />
+              <KpiCard icon={FileText}          label="Pages indexées"        value="1 048" />
+              <KpiCard icon={Eye}               label="Impressions (30j)"     value="447 000" sub="+8 % vs mois préc."  trend="up" />
             </div>
-            <ChartBar label="Évolution du trafic organique — 12 semaines" />
+            <div className="grid grid-cols-2 gap-4">
+
+              {/* Distribution des positions */}
+              <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
+                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
+                  </div>
+                  <Tooltip
+                    side="top"
+                    label={<>
+                      <span className="block text-[12px] text-white"><span className="font-semibold">5</span> mots-clés dans le top 100 / <span className="font-semibold">2 081</span> détectés (Haloscan)</span>
+                      <span className="mt-1 block text-[11px] text-white/70">2 076 mots-clés au-delà de la position 100</span>
+                    </>}
+                  >
+                    <button className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
+                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                        <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <path d="M7.5 6.5v4M7.5 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </Tooltip>
+                </div>
+                <PositionBarChart />
+              </div>
+
+              {/* Visibilité et trafic organique */}
+              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
+                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
+                  </div>
+                </div>
+                <VisibilityLineChart />
+              </div>
+
+            </div>
             <TopPages />
-            <RankTracker />
             <InsightList items={[
               "8 mots-clés ont progressé en top 3 ce mois",
               "La page /blog/seo-local est la plus performante avec 6,1% de CTR",
@@ -2441,16 +3009,21 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           </div>
         )}
 
+        {/* Tracking tab */}
+        {tab === "tracking" && (
+          <RankTracker />
+        )}
+
         {/* SEA tab */}
         {tab === "sea" && (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
-              <MetricCard label="CPC moyen" value="0,42 €" sub="stable vs mois préc." trend="neutral" />
-              <MetricCard label="CTR campagnes" value="5,8 %" sub="+0,4 pts" trend="up" />
-              <MetricCard label="Conversions (30j)" value="384" sub="+6 %" trend="up" />
-              <MetricCard label="Coût total (30j)" value="1 890 €" sub="budget consommé à 94%" />
-              <MetricCard label="CPA moyen" value="4,92 €" sub="−0,3 € vs mois préc." trend="up" />
-              <MetricCard label="Impressions (30j)" value="210 000" sub="+3 % vs mois préc." trend="up" />
+            <div className="grid grid-cols-3 gap-3">
+              <KpiCard icon={Euro}              label="CPC moyen"         value="0,42 €"  sub="stable vs mois préc."   trend="neutral" />
+              <KpiCard icon={MousePointerClick} label="CTR campagnes"     value="5,8 %"   sub="+0,4 pts"               trend="up" />
+              <KpiCard icon={CircleCheck}       label="Conversions (30j)" value="384"     sub="+6 %"                   trend="up" />
+              <KpiCard icon={Banknote}          label="Coût total (30j)"  value="1 890 €" sub="budget consommé à 94%" />
+              <KpiCard icon={Euro}              label="CPA moyen"         value="4,92 €"  sub="−0,3 € vs mois préc."   trend="up" />
+              <KpiCard icon={Eye}               label="Impressions (30j)" value="210 000" sub="+3 % vs mois préc."     trend="up" />
             </div>
             <ChartBar label="Évolution du CPC — 12 semaines" color="#6366F1" />
             <InsightList color="#6366F1" items={[
@@ -2465,13 +3038,13 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* Forecast tab */}
         {tab === "forecast" && (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
-              <MetricCard label="Trafic estimé M+3" value="+22 %" sub="Blocs 01 + 02 exécutés" trend="up" />
-              <MetricCard label="Trafic estimé M+6" value="+38 %" sub="Plan complet exécuté" trend="up" />
-              <MetricCard label="ROI SEO estimé 6 mois" value="×3,2" sub="basé sur 87 opportunités" trend="up" />
-              <MetricCard label="Mots-clés opportunités" value="87 KW" sub="volume ≥ 100/mois" />
-              <MetricCard label="Pages à créer" value="24" sub="Bloc 03 — création" />
-              <MetricCard label="Pages à optimiser" value="36" sub="Bloc 01 — existant" />
+            <div className="grid grid-cols-3 gap-3">
+              <KpiCard icon={TrendingUp} label="Trafic estimé M+3"      value="+22 %" sub="Blocs 01 + 02 exécutés"   trend="up" />
+              <KpiCard icon={TrendingUp} label="Trafic estimé M+6"      value="+38 %" sub="Plan complet exécuté"     trend="up" />
+              <KpiCard icon={LChartBar}   label="ROI SEO estimé 6 mois"  value="×3,2"  sub="basé sur 87 opportunités" trend="up" />
+              <KpiCard icon={LSearch}    label="Mots-clés opportunités" value="87 KW" sub="volume ≥ 100/mois" />
+              <KpiCard icon={FilePlus}   label="Pages à créer"          value="24"    sub="Bloc 03 — création" />
+              <KpiCard icon={FileText}   label="Pages à optimiser"      value="36"    sub="Bloc 01 — existant" />
             </div>
             <ForecastTimeline />
             <ChartBar label="Courbe de trafic projetée — 6 mois" color="#10B981" />
@@ -2496,10 +3069,10 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           <div className="flex flex-col gap-6">
 
             {/* 3 key metrics */}
-            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
-              <MetricCard label="Pages orphelines détectées" value="23" />
-              <MetricCard label="Score maillage global" value="62 %" />
-              <MetricCard label="Liens internes à créer" value="184" />
+            <div className="grid grid-cols-3 gap-3">
+              <KpiCard icon={TriangleAlert} label="Pages orphelines détectées" value="23" />
+              <KpiCard icon={LLink}         label="Score maillage global"      value="62 %" />
+              <KpiCard icon={LLink}         label="Liens internes à créer"     value="184" />
             </div>
 
             {/* Sub-sections tabs */}
@@ -2551,6 +3124,12 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           </div>
         )}
 
+        {tab === "cannibal" && <CannibalView />}
+
+        {tab === "univers" && <UniversSemantiqueView />}
+
+        {tab === "recommandations" && <RecommandationsView />}
+
         {tab === "audit" && (() => {
           const TECH_TOC: TocItem[] = [
             { id: "tec-synthese",      label: "Synthèse" },
@@ -2565,8 +3144,6 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             { id: "edi-diagnostic",      label: "01 · Diagnostic" },
             { id: "edi-dimensions",      label: "02 · Dimensions" },
             { id: "edi-donnees",         label: "03 · Données brutes" },
-            { id: "edi-cannibalisation", label: "05 · Cannibalisation" },
-            { id: "edi-univers",         label: "06 · Univers sémantique" },
           ];
           const NET_TOC: TocItem[] = [
             { id: "net-benchmark",  label: "01 · Benchmark concurrents" },

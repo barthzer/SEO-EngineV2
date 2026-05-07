@@ -12,11 +12,11 @@ const counts = {
 
 export default function BriefsPage() {
   return (
-    <div className="flex flex-1 flex-col overflow-hidden py-8">
-      <div className="flex w-full px-[var(--page-px)] flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 min-h-0 flex-col py-8">
+      <div className="flex w-full flex-1 min-h-0 flex-col">
 
         {/* Header */}
-        <div className="mb-8 flex-shrink-0">
+        <div className="mb-8 flex-shrink-0 px-[var(--page-px)]">
           <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
             <ArrowLeftIcon className="h-3.5 w-3.5" />
             Projets

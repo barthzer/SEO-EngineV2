@@ -39,9 +39,9 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
 
       {open && typeof window !== "undefined" && createPortal(
         <>
-          <div className="fixed inset-0 z-[998]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[1100]" onClick={() => setOpen(false)} />
           <div
-            className="fixed z-[999] rounded-2xl p-2 shadow-[var(--shadow-floating)]"
+            className="fixed z-[1101] rounded-2xl p-2 shadow-[var(--shadow-floating)]"
             style={{
               top: coords.top,
               bottom: coords.bottom,
@@ -63,18 +63,21 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
 }
 
 export function DropdownItem({
-  onClick, danger = false, children,
+  onClick, danger = false, icon: Icon, children,
 }: {
   onClick?: () => void;
   danger?: boolean;
+  icon?: React.ElementType;
   children: ReactNode;
 }) {
   const { close } = useContext(DropdownCtx);
+  const iconColor = danger ? "currentColor" : "var(--text-secondary)";
   return (
     <button
       onClick={() => { onClick?.(); close(); }}
       className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[#E11D48]" : "text-[var(--text-primary)]"}`}
     >
+      {Icon && <Icon className="h-5 w-5 flex-shrink-0" style={{ color: iconColor }} />}
       {children}
     </button>
   );

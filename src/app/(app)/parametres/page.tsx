@@ -349,7 +349,7 @@ export default function ParametresPage() {
               </div>
             </Section>
 
-            <Section title="Notifications" description="Choisissez quand SEO Engine vous alerte.">
+            <Section title="Notifications" description="Choisissez quand GlobalSearch vous alerte.">
               <div className="flex flex-col gap-4">
                 {[
                   { label: "Recevoir les rapports par email",             sub: "Résumé hebdomadaire de vos performances",                  checked: notifReport,    onChange: setNotifReport    },

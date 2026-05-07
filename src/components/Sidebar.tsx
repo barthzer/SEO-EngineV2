@@ -170,7 +170,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="relative flex h-full flex-col bg-[var(--bg-sidebar)] transition-all duration-300 flex-shrink-0"
+      className="relative flex h-full flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-sidebar)] transition-all duration-300 flex-shrink-0"
       style={{
         width: isExpanded ? "220px" : "64px",
         transitionTimingFunction: "var(--ease-expo)",
@@ -178,11 +178,10 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-14 flex-shrink-0 items-center px-4">
-        <SeoEngineLogo className="h-7 w-7 flex-shrink-0 text-[var(--text-primary)]" />
+        <SeoEngineLogo className="h-8 w-8 flex-shrink-0 text-[var(--text-primary)]" />
         <SeoEngineWordmark
-          className="ml-3 flex-shrink-0 overflow-hidden text-[var(--text-primary)] transition-all duration-300"
+          className="ml-3 flex-shrink-0 overflow-hidden text-[18px] text-[var(--text-primary)] transition-all duration-300"
           style={{
-            height: "16px",
             maxWidth: isExpanded ? "170px" : "0px",
             opacity: isExpanded ? 1 : 0,
             transitionTimingFunction: "var(--ease-expo)",
