@@ -513,7 +513,7 @@ export default function DashboardPage() {
             action={<Button size="md" onClick={() => setModalOpen(true)}>Nouveau projet</Button>}
           />
         ) : (
-          <div className="grid grid-cols-4 gap-4 animate-fade-in">
+          <div className="grid grid-cols-3 gap-4 animate-fade-in">
             {filtered.map((a) => (
               <AnalysisCard
                 key={a.id}
