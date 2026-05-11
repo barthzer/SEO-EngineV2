@@ -25,9 +25,9 @@ const variants = {
 } as const;
 
 const sizes = {
-  sm: "h-9  px-3.5 text-[14px] rounded-full",
-  md: "h-11 px-4   text-[16px] rounded-full",
-  lg: "h-12 px-5   text-[18px] rounded-full",
+  sm: "h-8  px-3 text-[12px] rounded-full",
+  md: "h-9  px-4 text-[14px] rounded-full",
+  lg: "h-11 px-5 text-[16px] rounded-full",
 } as const;
 
 const base =

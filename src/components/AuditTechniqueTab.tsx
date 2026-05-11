@@ -536,7 +536,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                       {s.detail && <span className="text-[12px] text-[var(--text-muted)]">{s.detail}</span>}
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-2">
-                      <span className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
+                      <span className="rounded-full px-2 py-1 text-[12px] font-semibold"
                         style={{ color: statusColors[s.status], backgroundColor: `${statusColors[s.status]}15` }}>
                         {statusLabels[s.status]}
                       </span>
@@ -664,7 +664,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               </p>
               <div className="flex flex-wrap gap-2">
                 {CRAWLERS.map((c) => (
-                  <span key={c.name} className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
+                  <span key={c.name} className="rounded-full px-2 py-1 text-[12px] font-semibold"
                     style={{ backgroundColor: c.ok === true ? "rgba(16,185,129,0.1)" : "var(--bg-secondary)", color: c.ok === true ? "#10B981" : "var(--text-muted)" }}>
                     {c.name}{c.ok === true ? " ✓" : ""}
                   </span>
@@ -705,7 +705,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                 <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-7 py-3">
                   <div className="flex gap-2">
                     {(["todo", "doing", "done"] as const).map((s) => (
-                      <span key={s} className="rounded-full px-3 py-1.5 text-[12px] font-semibold"
+                      <span key={s} className="rounded-full px-2 py-1 text-[12px] font-semibold"
                         style={{ backgroundColor: s === "todo" ? "rgba(225,29,72,0.08)" : s === "doing" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
                                  color: s === "todo" ? "#E11D48" : s === "doing" ? "#F59E0B" : "#10B981" }}>
                         {pilotCounts[s]} {{ todo: "À faire", doing: "En cours", done: "Terminé" }[s].toLowerCase()}

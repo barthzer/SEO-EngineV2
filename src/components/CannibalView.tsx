@@ -6,6 +6,7 @@ import { FilterTabs } from "@/components/FilterTabs";
 import { DonutChart } from "@/components/DonutChart";
 import { AreaChart } from "@/components/AreaChart";
 import { KpiCard } from "@/components/KpiCard";
+import { SoftPanel } from "@/components/SoftPanel";
 import { TriangleAlert, FileText, MousePointerClick, Percent } from "lucide-react";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -106,7 +107,7 @@ const CANNIBAL_SEV_CONFIG: Record<CannibalSev, { label: string; color: string; b
 function CannibalSevBadge({ sev }: { sev: CannibalSev }) {
   const c = CANNIBAL_SEV_CONFIG[sev];
   return (
-    <span className="inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold"
+    <span className="inline-flex rounded-full px-2 py-1 text-[12px] font-semibold"
       style={{ color: c.color, backgroundColor: c.bg }}>{c.label}</span>
   );
 }
@@ -164,7 +165,7 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
           <CannibalActionSelect value={kw.action} />
         </td>
         <td className="pr-6 py-3.5 align-middle">
-          <span className={`inline-flex rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+          <span className={`inline-flex rounded-full px-2 py-1 text-[12px] font-semibold ${
             kw.status === "resolved" ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" :
             kw.status === "ignored"  ? "bg-[var(--bg-secondary)] text-[var(--text-muted)]" :
             "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]"}`}>
@@ -255,12 +256,14 @@ export function CannibalView() {
 
 
       {/* KPI cards */}
-      <div className="grid grid-cols-4 gap-3">
-        <KpiCard icon={TriangleAlert}     label="Keywords cannibalisés" value={String(total)}                  sub="/ 53 suivis"     valueColor="#E11D48" />
-        <KpiCard icon={FileText}          label="Pages impactées"       value={String(CANNIBAL_PAGES.length)}  sub="URLs en conflit"  valueColor="#F59E0B" />
-        <KpiCard icon={MousePointerClick} label="Trafic à risque"       value="295"                            sub="clics / mois"    valueColor="#F59E0B" />
-        <KpiCard icon={Percent}           label="% cannibalisation"     value="7.5%"                           sub="du trafic SEO" />
-      </div>
+      <SoftPanel>
+        <div className="grid grid-cols-4 gap-3">
+          <KpiCard icon={TriangleAlert}     label="Keywords cannibalisés" value={String(total)}                  sub="/ 53 suivis"     valueColor="#E11D48" />
+          <KpiCard icon={FileText}          label="Pages impactées"       value={String(CANNIBAL_PAGES.length)}  sub="URLs en conflit"  valueColor="#F59E0B" />
+          <KpiCard icon={MousePointerClick} label="Trafic à risque"       value="295"                            sub="clics / mois"    valueColor="#F59E0B" />
+          <KpiCard icon={Percent}           label="% cannibalisation"     value="7.5%"                           sub="du trafic SEO" />
+        </div>
+      </SoftPanel>
 
       {/* Charts row */}
       <div className="grid grid-cols-2 gap-4">

@@ -1,15 +1,21 @@
 "use client";
 
+import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
+
 interface DeltaBadgeProps {
   value: number | string;
   positiveIsGood?: boolean;
+  /** Show the up/down arrow icon when value is non-zero (default: true) */
+  showIcon?: boolean;
   className?: string;
 }
 
-export function DeltaBadge({ value, positiveIsGood = true, className = "" }: DeltaBadgeProps) {
-  const num = typeof value === "string" ? parseFloat(value) : value;
+export function DeltaBadge({ value, positiveIsGood = true, showIcon = true, className = "" }: DeltaBadgeProps) {
+  // Normalize unicode minus / en-dash and French decimal comma for parsing
+  const cleaned = typeof value === "string" ? value.replace(/[−–]/g, "-").replace(/,/g, ".") : String(value);
+  const num = parseFloat(cleaned);
   const isPositive = num > 0;
-  const isNeutral = num === 0;
+  const isNeutral = num === 0 || Number.isNaN(num);
 
   let color: string;
   let bg: string;
@@ -26,12 +32,14 @@ export function DeltaBadge({ value, positiveIsGood = true, className = "" }: Del
   }
 
   const display = typeof value === "string" ? value : `${isPositive ? "+" : ""}${value}`;
+  const Icon = isNeutral ? null : isPositive ? ArrowUpIcon : ArrowDownIcon;
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold tabular-nums ${className}`}
+      className={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[12px] font-semibold tabular-nums ${className}`}
       style={{ color, backgroundColor: bg }}
     >
+      {showIcon && Icon && <Icon className="h-3 w-3 flex-shrink-0" strokeWidth={2.5} />}
       {display}
     </span>
   );

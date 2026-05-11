@@ -1,39 +1,49 @@
 "use client";
 
 import type { ElementType, ReactNode } from "react";
-import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from "@heroicons/react/24/outline";
+import { DeltaBadge } from "@/components/DeltaBadge";
 
 interface KpiCardProps {
   label: string;
   value: ReactNode;
+  /** Delta indicator shown as a DeltaBadge to the right of the value (e.g. "+8,4%") */
+  delta?: string | number;
+  /** When true (default), positive delta renders green */
+  deltaPositiveIsGood?: boolean;
+  /** Subtext shown below in muted tone (context, threshold, comparison reference, etc.) */
   sub?: ReactNode;
   valueColor?: string;
-  trend?: "up" | "down" | "neutral";
   icon?: ElementType;
   className?: string;
 }
 
-export function KpiCard({ label, value, sub, valueColor, trend, icon: Icon, className = "" }: KpiCardProps) {
-  const TrendIcon = trend === "up" ? ArrowUpIcon : trend === "down" ? ArrowDownIcon : trend === "neutral" ? MinusIcon : null;
-  const trendColor = trend === "up" ? "#10B981" : trend === "down" ? "#E11D48" : "var(--text-muted)";
-
+export function KpiCard({
+  label,
+  value,
+  delta,
+  deltaPositiveIsGood = true,
+  sub,
+  valueColor,
+  icon: Icon,
+  className = "",
+}: KpiCardProps) {
   return (
-    <div className={`flex flex-col rounded-2xl border border-[var(--border-subtle)] p-5 ${className}`}>
+    <div className={`flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] p-5 ${className}`}>
       <div className="flex items-center gap-2">
         {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-[var(--text-secondary)]" />}
         <p className="text-[14px] font-medium tracking-body text-[var(--text-primary)]">{label}</p>
       </div>
-      <div className="mt-1.5 flex items-baseline gap-1.5">
-        <p className="text-[26px] font-semibold tabular-nums tracking-heading leading-none"
+      <div className="mt-1.5 flex items-center gap-2">
+        <p className="text-[20px] font-semibold tabular-nums tracking-heading leading-none"
           style={{ color: valueColor ?? "var(--text-primary)" }}>
           {value}
         </p>
+        {delta !== undefined && (
+          <DeltaBadge value={delta} positiveIsGood={deltaPositiveIsGood} />
+        )}
       </div>
-      {(sub || TrendIcon) && (
-        <div className="mt-2 flex items-center gap-1" style={{ color: trend ? trendColor : "var(--text-muted)" }}>
-          {TrendIcon && <TrendIcon className="h-3 w-3 flex-shrink-0" />}
-          {sub && <span className="text-[12px]">{sub}</span>}
-        </div>
+      {sub && (
+        <p className="mt-2 text-[12px] tracking-caption text-[var(--text-muted)]">{sub}</p>
       )}
     </div>
   );

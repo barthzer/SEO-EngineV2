@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { CheckIcon } from "@heroicons/react/24/outline";
 
 const DropdownCtx = createContext<{ close: () => void }>({ close: () => {} });
 
@@ -63,11 +64,13 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
 }
 
 export function DropdownItem({
-  onClick, danger = false, icon: Icon, children,
+  onClick, danger = false, icon: Icon, selected = false, children,
 }: {
   onClick?: () => void;
   danger?: boolean;
   icon?: React.ElementType;
+  /** When true, renders a check icon on the right (use for sort / filter dropdowns) */
+  selected?: boolean;
   children: ReactNode;
 }) {
   const { close } = useContext(DropdownCtx);
@@ -78,11 +81,25 @@ export function DropdownItem({
       className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[#E11D48]" : "text-[var(--text-primary)]"}`}
     >
       {Icon && <Icon className="h-5 w-5 flex-shrink-0" style={{ color: iconColor }} />}
-      {children}
+      <span className="flex-1 text-left">{children}</span>
+      {selected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-[var(--text-primary)]" strokeWidth={2.5} />}
     </button>
   );
 }
 
 export function DropdownSeparator() {
   return <div className="my-1.5 border-t border-[var(--border-subtle)]" />;
+}
+
+/**
+ * Tertiary header for a DropdownMenu — small uppercase-tracking caption
+ * to introduce a section / explain what the menu does (e.g. "Trier par").
+ * Place as the first child of `<DropdownMenu>` (or above an items group).
+ */
+export function DropdownHeader({ children }: { children: ReactNode }) {
+  return (
+    <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
+      {children}
+    </div>
+  );
 }

@@ -16,7 +16,7 @@ import { StatusPill, StatusPillDropdown, type Status } from "@/components/Status
 import { SearchInput } from "@/components/SearchInput";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton, SkeletonText, SkeletonCircle } from "@/components/Skeleton";
-import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
+import { DropdownMenu, DropdownItem, DropdownSeparator, DropdownHeader } from "@/components/DropdownMenu";
 import { NumberInput } from "@/components/NumberInput";
 import { AnimateIn } from "@/components/AnimateIn";
 import { DeltaBadge } from "@/components/DeltaBadge";
@@ -26,6 +26,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { AreaChart } from "@/components/AreaChart";
 import { LineDotChart } from "@/components/LineDotChart";
 import { ProfileDonutChart } from "@/components/ProfileDonutChart";
+import { SoftPanel } from "@/components/SoftPanel";
 import { DonutChart } from "@/components/DonutChart";
 import { Sparkline } from "@/components/Sparkline";
 import {
@@ -378,11 +379,11 @@ function ViewAtomes() {
               <Button variant="danger">Danger</Button>
             </div>
           </Block>
-          <Block title="Tailles — sm 14px / 36h · md 16px / 44h / 16px-x · lg 18px / 48h" note="Button.tsx · sizes">
+          <Block title="Tailles" note="Button.tsx · sizes">
             <div className="flex flex-wrap items-end gap-3">
-              <Button size="sm">Small · 14px</Button>
-              <Button size="md">Medium · 16px</Button>
-              <Button size="lg">Large · 18px</Button>
+              <Button size="sm">Small</Button>
+              <Button size="md">Medium</Button>
+              <Button size="lg">Large</Button>
             </div>
           </Block>
           <Block title="Disabled">
@@ -586,6 +587,24 @@ function ViewAtomes() {
             </DropdownMenu>
           </div>
         </Block>
+
+        <Block title="Variante avec DropdownHeader (sous-titre tertiaire) + items selectionnés (check à droite)" note="DropdownMenu.tsx · `DropdownHeader` + `selected` prop on `DropdownItem`">
+          <div className="flex gap-4">
+            <DropdownMenu
+              trigger={
+                <Button variant="secondary" size="sm">
+                  <span className="flex items-center gap-1.5">Trier par <ChevronDownIcon className="h-3.5 w-3.5" /></span>
+                </Button>
+              }
+            >
+              <DropdownHeader>Trier par</DropdownHeader>
+              <DropdownItem onClick={() => {}} selected>Nb de prompts</DropdownItem>
+              <DropdownItem onClick={() => {}}>Visibilité</DropdownItem>
+              <DropdownItem onClick={() => {}}>Sentiment</DropdownItem>
+              <DropdownItem onClick={() => {}}>Position</DropdownItem>
+            </DropdownMenu>
+          </div>
+        </Block>
       </Section>
 
       <Section id="skeleton" title="Skeleton">
@@ -775,6 +794,18 @@ function ViewMolecules() {
         </Block>
       </Section>
 
+      <Section id="softpanel" title="SoftPanel">
+        <Block title="Encart léger — p-2 (8px) · bg-subtle · rounded-3xl" note="SoftPanel.tsx · usage typique : grouper un set de KpiCard">
+          <SoftPanel>
+            <div className="grid grid-cols-3 gap-3">
+              <KpiCard icon={Trophy}     label="Score global"   value="72"   sub="/ 100"    valueColor="#3E50F5" />
+              <KpiCard icon={TrendingUp} label="Trafic estimé"  value="4.2K" sub="/ mois"   valueColor="#10B981" />
+              <KpiCard icon={ChartBar}   label="Position moy."  value="14.3" sub="SERP" />
+            </div>
+          </SoftPanel>
+        </Block>
+      </Section>
+
       <Section id="kpicard" title="KpiCard">
         <Block title="Cards de métriques — icône lucide 20×20 + label 14px primary + valeur colorée + sous-titre" note="KpiCard.tsx · lucide-react">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -794,6 +825,14 @@ function ViewMolecules() {
             <KpiCard label="Trust Flow"         value="17"   sub="Majestic" valueColor="#F59E0B" />
             <KpiCard label="Domaines référents" value="284"                valueColor="#10B981" />
             <KpiCard label="Position moyenne"   value="14.3" sub="SERP" />
+          </div>
+        </Block>
+        <Block title="Avec delta — DeltaBadge à droite de la valeur, sub en muted" note="KpiCard.tsx · prop `delta` + `deltaPositiveIsGood`">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <KpiCard icon={TrendingUp}        label="Trafic organique"  value="42 800" delta="+8,4 %" sub="vs mois dernier" />
+            <KpiCard icon={ChartBar}          label="Position moyenne"  value="18,4"   delta="−2,1 pts" deltaPositiveIsGood={false} sub="ce mois" />
+            <KpiCard icon={MousePointerClick} label="CTR moyen"         value="3,2 %"  delta="0" sub="stable" />
+            <KpiCard icon={TriangleAlert}     label="Erreurs critiques" value="7"      delta="+3" deltaPositiveIsGood={false} sub="ce mois" />
           </div>
         </Block>
       </Section>
@@ -858,10 +897,10 @@ function ViewMolecules() {
       <Section id="kpicard-trend" title="KpiCard — avec tendance">
         <Block title="Icône + label + valeur + sous-titre avec flèche tendance" note="KpiCard.tsx · lucide-react">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <KpiCard icon={TrendingUp}        label="Trafic organique"  value="42 800" sub="+8,4 % vs mois dernier" trend="up" />
-            <KpiCard icon={ChartBar}          label="Position moyenne"  value="18,4"   sub="−2,1 pts ce mois"       trend="up" />
-            <KpiCard icon={MousePointerClick} label="CTR moyen"         value="3,2 %"  sub="stable"                 trend="neutral" />
-            <KpiCard icon={TriangleAlert}     label="Erreurs critiques" value="7"      sub="3 nouvelles ce mois"    trend="down" />
+            <KpiCard icon={TrendingUp}        label="Trafic organique"  value="42 800" delta="+8,4 %" sub="vs mois dernier" />
+            <KpiCard icon={ChartBar}          label="Position moyenne"  value="18,4"   delta="−2,1 pts" deltaPositiveIsGood={false} sub="ce mois" />
+            <KpiCard icon={MousePointerClick} label="CTR moyen"         value="3,2 %"  delta="0" sub="stable" />
+            <KpiCard icon={TriangleAlert}     label="Erreurs critiques" value="7"      delta="+3" deltaPositiveIsGood={false} sub="ce mois" />
           </div>
         </Block>
       </Section>
@@ -906,7 +945,7 @@ function ViewMolecules() {
       </Section>
 
       <Section id="linedotchart" title="LineDotChart">
-        <Block title="Ligne avec points (contour blanc) + dégradé sous le tracé + axe Y" note="LineDotChart.tsx">
+        <Block title="Ligne avec points (contour blanc) + dégradé sous le tracé + axe Y · X axis = mois seul, tooltip = date complète" note="LineDotChart.tsx">
           <div className="flex flex-col gap-6 w-full max-w-[420px]">
             <div>
               <p className="mb-2 text-[12px] font-medium text-[var(--text-muted)]">Standard — clics sur 3 mois (plus haut = mieux)</p>
@@ -917,7 +956,6 @@ function ViewMolecules() {
                   { val: 64,  date: "2026-04-10" },
                 ]}
                 formatValue={(v) => Math.round(v).toLocaleString()}
-                formatDate={(d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", "")}
               />
             </div>
             <div>
@@ -930,7 +968,6 @@ function ViewMolecules() {
                 ]}
                 invertY
                 formatValue={(v) => `#${v.toFixed(1)}`}
-                formatDate={(d) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", "")}
               />
             </div>
             <div>
@@ -944,7 +981,6 @@ function ViewMolecules() {
                 ]}
                 color="#E11D48"
                 formatValue={(v) => v.toString()}
-                formatDate={(d) => new Date(d).toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")}
               />
             </div>
           </div>

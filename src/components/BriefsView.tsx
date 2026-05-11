@@ -5,9 +5,9 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/Button";
 import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
-import { Tooltip } from "@/components/Tooltip";
+import { Tooltip, ChartTooltip } from "@/components/Tooltip";
 import { AreaChart } from "@/components/AreaChart";
-import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
+import { DropdownMenu, DropdownItem, DropdownSeparator, DropdownHeader } from "@/components/DropdownMenu";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -33,6 +33,7 @@ import { StatusPill, StatusPillDropdown, STATUS_CONFIG, type Status as BriefStat
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Callout } from "@/components/Callout";
 import { KpiCard } from "@/components/KpiCard";
+import { SoftPanel } from "@/components/SoftPanel";
 import { ScoreRing } from "@/components/ScoreRing";
 import {
   ArrowPathIcon,
@@ -53,8 +54,10 @@ import {
   MousePointerClick,
   RefreshCw,
   Play,
+  Plus,
 } from "lucide-react";
 import { LineDotChart } from "@/components/LineDotChart";
+import { Sparkline } from "@/components/Sparkline";
 
 /* ── Types ───────────────────────────────────────────────────────────── */
 
@@ -396,9 +399,9 @@ function PositionSparkline({ history }: { history: HistoricalAnalysis[] }) {
   return (
     <LineDotChart
       data={pairs}
+      fillHeight
       invertY
       formatValue={(v) => v.toFixed(1)}
-      formatDate={formatAnalysisDate}
     />
   );
 }
@@ -416,9 +419,86 @@ function TrafficSparkline({ history }: { history: HistoricalAnalysis[] }) {
   return (
     <LineDotChart
       data={pairs}
+      fillHeight
       formatValue={(v) => Math.round(v).toLocaleString()}
-      formatDate={formatAnalysisDate}
     />
+  );
+}
+
+/* ── ClicsSparkline — mini sparkline interactive : track la souris,
+   affiche le dot du point le plus proche + tooltip avec date + valeur ── */
+
+function ClicsSparkline({ history, color }: { history: { date: string; clics: number }[]; color: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const W = 120, H = 22;
+
+  if (history.length < 2) return null;
+
+  const max = Math.max(...history.map((d) => d.clics));
+  const min = Math.min(...history.map((d) => d.clics));
+  const range = max - min || 1;
+  const pts = history.map((d, i) => ({
+    x: (i / (history.length - 1)) * W,
+    y: H - ((d.clics - min) / range) * H,
+    val: d.clics,
+    date: d.date,
+  }));
+
+  function handleMove(e: React.MouseEvent) {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const xViewBox = ((e.clientX - rect.left) / rect.width) * W;
+    let best = 0;
+    let bestDist = Infinity;
+    pts.forEach((p, i) => {
+      const d = Math.abs(p.x - xViewBox);
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    });
+    setHoverIdx(best);
+  }
+
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
+
+  const hov = hoverIdx !== null ? pts[hoverIdx] : null;
+  let tipX = 0, tipY = 0;
+  if (hov && containerRef.current) {
+    const rect = containerRef.current.getBoundingClientRect();
+    tipX = (hov.x / W) * rect.width;
+    tipY = (hov.y / H) * rect.height;
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative cursor-crosshair"
+      onMouseMove={handleMove}
+      onMouseLeave={() => setHoverIdx(null)}
+    >
+      <Sparkline data={history.map((d) => d.clics)} color={color} area width={W} height={H} strokeWidth={1.5} />
+      {hov && (
+        <svg
+          width={W}
+          height={H}
+          viewBox={`0 0 ${W} ${H}`}
+          className="pointer-events-none absolute inset-0 overflow-visible"
+        >
+          <circle cx={hov.x} cy={hov.y} r={3} fill={color} stroke="#FFFFFF" strokeWidth={1.5} />
+        </svg>
+      )}
+      {hov && (
+        <ChartTooltip x={tipX} y={tipY - 4}>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] text-white/60">{fmtDate(hov.date)}</span>
+            <span className="text-[13px] font-semibold text-white">{hov.val.toLocaleString("fr-FR")} clics</span>
+          </div>
+        </ChartTooltip>
+      )}
+    </div>
   );
 }
 
@@ -447,7 +527,7 @@ function StatusBadge({ status, onChange }: { status: BriefStatus; onChange: (s: 
         width={148}
         trigger={
           <button
-            className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium transition-opacity hover:opacity-70 cursor-pointer"
+            className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-70 cursor-pointer"
             style={{ color: cfg.color, backgroundColor: cfg.bg }}
           >
             {cfg.label}
@@ -571,7 +651,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
 
         <div className="mt-3 flex flex-wrap gap-2">
           {actionTags.map((t) => (
-            <span key={t.label} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: t.color, backgroundColor: `${t.color}18` }}>
+            <span key={t.label} className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: t.color, backgroundColor: `${t.color}18` }}>
               <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
               {t.label}
             </span>
@@ -720,20 +800,22 @@ function SyntheseTab({ brief }: { brief: Brief }) {
           },
         ];
         return (
-          <div className="grid grid-cols-3 gap-2">
-            {kpis.map((kpi) => (
-              <Tooltip key={kpi.label} label={kpi.tt} side="top" rich portal className="w-full">
-                <KpiCard
-                  icon={kpi.icon}
-                  label={kpi.label}
-                  value={kpi.value}
-                  sub={kpi.sub ?? undefined}
-                  valueColor={kpi.na ? "var(--text-muted)" : undefined}
-                  className="w-full cursor-default"
-                />
-              </Tooltip>
-            ))}
-          </div>
+          <SoftPanel>
+            <div className="grid grid-cols-3 gap-2">
+              {kpis.map((kpi) => (
+                <Tooltip key={kpi.label} label={kpi.tt} side="top" rich portal className="w-full">
+                  <KpiCard
+                    icon={kpi.icon}
+                    label={kpi.label}
+                    value={kpi.value}
+                    sub={kpi.sub ?? undefined}
+                    valueColor={kpi.na ? "var(--text-muted)" : undefined}
+                    className="w-full cursor-default"
+                  />
+                </Tooltip>
+              ))}
+            </div>
+          </SoftPanel>
         );
       })()}
 
@@ -958,7 +1040,7 @@ function SyntheseTab({ brief }: { brief: Brief }) {
 
       {/* ── NBA card sticky ── */}
       <div className="w-[340px] flex-shrink-0 sticky top-0">
-        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+        <div className="nba-surface overflow-hidden rounded-2xl shadow-[var(--shadow-floating)]">
 
           {/* Header */}
           <div className="px-5 pt-5 pb-4">
@@ -1073,9 +1155,9 @@ function ContenuTab({ brief }: { brief: Brief }) {
         <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Brief éditorial</p>
         <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(62,80,245,0.08)] text-[#3E50F5]">B2B / Services</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(99,102,241,0.08)] text-[#6366F1]">Informationnelle</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[var(--bg-subtle)] text-[var(--text-primary)]">Funnel TOFU</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[rgba(62,80,245,0.08)] text-[#3E50F5]">B2B / Services</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[rgba(99,102,241,0.08)] text-[#6366F1]">Informationnelle</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--bg-subtle)] text-[var(--text-primary)]">Funnel TOFU</span>
           </div>
 
           <div>
@@ -1093,7 +1175,7 @@ function ContenuTab({ brief }: { brief: Brief }) {
               {h2ToAdd.map((h, i) => (
                 <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] px-4 py-3">
                   <span className="text-[13px] text-[var(--text-primary)]">{h.text}</span>
-                  <span className={`flex-shrink-0 inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium ${h.priority === "Critical" ? "bg-[rgba(225,29,72,0.08)] text-[#E11D48]" : "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"}`}>
+                  <span className={`flex-shrink-0 inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${h.priority === "Critical" ? "bg-[rgba(225,29,72,0.08)] text-[#E11D48]" : "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"}`}>
                     {h.priority}
                   </span>
                 </div>
@@ -1168,7 +1250,7 @@ function ContenuTab({ brief }: { brief: Brief }) {
               <p className="text-[11px] text-[var(--text-muted)]">occurrences / 1 000 mots</p>
             </div>
             <div className="ml-auto">
-              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(225,29,72,0.08)] text-[#E11D48]">−32%</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[rgba(225,29,72,0.08)] text-[#E11D48]">−32%</span>
             </div>
           </div>
           <Callout variant="error">La densité est insuffisante par rapport aux concurrents. Augmenter les occurrences du mot-clé principal dans le corps du texte.</Callout>
@@ -1224,7 +1306,7 @@ function ContenuTab({ brief }: { brief: Brief }) {
                   <td className="px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] whitespace-nowrap">{t.word}</td>
                   <td className="px-4 py-3 text-[12px] text-[var(--text-muted)]">{t.desc}</td>
                   <td className="px-4 py-3 text-right">
-                    <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(225,29,72,0.08)] text-[#E11D48]">{t.ecart}</span>
+                    <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium bg-[rgba(225,29,72,0.08)] text-[#E11D48]">{t.ecart}</span>
                   </td>
                 </tr>
               ))}
@@ -1282,7 +1364,7 @@ function ContenuTab({ brief }: { brief: Brief }) {
 
       {/* ── NBA card sticky ── */}
       <div className="w-[340px] flex-shrink-0 sticky top-0">
-        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+        <div className="nba-surface overflow-hidden rounded-2xl shadow-[var(--shadow-floating)]">
           <div className="px-5 pt-5 pb-4">
             <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
               Enrichir le contenu sur les 5 sujets manquants
@@ -1492,7 +1574,7 @@ function AutoriteTab({ brief }: { brief: Brief }) {
               <SparklesIcon className="h-4 w-4 text-[#3E50F5]" />
               <span className="text-[13px] font-semibold text-[var(--text-primary)]">Analyse IA</span>
             </div>
-            <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium bg-[rgba(16,185,129,0.08)] text-[#10B981]">85% confiance</span>
+            <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium bg-[rgba(16,185,129,0.08)] text-[#10B981]">85% confiance</span>
           </div>
           <p className="text-[14px] text-[var(--text-secondary)] leading-relaxed">
             La page cible un mot-clé compétitif (content marketing B2B) sans profil de liens — classement quasi impossible sans construction d'autorité. Les concurrents en position 1–4 affichent tous un DR &gt; 79 et des centaines de backlinks vers cette URL spécifique.
@@ -1537,7 +1619,7 @@ function AutoriteTab({ brief }: { brief: Brief }) {
 
       {/* ── NBA card sticky ── */}
       <div className="w-[340px] flex-shrink-0 sticky top-0">
-        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+        <div className="nba-surface overflow-hidden rounded-2xl shadow-[var(--shadow-floating)]">
           <div className="px-5 pt-5 pb-4">
             <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
               Publier un article invité sur journalduweb.fr
@@ -1643,7 +1725,7 @@ function TechniqueTab({ brief }: { brief: Brief }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {indexPills.map((s) => (
-            <span key={s.label} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium ${s.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : "bg-[rgba(225,29,72,0.08)] text-[#E11D48]"}`}>
+            <span key={s.label} className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium ${s.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : "bg-[rgba(225,29,72,0.08)] text-[#E11D48]"}`}>
               <span>{s.ok ? "✓" : "✕"}</span>
               {s.label}
             </span>
@@ -1675,7 +1757,7 @@ function TechniqueTab({ brief }: { brief: Brief }) {
             <div key={m.label} className="rounded-2xl border border-[var(--border-subtle)] p-6">
               <div className="flex items-center justify-between">
                 <p className="text-[12px] font-medium text-[var(--text-muted)]">{m.label}</p>
-                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium ${m.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"}`}>
+                <span className={`inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${m.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"}`}>
                   {m.ok ? "Bon" : "À améliorer"}
                 </span>
               </div>
@@ -1756,7 +1838,7 @@ function TechniqueTab({ brief }: { brief: Brief }) {
                 <tr key={item.schema} className="border-b border-[var(--border-subtle)] last:border-0">
                   <td className="px-4 py-3 font-mono text-[12px] text-[var(--text-primary)]">{item.schema}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium ${item.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : item.note === "Critique" ? "bg-[rgba(225,29,72,0.08)] text-[#E11D48]" : "bg-[rgba(99,102,241,0.08)] text-[#6366F1]"}`}>
+                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${item.ok ? "bg-[rgba(16,185,129,0.08)] text-[#10B981]" : item.note === "Critique" ? "bg-[rgba(225,29,72,0.08)] text-[#E11D48]" : "bg-[rgba(99,102,241,0.08)] text-[#6366F1]"}`}>
                       {item.status}
                     </span>
                   </td>
@@ -1802,7 +1884,7 @@ function TechniqueTab({ brief }: { brief: Brief }) {
 
       {/* ── NBA card sticky ── */}
       <div className="w-[340px] flex-shrink-0 sticky top-0">
-        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+        <div className="nba-surface overflow-hidden rounded-2xl shadow-[var(--shadow-floating)]">
           <div className="px-5 pt-5 pb-4">
             <p className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
               Optimiser LCP et FCP pour passer les Core Web Vitals
@@ -1897,7 +1979,7 @@ function BriefDrawerContent({
   return (
     <>
       {/* Header */}
-      <div className="flex-shrink-0 px-10 pt-7 pb-0">
+      <div className="flex-shrink-0 border-b border-[var(--border-subtle)] px-10 pt-7 pb-0">
         {/* Top row — Retour (left) + nav/close (right) */}
         <div className="mb-5 flex items-center justify-between">
           {onBack ? (
@@ -1949,17 +2031,21 @@ function BriefDrawerContent({
         {/* Priority + Status pills only */}
         <div className="mb-5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Priority — editable */}
-          <DropdownMenu width={148} trigger={
-            <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-opacity hover:opacity-70"
+          <DropdownMenu width={180} trigger={
+            <button className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-70"
               style={{ color: PRIORITY_CONFIG[priority].text, backgroundColor: PRIORITY_CONFIG[priority].bg }}>
-              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_CONFIG[priority].color }} />
               {PRIORITY_CONFIG[priority].label}
             </button>
           }>
+            <DropdownHeader>Choisir la priorité</DropdownHeader>
             {(Object.entries(PRIORITY_CONFIG) as [Priority, typeof PRIORITY_CONFIG[Priority]][]).map(([key, c]) => (
-              <DropdownItem key={key} onClick={() => onPriorityChange(key)}>
-                <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
-                <span className={priority === key ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
+              <DropdownItem key={key} onClick={() => onPriorityChange(key)} selected={priority === key}>
+                <span
+                  className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium"
+                  style={{ color: c.text, backgroundColor: c.bg }}
+                >
+                  {c.label}
+                </span>
               </DropdownItem>
             ))}
           </DropdownMenu>
@@ -2049,7 +2135,7 @@ function ColPill({
     <>
       <button
         onClick={handleClick}
-        className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium transition-colors ${
           active
             ? "bg-[var(--bg-subtle)] text-[var(--text-primary)]"
             : "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
@@ -2067,6 +2153,9 @@ function ColPill({
         >
           {children ? children(close) : (
             <div className="p-1">
+              <div className="px-3 pt-1 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
+                Trier par {label.toLowerCase()}
+              </div>
               {items!.map((item) => (
                 <button
                   key={item.value}
@@ -2076,7 +2165,7 @@ function ColPill({
                   <span className={value === item.value ? "font-medium text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}>
                     {item.label}
                   </span>
-                  {value === item.value && <CheckIcon className="h-3.5 w-3.5 flex-shrink-0 text-[#3E50F5]" />}
+                  {value === item.value && <CheckIcon className="h-4 w-4 flex-shrink-0 text-[var(--text-primary)]" strokeWidth={2.5} />}
                 </button>
               ))}
             </div>
@@ -2213,21 +2302,29 @@ function PagePanelContent({
   briefs,
   keyword,
   lotColor,
+  lots,
+  lotColors,
   status,
   priority,
   onOpenAnalysis,
   onNavigatePage,
   onClose,
+  onLotChange,
+  onCreateLot,
 }: {
   brief: Brief;
   briefs: Brief[];
   keyword: string;
   lotColor: string;
+  lots: string[];
+  lotColors: Record<string, string>;
   status: BriefStatus;
   priority: Priority;
   onOpenAnalysis: (b: Brief, histIdx: number) => void;
   onNavigatePage: (b: Brief) => void;
   onClose: () => void;
+  onLotChange: (lot: string | null) => void;
+  onCreateLot: (name: string) => void;
 }) {
   const idx = briefs.findIndex((b) => b.id === brief.id);
   const hasPrev = idx > 0;
@@ -2244,35 +2341,46 @@ function PagePanelContent({
   const clicsDelta = current?.clics != null && previous?.clics != null ? current.clics - previous.clics : null;
   const impDelta   = current?.impressions != null && previous?.impressions != null ? current.impressions - previous.impressions : null;
 
+  const [lotModalOpen, setLotModalOpen] = useState(false);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") { onClose(); return; }
       if (e.key === "ArrowUp"   && hasPrev) onNavigatePage(briefs[idx - 1]);
       if (e.key === "ArrowDown" && hasNext) onNavigatePage(briefs[idx + 1]);
     }
+    if (lotModalOpen) return;
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, onNavigatePage, briefs, idx, hasPrev, hasNext]);
+  }, [onClose, onNavigatePage, briefs, idx, hasPrev, hasNext, lotModalOpen]);
 
   return (
     <>
       {/* Header */}
-      <div className="flex-shrink-0 px-10 pt-7 pb-7">
-        {/* Top row — nav/close (right) */}
-        <div className="mb-5 flex items-center justify-end gap-1">
-          <button onClick={() => hasPrev && onNavigatePage(briefs[idx - 1])} disabled={!hasPrev}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed">
-            <ChevronRightIcon className="h-5 w-5 rotate-180" />
-          </button>
-          <button onClick={() => hasNext && onNavigatePage(briefs[idx + 1])} disabled={!hasNext}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed">
-            <ChevronRightIcon className="h-5 w-5" />
-          </button>
-          <div className="mx-1 h-4 w-px bg-[var(--border-subtle)]" />
-          <button onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]">
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+      <div className="flex-shrink-0 border-b border-[var(--border-subtle)] px-10 pt-7 pb-7">
+        {/* Top row — back to list (left) + nav/close (right) */}
+        <div className="mb-5 flex items-center justify-between gap-1">
+          <Tooltip label="Retour à la liste" side="right" portal>
+            <button onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]">
+              <ArrowLeftIcon className="h-5 w-5" />
+            </button>
+          </Tooltip>
+          <div className="flex items-center gap-1">
+            <button onClick={() => hasPrev && onNavigatePage(briefs[idx - 1])} disabled={!hasPrev}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed">
+              <ChevronRightIcon className="h-5 w-5 rotate-180" />
+            </button>
+            <button onClick={() => hasNext && onNavigatePage(briefs[idx + 1])} disabled={!hasNext}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed">
+              <ChevronRightIcon className="h-5 w-5" />
+            </button>
+            <div className="mx-1 h-4 w-px bg-[var(--border-subtle)]" />
+            <button onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]">
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
         </div>
 
         {/* Title */}
@@ -2282,19 +2390,40 @@ function PagePanelContent({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: typeText, backgroundColor: colorBg }}>{label}</span>
-          {brief.lot && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: lotColor }} />
-              {shortLot(brief.lot)}
-            </span>
-          )}
+          <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: typeText, backgroundColor: colorBg }}>{label}</span>
+          <DropdownMenu
+            width={280}
+            trigger={
+              <button className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-opacity hover:opacity-80">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: lotColor }} />
+                {brief.lot ? shortLot(brief.lot) : "Sans lot"}
+              </button>
+            }
+          >
+            <DropdownHeader>Changer de lot</DropdownHeader>
+            {lots.map((lot) => (
+              <DropdownItem
+                key={lot}
+                selected={(brief.lot ?? "Sans lot") === lot}
+                onClick={() => onLotChange(lot === "Sans lot" ? null : lot)}
+              >
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
+                  <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: lotColors[lot] }} />
+                  {lot}
+                </span>
+              </DropdownItem>
+            ))}
+            <DropdownSeparator />
+            <DropdownItem icon={Plus} onClick={() => setLotModalOpen(true)}>
+              Créer un nouveau lot
+            </DropdownItem>
+          </DropdownMenu>
           <span className="rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-primary)]">{keyword}</span>
         </div>
       </div>
 
       {/* Body — 2 columns */}
-      <div className="flex flex-1 gap-14 overflow-hidden px-10 py-8">
+      <div className="flex flex-1 gap-6 overflow-hidden px-10 py-8">
 
         {/* Left — données GSC + évolution */}
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto">
@@ -2302,40 +2431,44 @@ function PagePanelContent({
           {/* KPI cards */}
           <div>
             <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Données GSC actuelles</p>
-            <div className="grid grid-cols-5 gap-3">
-              {([
-                { label: "Pos. GSC",     val: current?.positionGsc != null ? current.positionGsc.toFixed(1) : "—", delta: posDelta,   invert: true,  Icon: Hash    },
-                { label: "Trafic",       val: current?.clics != null ? current.clics.toLocaleString() : "—",        delta: clicsDelta,               Icon: MousePointerClick },
-                { label: "CTR",          val: current?.clics != null && current?.impressions ? `${(current.clics / current.impressions * 100).toFixed(1)}%` : "—", delta: null, Icon: Activity },
-                { label: "Impressions",  val: current?.impressions != null ? (current.impressions >= 1000 ? `${(current.impressions / 1000).toFixed(1)}k` : String(current.impressions)) : "—", delta: impDelta, Icon: Eye },
-                { label: "Volume rech.", val: brief.volume.toLocaleString(), delta: null,                            Icon: Target },
-              ] as { label: string; val: string; delta: number | null; invert?: boolean; Icon: React.ElementType }[]).map(({ label: kl, val, delta, invert, Icon }) => (
-                <KpiCard
-                  key={kl}
-                  icon={Icon}
-                  label={kl}
-                  value={val}
-                  sub={delta != null ? (
-                    <span className={`font-semibold tabular-nums ${(invert ? delta < 0 : delta > 0) ? "text-emerald-500" : "text-rose-500"}`}>
-                      {delta > 0 ? "+" : ""}{Number.isInteger(delta) ? delta : delta.toFixed(1)} vs préc.
-                    </span>
-                  ) : undefined}
-                  className="w-full"
-                />
-              ))}
+            <SoftPanel>
+              <div className="grid grid-cols-5 gap-3">
+                {([
+                  { label: "Pos. GSC",     val: current?.positionGsc != null ? current.positionGsc.toFixed(1) : "—", delta: posDelta,   invert: true,  Icon: Hash    },
+                  { label: "Trafic",       val: current?.clics != null ? current.clics.toLocaleString() : "—",        delta: clicsDelta,               Icon: MousePointerClick },
+                  { label: "CTR",          val: current?.clics != null && current?.impressions ? `${(current.clics / current.impressions * 100).toFixed(1)}%` : "—", delta: null, Icon: Activity },
+                  { label: "Impressions",  val: current?.impressions != null ? (current.impressions >= 1000 ? `${(current.impressions / 1000).toFixed(1)}k` : String(current.impressions)) : "—", delta: impDelta, Icon: Eye },
+                  { label: "Volume",       val: brief.volume.toLocaleString(), delta: null,                            Icon: Target },
+                ] as { label: string; val: string; delta: number | null; invert?: boolean; Icon: React.ElementType }[]).map(({ label: kl, val, delta, invert, Icon }) => (
+                  <KpiCard
+                    key={kl}
+                    icon={Icon}
+                    label={kl}
+                    value={val}
+                    delta={delta != null ? `${delta > 0 ? "+" : ""}${Number.isInteger(delta) ? delta : delta.toFixed(1).replace(".", ",")}` : undefined}
+                    deltaPositiveIsGood={!invert}
+                    sub={delta != null ? "vs préc." : undefined}
+                    className="w-full"
+                  />
+                ))}
+              </div>
+            </SoftPanel>
+          </div>
+
+          {/* Sparklines — côte à côte, fill height pour égaliser avec la colonne droite */}
+          <div className="grid flex-1 grid-cols-2 gap-4">
+            <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
+              <p className="mb-4 flex-shrink-0 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution position GSC</p>
+              <div className="flex-1">
+                {history.length >= 2 ? <PositionSparkline history={history} /> : <SparklineEmpty />}
+              </div>
             </div>
-          </div>
-
-          {/* Position sparkline */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
-            <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution position GSC</p>
-            {history.length >= 2 ? <PositionSparkline history={history} /> : <SparklineEmpty />}
-          </div>
-
-          {/* Traffic sparkline */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
-            <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution trafic</p>
-            {history.length >= 2 && history.some((h) => h.clics != null) ? <TrafficSparkline history={history} /> : <SparklineEmpty />}
+            <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
+              <p className="mb-4 flex-shrink-0 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution trafic</p>
+              <div className="flex-1">
+                {history.length >= 2 && history.some((h) => h.clics != null) ? <TrafficSparkline history={history} /> : <SparklineEmpty />}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2372,9 +2505,8 @@ function PagePanelContent({
                     </div>
                   )}
                   <div className="mt-2 flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium"
                       style={{ color: PRIORITY_CONFIG[priority].text, backgroundColor: PRIORITY_CONFIG[priority].bg }}>
-                      <span className="h-1 w-1 flex-shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_CONFIG[priority].color }} />
                       {PRIORITY_CONFIG[priority].label}
                     </span>
                     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -2394,7 +2526,85 @@ function PagePanelContent({
           </Button>
         </div>
       </div>
+
+      {lotModalOpen && (
+        <CreateLotModal
+          existingLots={lots}
+          onCancel={() => setLotModalOpen(false)}
+          onCreate={(name) => { onCreateLot(name); setLotModalOpen(false); }}
+        />
+      )}
     </>
+  );
+}
+
+/* ── CreateLotModal — petite modal pour créer un nouveau lot ─────────── */
+
+function CreateLotModal({
+  existingLots,
+  onCancel,
+  onCreate,
+}: {
+  existingLots: string[];
+  onCancel: () => void;
+  onCreate: (name: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const trimmed = name.trim();
+  const exists = existingLots.includes(trimmed);
+  const canSubmit = trimmed.length > 0 && !exists;
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onCancel]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div className="relative w-full max-w-[420px] rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-7 shadow-[var(--shadow-floating)]">
+        <button
+          onClick={onCancel}
+          className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+        >
+          <XMarkIcon className="h-5 w-5" />
+        </button>
+
+        <h3 className="mb-1.5 text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+          Créer un nouveau lot
+        </h3>
+        <p className="mb-5 text-[13px] text-[var(--text-secondary)]">
+          Donnez un nom à votre lot — une couleur lui sera attribuée automatiquement.
+        </p>
+
+        <input
+          autoFocus
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) onCreate(trimmed); }}
+          placeholder="Ex. Lot Mai 2026 — Refonte"
+          className="w-full rounded-full border border-[var(--border-medium)] bg-[var(--input-bg)] px-4 py-2.5 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-input)] focus:border-[var(--accent-primary)] focus:outline-none"
+        />
+        {exists && (
+          <p className="mt-2 text-[12px] text-[#E11D48]">Ce lot existe déjà.</p>
+        )}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="secondary" size="md" onClick={onCancel}>Annuler</Button>
+          <Button variant="primary" size="md" onClick={() => onCreate(trimmed)} disabled={!canSubmit}>
+            Créer le lot
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -2405,6 +2615,8 @@ function SidePanel({
   briefs,
   briefKeyword,
   lotColor,
+  lots,
+  lotColors,
   status,
   priority,
   analysis,
@@ -2414,11 +2626,15 @@ function SidePanel({
   onCloseAnalysis,
   onStatusChange,
   onPriorityChange,
+  onLotChange,
+  onCreateLot,
 }: {
   brief: Brief;
   briefs: Brief[];
   briefKeyword: string;
   lotColor: string;
+  lots: string[];
+  lotColors: Record<string, string>;
   status: BriefStatus;
   priority: Priority;
   analysis: Brief | null;
@@ -2428,6 +2644,8 @@ function SidePanel({
   onCloseAnalysis: () => void;
   onStatusChange: (s: BriefStatus) => void;
   onPriorityChange: (p: Priority) => void;
+  onLotChange: (lot: string | null) => void;
+  onCreateLot: (name: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -2458,9 +2676,16 @@ function SidePanel({
   if (typeof window === "undefined") return null;
 
   return createPortal(
-    <div
-      className={`fixed inset-y-0 right-0 z-[60] flex w-[1200px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl transition-all duration-[320ms] ease-out ${visible && !closing ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-    >
+    <>
+      {/* Backdrop transparent — click outside to close */}
+      <div
+        aria-hidden="true"
+        onClick={handleClose}
+        className={`fixed inset-0 z-[59] transition-opacity duration-[320ms] ease-out ${visible && !closing ? "opacity-100" : "opacity-0"}`}
+      />
+      <div
+        className={`fixed inset-y-0 right-0 z-[60] flex w-[1200px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl transition-all duration-[320ms] ease-out ${visible && !closing ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+      >
       <div
         className="flex flex-1 flex-col min-h-0 transition-opacity duration-[150ms]"
         style={{ opacity: fading ? 0 : 1 }}
@@ -2482,15 +2707,20 @@ function SidePanel({
               briefs={briefs}
               keyword={briefKeyword}
               lotColor={lotColor}
+              lots={lots}
+              lotColors={lotColors}
               status={status}
               priority={priority}
               onOpenAnalysis={onOpenAnalysis}
               onNavigatePage={onNavigatePage}
               onClose={handleClose}
+              onLotChange={onLotChange}
+              onCreateLot={onCreateLot}
             />
         }
       </div>
-    </div>,
+    </div>
+    </>,
     document.body
   );
 }
@@ -2504,6 +2734,16 @@ export function BriefsView() {
     const t = setTimeout(() => setLoading(false), 600);
     return () => clearTimeout(t);
   }, []);
+
+  // Refs for horizontal scroll sync between sticky column header and table body
+  const headerInnerRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef  = useRef<HTMLDivElement>(null);
+  function handleBodyScroll() {
+    if (headerInnerRef.current && bodyScrollRef.current) {
+      headerInnerRef.current.style.transform = `translateX(-${bodyScrollRef.current.scrollLeft}px)`;
+    }
+  }
+
   const [briefs, setBriefs] = useState<Brief[]>(BRIEFS.map((b) => ({ ...b, ...BRIEF_EXTRA[b.id] })));
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -2528,6 +2768,23 @@ export function BriefsView() {
   });
   function setLotColor(lot: string, color: string) {
     setLotColors((prev) => ({ ...prev, [lot]: color }));
+  }
+
+  function changeBriefLot(id: number, lot: string | null) {
+    setBriefs((prev) => prev.map((b) => (b.id === id ? { ...b, lot: lot ?? undefined } : b)));
+    setActiveBrief((prev) => (prev?.id === id ? { ...prev, lot: lot ?? undefined } : prev));
+  }
+
+  const LOT_PALETTE = ["#3B82F6", "#10B981", "#A855F7", "#F97316", "#EC4899", "#14B8A6", "#EAB308", "#6366F1"];
+  function createLotAndAssign(name: string, briefId: number) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (!lotColors[trimmed]) {
+      const used = new Set(Object.values(lotColors));
+      const color = LOT_PALETTE.find((c) => !used.has(c)) ?? LOT_PALETTE[Math.floor(Math.random() * LOT_PALETTE.length)];
+      setLotColors((prev) => ({ ...prev, [trimmed]: color }));
+    }
+    changeBriefLot(briefId, trimmed);
   }
 
   const [colType,     setColType]     = useState<BriefType | "all">("all");
@@ -2603,35 +2860,44 @@ export function BriefsView() {
   if (loading) return <SkeletonBriefs />;
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 animate-fade-in">
+    <div className="animate-fade-in">
 
-      {/* ── Toolbar + lot filter — always visible above internal scroll ── */}
-      <div className="flex-shrink-0 bg-[var(--bg-primary)]/75 backdrop-blur-md">
-        <div className="flex items-center gap-4 px-[var(--page-px)] pt-4 pb-3">
-          <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un brief…" alwaysExpanded />
-          {hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            >
-              <XMarkIcon className="h-3.5 w-3.5" />
-              Réinitialiser les filtres
-            </button>
-          )}
+      {/* ── Header — H2 + SearchBar directement à droite du titre ── */}
+      <div className="mb-6 flex items-center gap-4 px-[var(--page-px)]">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">URLs</h2>
+          <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
+            {filtered.length.toLocaleString("fr-FR")}
+            {hasActiveFilters && filtered.length !== briefs.length && (
+              <span className="text-[var(--text-muted)]"> / {briefs.length.toLocaleString("fr-FR")}</span>
+            )}
+          </span>
         </div>
-        <div className="px-[var(--page-px)] pb-4">
-          <FilterTabs
-            tabs={[
-              { key: "all",                        label: "Tous" },
-              { key: "Lot SEO — Optimisation Q2",  label: "SEO — Optimisation Q2",  color: lotColors["Lot SEO — Optimisation Q2"],  count: LOT_COUNTS["Lot SEO — Optimisation Q2"]  ?? 0 },
-              { key: "Lot Création — Blog expert", label: "Création — Blog expert",  color: lotColors["Lot Création — Blog expert"], count: LOT_COUNTS["Lot Création — Blog expert"] ?? 0 },
-              { key: "Lot GEO — Structured data",  label: "GEO — Structured data",  color: lotColors["Lot GEO — Structured data"],  count: LOT_COUNTS["Lot GEO — Structured data"]  ?? 0 },
-              { key: "__none__",                   label: "Sans lot" },
-            ]}
-            value={colLot}
-            onChange={setColLot}
-          />
-        </div>
+        <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un brief…" alwaysExpanded />
+      </div>
+
+      {/* ── Filter tabs + reset ── */}
+      <div className="mb-4 flex items-center gap-3 px-[var(--page-px)]">
+        <FilterTabs
+          tabs={[
+            { key: "all",                        label: "Tous" },
+            { key: "Lot SEO — Optimisation Q2",  label: "SEO — Optimisation Q2",  color: lotColors["Lot SEO — Optimisation Q2"],  count: LOT_COUNTS["Lot SEO — Optimisation Q2"]  ?? 0 },
+            { key: "Lot Création — Blog expert", label: "Création — Blog expert",  color: lotColors["Lot Création — Blog expert"], count: LOT_COUNTS["Lot Création — Blog expert"] ?? 0 },
+            { key: "Lot GEO — Structured data",  label: "GEO — Structured data",  color: lotColors["Lot GEO — Structured data"],  count: LOT_COUNTS["Lot GEO — Structured data"]  ?? 0 },
+            { key: "__none__",                   label: "Sans lot" },
+          ]}
+          value={colLot}
+          onChange={setColLot}
+        />
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+          >
+            <XMarkIcon className="h-3.5 w-3.5" />
+            Réinitialiser les filtres
+          </button>
+        )}
       </div>
 
       {/* Bulk action bar */}
@@ -2654,6 +2920,7 @@ export function BriefsView() {
                 </button>
               }
             >
+              <DropdownHeader>Choisir un lot</DropdownHeader>
               {Object.keys(lotColors).map((lot) => (
                 <DropdownItem key={lot} onClick={() => assignLot(lot === "Sans lot" ? null : lot)}>
                   <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: lotColors[lot] }} />
@@ -2672,12 +2939,20 @@ export function BriefsView() {
                 </button>
               }
             >
-              {(["haute", "moyenne", "basse"] as Priority[]).map((p) => (
-                <DropdownItem key={p} onClick={() => assignPriority(p)}>
-                  <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_CONFIG[p].color }} />
-                  {PRIORITY_CONFIG[p].label}
-                </DropdownItem>
-              ))}
+              <DropdownHeader>Choisir la priorité</DropdownHeader>
+              {(["haute", "moyenne", "basse"] as Priority[]).map((p) => {
+                const c = PRIORITY_CONFIG[p];
+                return (
+                  <DropdownItem key={p} onClick={() => assignPriority(p)}>
+                    <span
+                      className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium"
+                      style={{ color: c.text, backgroundColor: c.bg }}
+                    >
+                      {c.label}
+                    </span>
+                  </DropdownItem>
+                );
+              })}
             </DropdownMenu>
 
             {/* Lancer l'analyse */}
@@ -2714,14 +2989,9 @@ export function BriefsView() {
         document.body
       )}
 
-      {/* ── Table ── */}
-      <div className="min-h-0 flex-1 overflow-auto">
-        {/* Hardcoded min-width = sum of cells (1562) + checkbox (16) + 15 gaps (180) + pr-4 (16) + pl-page-px (max 80) ≈ 1854 → round to 1950 for safety.
-            Using `min-width: max-content` here causes browsers to introspect inputs/dropdowns and explode width to ~67000px. */}
-        <div style={{ minWidth: 1950 }}>
-          {/* Sticky column header — relative to the overflow-auto scroll container */}
-          <div className="sticky top-0 z-10 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]">
-          <div className="flex items-center gap-3 pl-[var(--page-px)] pr-4 py-3">
+      {/* ── Sticky column header — page-level, sticks below the tab bar (h-12 = 48px) ── */}
+      <div className="sticky top-12 z-[15] overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
+        <div ref={headerInnerRef} style={{ minWidth: 1910 }} className="flex h-10 items-center gap-3 pl-[var(--page-px)] pr-4">
             <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} />
             <span className="w-[200px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Page</span>
             <span className="w-[130px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Mot-clé</span>
@@ -2793,9 +3063,7 @@ export function BriefsView() {
                 )}
               </ColPill>
             </div>
-            <span className="w-[70px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Trafic</span>
-            <span className="w-[90px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Impressions</span>
-            <span className="w-[80px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Pos. GSC</span>
+            <span className="w-[200px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Trafic</span>
             <div className="w-[110px] flex-shrink-0 min-w-0">
               <ColPill label="Priorité" active={colPriority !== "all"} value={colPriority} onChange={(v) => setColPriority(v as Priority | "all")} items={[
                 { value: "all",     label: "Toutes" },
@@ -2821,7 +3089,7 @@ export function BriefsView() {
                 { value: "__none__",                   label: "Sans lot" },
               ]} />
             </div>
-            <span className="w-[110px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Analyse</span>
+            <span className="w-[130px] flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]">Analyse</span>
             <div className="w-12 flex-shrink-0 min-w-0" />
             <div className="w-16 flex-shrink-0 min-w-0">
               <ColPill label={colScoreMin >= 0 ? `≥ ${colScoreMin}` : "Score"} active={colScoreMin >= 0}>
@@ -2854,9 +3122,12 @@ export function BriefsView() {
               </ColPill>
             </div>
             <div className="sticky right-0 w-16 flex-shrink-0 min-w-0 bg-[var(--bg-primary)]" />
-          </div>
-          </div>
+        </div>
+      </div>
 
+      {/* ── Body — horizontal scroll only (synced with sticky header) ── */}
+      <div ref={bodyScrollRef} onScroll={handleBodyScroll} className="overflow-x-auto">
+        <div style={{ minWidth: 1910 }}>
           {/* Rows */}
           {filtered.length === 0 ? (
             <EmptyState
@@ -2903,7 +3174,7 @@ export function BriefsView() {
                         value={briefKeywords[brief.id] ?? brief.keyword}
                         onChange={(e) => setBriefKeywords((prev) => ({ ...prev, [brief.id]: e.target.value }))}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full truncate rounded-lg border border-transparent bg-[var(--bg-subtle)] px-2 py-1 text-[12px] text-[var(--text-secondary)] outline-none transition-colors hover:bg-[var(--bg-card-hover)] hover:border-[var(--border-subtle)] focus:border-[#3E50F5] focus:bg-[var(--bg-secondary)]"
+                        className="w-full truncate rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)] outline-none transition-colors hover:bg-[var(--bg-card-hover)] focus:border-[#3E50F5] focus:bg-[var(--bg-secondary)]"
                         style={{ minWidth: 0 }}
                         placeholder="Mot-clé…"
                       />
@@ -2911,7 +3182,7 @@ export function BriefsView() {
 
                     {/* Type */}
                     <div className="w-[110px] flex-shrink-0 min-w-0">
-                      <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: typeText, backgroundColor: colorBg }}>
+                      <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
                         {TYPE_CONFIG[brief.type].label}
                       </span>
                     </div>
@@ -2930,45 +3201,83 @@ export function BriefsView() {
                       <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{brief.volume.toLocaleString()}</span>
                     </div>
 
-                    {/* Clics */}
-                    <div className="w-[70px] flex-shrink-0 min-w-0">
-                      {brief.clics != null ? (
-                        <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{brief.clics.toLocaleString()}</span>
-                      ) : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
-                    </div>
-
-                    {/* Impressions */}
-                    <div className="w-[90px] flex-shrink-0 min-w-0">
-                      {brief.impressions != null ? (
-                        <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{brief.impressions.toLocaleString()}</span>
-                      ) : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
-                    </div>
-
-                    {/* Pos. GSC */}
-                    <div className="w-[80px] flex-shrink-0 min-w-0">
-                      {brief.positionGsc != null ? (
-                        <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
-                          {brief.positionGsc.toFixed(1)}
-                        </span>
-                      ) : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
+                    {/* Trafic — clics (tooltip Détail GSC) + sparkline interactive (tooltip point survolé) */}
+                    <div className="w-[200px] flex-shrink-0 min-w-0">
+                      {brief.clics != null ? (() => {
+                        const histClics = (PAGE_HISTORY[brief.id] ?? [])
+                          .map((h) => ({ date: h.date, clics: h.clics }))
+                          .filter((h): h is { date: string; clics: number } => h.clics != null)
+                          .reverse(); // oldest → most recent
+                        const isUp = (brief.clicsDelta ?? 0) >= 0;
+                        const trendColor = isUp ? "#10B981" : "#E11D48";
+                        return (
+                          <span className="inline-flex w-full items-center justify-between gap-3">
+                            {/* Tooltip 1 — Détail GSC sur le nombre de clics */}
+                            <Tooltip
+                              side="top"
+                              rich
+                              portal
+                              label={
+                                <div className="flex flex-col gap-1.5">
+                                  <p className="font-semibold">Détail GSC</p>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="opacity-70">Clics</span>
+                                    <span className="font-semibold tabular-nums">{brief.clics!.toLocaleString("fr-FR")}{brief.clicsDelta != null && <span className={`ml-1.5 text-[11px] ${isUp ? "text-emerald-300" : "text-rose-300"}`}>{isUp ? "+" : ""}{brief.clicsDelta}</span>}</span>
+                                  </div>
+                                  {brief.impressions != null && (
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="opacity-70">Impressions</span>
+                                      <span className="font-semibold tabular-nums">{brief.impressions.toLocaleString("fr-FR")}</span>
+                                    </div>
+                                  )}
+                                  {brief.positionGsc != null && (
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="opacity-70">Position GSC</span>
+                                      <span className="font-semibold tabular-nums">{brief.positionGsc.toFixed(1)}{brief.positionDelta != null && <span className={`ml-1.5 text-[11px] ${brief.positionDelta < 0 ? "text-emerald-300" : "text-rose-300"}`}>{brief.positionDelta > 0 ? "+" : ""}{brief.positionDelta.toFixed(1)}</span>}</span>
+                                    </div>
+                                  )}
+                                  {brief.impressions != null && brief.clics != null && (
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="opacity-70">CTR</span>
+                                      <span className="font-semibold tabular-nums">{((brief.clics / brief.impressions) * 100).toFixed(1)}%</span>
+                                    </div>
+                                  )}
+                                </div>
+                              }
+                            >
+                              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{brief.clics.toLocaleString()}</span>
+                            </Tooltip>
+                            {/* Tooltip 2 — point survolé du sparkline (date + valeur) */}
+                            <ClicsSparkline history={histClics} color={trendColor} />
+                          </span>
+                        );
+                      })() : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
                     </div>
 
                     {/* Priorité */}
                     <div className="w-[110px] flex-shrink-0 min-w-0">
                       <div onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu
-                          width={148}
+                          width={180}
                           trigger={
-                            <button className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color: prio.color, backgroundColor: prio.bg }}>
-                              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: prio.color }} />
+                            <button className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color: prio.text, backgroundColor: prio.bg }}>
                               {prio.label}
                             </button>
                           }
                         >
+                          <DropdownHeader>Choisir la priorité</DropdownHeader>
                           {(Object.entries(PRIORITY_CONFIG) as [Priority, typeof PRIORITY_CONFIG[Priority]][]).map(([key, c]) => (
-                            <DropdownItem key={key} onClick={() => setPriority(brief.id, key)}>
-                              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
-                              <span className={(briefPriorities[brief.id] ?? brief.priority) === key ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
+                            <DropdownItem
+                              key={key}
+                              onClick={() => setPriority(brief.id, key)}
+                              selected={(briefPriorities[brief.id] ?? brief.priority) === key}
+                            >
+                              <span
+                                className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium"
+                                style={{ color: c.text, backgroundColor: c.bg }}
+                              >
+                                {c.label}
+                              </span>
                             </DropdownItem>
                           ))}
                         </DropdownMenu>
@@ -3001,21 +3310,20 @@ export function BriefsView() {
                     </div>
 
                     {/* Analyse */}
-                    <div className="w-[110px] flex-shrink-0 min-w-0">
-                      {analyseLabel ? (
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1.5">
-                            {brief.analysisCount && brief.analysisCount > 1 && (
-                              <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold" style={{ color: "#3E50F5", backgroundColor: "rgba(62,80,245,0.1)" }}>
-                                {brief.analysisCount}×
-                              </span>
-                            )}
-                            <span className="text-[12px] text-[var(--text-secondary)]">{analyseLabel}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-[12px] text-[var(--text-muted)]">Jamais</span>
-                      )}
+                    <div className="w-[130px] flex-shrink-0 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="h-2 w-2 flex-shrink-0 rounded-full"
+                          style={{
+                            backgroundColor: !analyseLabel
+                              ? "var(--text-muted)"
+                              : (brief.analysisCount && brief.analysisCount > 1 ? "#10B981" : "#F59E0B"),
+                          }}
+                        />
+                        <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
+                          {analyseLabel ? `Analysée · ${analyseLabel}` : "Pas encore analysée"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Actions — lancer / relancer l'analyse */}
@@ -3028,6 +3336,9 @@ export function BriefsView() {
                           <div className="space-y-0.5">
                             <p className="font-semibold">{analyseLabel ? "Relancer une analyse" : "Lancer une analyse"}</p>
                             <p className="opacity-70">3min</p>
+                            {brief.analysisCount && brief.analysisCount > 1 && (
+                              <p className="opacity-70">{brief.analysisCount} analyses au total</p>
+                            )}
                           </div>
                         }
                       >
@@ -3072,6 +3383,8 @@ export function BriefsView() {
           briefs={filtered}
           briefKeyword={briefKeywords[activeBrief.id] ?? activeBrief.keyword}
           lotColor={lotColors[activeBrief.lot ?? "Sans lot"] ?? "#64748B"}
+          lots={Object.keys(lotColors)}
+          lotColors={lotColors}
           status={briefStatuses[activeBrief.id] ?? "todo"}
           priority={briefPriorities[activeBrief.id] ?? activeBrief.priority}
           analysis={activeAnalysis}
@@ -3081,6 +3394,8 @@ export function BriefsView() {
           onCloseAnalysis={() => setActiveAnalysis(null)}
           onStatusChange={(next) => toggleStatus(activeBrief.id, next)}
           onPriorityChange={(next) => setPriority(activeBrief.id, next)}
+          onLotChange={(lot) => changeBriefLot(activeBrief.id, lot)}
+          onCreateLot={(name) => createLotAndAssign(name, activeBrief.id)}
         />
       )}
 

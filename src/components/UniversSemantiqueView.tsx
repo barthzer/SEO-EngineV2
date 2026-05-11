@@ -6,6 +6,7 @@ import { ChevronDownIcon, ArrowPathIcon, XMarkIcon, CheckIcon } from "@heroicons
 import { Tooltip } from "@/components/Tooltip";
 import { Button } from "@/components/Button";
 import { KpiCard } from "@/components/KpiCard";
+import { SoftPanel } from "@/components/SoftPanel";
 import { Layers, CircleCheck, TriangleAlert, Sparkles, Clock } from "lucide-react";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -237,7 +238,7 @@ function SemUrlList({ urls, extra }: { urls: { url: string; pos: number }[]; ext
 function SemStatusCell({ row }: { row: SemanticKw }) {
   if (row.status === "cannibalisation") return (
     <Tooltip portal rich side="bottom" label={<CannibalTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold"
         style={{ color: "#E11D48", backgroundColor: "rgba(225,29,72,0.08)" }}>
         Cannibalisation ({row.cannibCount})
       </span>
@@ -245,13 +246,13 @@ function SemStatusCell({ row }: { row: SemanticKw }) {
   );
   if (row.status === "couvert") return (
     <Tooltip portal rich side="bottom" label={<CouvertTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-3 py-1.5 text-[12px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-1 text-[12px] font-semibold"
         style={{ color: "#10B981", backgroundColor: "rgba(16,185,129,0.09)" }}>Couvert</span>
     </Tooltip>
   );
   return (
     <Tooltip portal rich side="bottom" label={<OppTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-3 py-1.5 text-[12px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-1 text-[12px] font-semibold"
         style={{ color: "#3E50F5", backgroundColor: "rgba(62,80,245,0.08)" }}>Opportunité</span>
     </Tooltip>
   );
@@ -289,13 +290,15 @@ export function UniversSemantiqueView() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-5 gap-3">
-        <KpiCard icon={Layers}        label="Total"        value="303" />
-        <KpiCard icon={CircleCheck}   label="Couverts"     value="65"  valueColor="#10B981" />
-        <KpiCard icon={TriangleAlert} label="Cannibalisés" value="15"  valueColor="#E11D48" />
-        <KpiCard icon={Sparkles}      label="Opportunités" value="223" valueColor="#3E50F5" />
-        <KpiCard icon={Clock}         label="En attente"   value="0"   valueColor="var(--text-muted)" />
-      </div>
+      <SoftPanel>
+        <div className="grid grid-cols-5 gap-3">
+          <KpiCard icon={Layers}        label="Total"        value="303" />
+          <KpiCard icon={CircleCheck}   label="Couverts"     value="65"  valueColor="#10B981" />
+          <KpiCard icon={TriangleAlert} label="Cannibalisés" value="15"  valueColor="#E11D48" />
+          <KpiCard icon={Sparkles}      label="Opportunités" value="223" valueColor="#3E50F5" />
+          <KpiCard icon={Clock}         label="En attente"   value="0"   valueColor="var(--text-muted)" />
+        </div>
+      </SoftPanel>
 
       {/* Filter controls */}
       <div className="flex items-center gap-3">

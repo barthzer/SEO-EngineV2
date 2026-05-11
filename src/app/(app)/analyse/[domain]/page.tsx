@@ -70,6 +70,8 @@ import {
 import { CheckCircleIcon as CheckCircleSolid, SparklesIcon } from "@heroicons/react/24/solid";
 import { AIInsight } from "@/components/AIInsight";
 import { KpiCard } from "@/components/KpiCard";
+import { SoftPanel } from "@/components/SoftPanel";
+import { HorizontalBarChart } from "@/components/HorizontalBarChart";
 import { EmptyState } from "@/components/EmptyState";
 import { AreaChart } from "@/components/AreaChart";
 import { FilterTabs } from "@/components/FilterTabs";
@@ -194,7 +196,7 @@ function SeverityBadge({ level, count }: { level: "critique" | "important"; coun
     ? { color: "#E11D48", bg: "rgba(225,29,72,0.09)", label: count === 1 ? "critique" : "critiques" }
     : { color: "#F59E0B", bg: "rgba(245,158,11,0.09)", label: count === 1 ? "important" : "importants" };
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
       {count} {cfg.label}
     </span>
   );
@@ -237,7 +239,7 @@ function HealthCard({
               </span>
               <span className="flex-1 text-[13px] font-medium leading-snug text-[var(--text-primary)]">{a.label}</span>
               {a.visits && (
-                <span className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold tabular-nums" style={{ color, backgroundColor: colorBg }}>
+                <span className="flex-shrink-0 rounded-full px-2 py-1 text-[12px] font-semibold tabular-nums" style={{ color, backgroundColor: colorBg }}>
                   {a.visits} vis.
                 </span>
               )}
@@ -263,95 +265,19 @@ function HealthCard({
 /* ── PositionBarChart ────────────────────────────────────────────────── */
 
 const POSITION_BARS = [
-  { label: "Top 3",    value: 2, pct: "40%", color: "#10B981" },
-  { label: "4 – 10",   value: 3, pct: "60%", color: "#3E50F5" },
-  { label: "11 – 50",  value: 0, pct: "0%",  color: "#EAB308" },
-  { label: "51 – 100", value: 0, pct: "0%",  color: "#F97316" },
+  { label: "Top 3",    value: 2  },
+  { label: "4 – 10",   value: 3  },
+  { label: "11 – 50",  value: 8  },
+  { label: "51 – 100", value: 14 },
 ];
 
 function PositionBarChart() {
-  const [hovered, setHovered] = useState<{ bar: typeof POSITION_BARS[0]; x: number; y: number } | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerW, setContainerW] = useState(0);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setContainerW(entry.contentRect.width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const maxY = 4, chartH = 180, lm = 30, tm = 8;
-  const chartW = Math.max(1, containerW - lm - 10);
-  const slotW = chartW / 4;
-  const barW = Math.min(56, slotW * 0.65);
-
-  function handleMouseEnter(e: React.MouseEvent<SVGRectElement>, bar: typeof POSITION_BARS[0]) {
-    const svgEl = svgRef.current;
-    if (!svgEl) return;
-    const svgRect = svgEl.getBoundingClientRect();
-    const barRect = (e.target as SVGRectElement).getBoundingClientRect();
-    setHovered({
-      bar,
-      x: barRect.left + barRect.width / 2 - svgRect.left,
-      y: barRect.top - svgRect.top,
-    });
-  }
-
   return (
-    <div ref={containerRef} className="relative">
-      {containerW > 0 && (
-        <svg
-          ref={svgRef}
-          width={containerW}
-          height={chartH + tm + 30}
-          className="overflow-visible"
-          onMouseLeave={() => setHovered(null)}
-        >
-          {[0, 1, 2, 3, 4].map((v) => {
-            const y = tm + chartH * (1 - v / maxY);
-            return (
-              <g key={v}>
-                <line x1={lm} y1={y} x2={lm + chartW} y2={y} stroke="var(--border-subtle)" strokeWidth="1" />
-                <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{v}</text>
-              </g>
-            );
-          })}
-          {POSITION_BARS.map((bar, i) => {
-            const barH = chartH * bar.value / maxY;
-            const x = lm + slotW * i + (slotW - barW) / 2;
-            const y = tm + chartH - barH;
-            const isHovered = hovered?.bar.label === bar.label;
-            return (
-              <g key={bar.label}>
-                {barH > 0 && (
-                  <rect
-                    x={x} y={y} width={barW} height={barH} rx={7}
-                    fill={bar.color}
-                    opacity={hovered && !isHovered ? 0.35 : 1}
-                    style={{ cursor: "pointer", transition: "opacity 0.15s" }}
-                    onMouseEnter={(e) => handleMouseEnter(e, bar)}
-                  />
-                )}
-                <text x={x + barW / 2} y={tm + chartH + 18} textAnchor="middle" fontSize={12} fill="var(--text-muted)">{bar.label}</text>
-              </g>
-            );
-          })}
-        </svg>
-      )}
-
-      {/* Tooltip */}
-      {hovered && (
-        <ChartTooltip x={hovered.x} y={hovered.y - 8}>
-          <p className="text-[12px] font-semibold text-white">{hovered.bar.label}</p>
-          <p className="text-[11px] font-medium text-white/60">
-            <span className="font-semibold text-white">{hovered.bar.value}</span> mot{hovered.bar.value > 1 ? "s" : ""}-clé — {hovered.bar.pct}
-          </p>
-        </ChartTooltip>
-      )}
-    </div>
+    <HorizontalBarChart
+      data={POSITION_BARS}
+      color="#3E50F5"
+      formatValue={(v) => v.toString()}
+    />
   );
 }
 
@@ -894,7 +820,7 @@ function TopPages() {
   function PosTag({ pos }: { pos: number }) {
     const color = pos <= 3 ? "#10B981" : pos <= 10 ? "#3E50F5" : pos <= 20 ? "#F59E0B" : "#94A3B8";
     return (
-      <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
+      <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
         #{pos.toFixed(1)}
       </span>
     );
@@ -921,7 +847,7 @@ function TopPages() {
               <th className="px-4 py-2.5 text-left">
                 <button
                   onClick={openFilter}
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${urlFilter !== "all" ? "bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold transition-colors ${urlFilter !== "all" ? "bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
                 >
                   {activeLabel}
                   <ChevronDownIcon className="h-3 w-3 flex-shrink-0" />
@@ -1015,7 +941,7 @@ function ForecastTimeline() {
             <div className="h-px flex-1 border-t border-dashed border-[var(--border-medium)]" />
             <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate text-[13px] text-[var(--text-secondary)]">{s.action}</span>
-              <span className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color: s.color, backgroundColor: `${s.color}14` }}>
+              <span className="flex-shrink-0 rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: s.color, backgroundColor: `${s.color}14` }}>
                 {s.gain}
               </span>
             </div>
@@ -1088,6 +1014,7 @@ const TAB_TITLES: Record<Tab, string> = {
 const TAB_SUBTITLES: Partial<Record<Tab, string>> = {
   cannibal: "Pages en conflit de positionnement — dilution du trafic et des signaux de pertinence.",
   univers:  "Identifiez les opportunités de contenu et résolvez les cannibalisations pour améliorer votre SEO.",
+  tracking: "8 mots-clés · Dernier check : 04 mai, 14:00",
 };
 
 /* ── GSC Import ──────────────────────────────────────────────────────── */
@@ -2033,7 +1960,7 @@ function ProjIntegRow({ name, logo, desc, account, connected, onToggle }: {
         <div>
           <div className="flex items-center gap-2">
             <p className="text-[13px] font-semibold text-[var(--text-primary)]">{name}</p>
-            <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium"
+            <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium"
               style={{ color: connected ? "#10B981" : "var(--text-muted)", backgroundColor: connected ? "rgba(16,185,129,0.09)" : "var(--bg-secondary)" }}>
               {connected ? "Connecté" : "Non connecté"}
             </span>
@@ -2686,7 +2613,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
       <div className="sticky top-0 z-20 bg-[var(--bg-primary)]/75 backdrop-blur-md">
         <div className="w-full px-[var(--page-px)]">
           {loading ? <SkeletonTabs count={4} /> : (
-            <div ref={tabNavRef} className="relative flex h-16 items-center gap-1">
+            <div ref={tabNavRef} className="relative flex h-12 items-center gap-1">
               <span
                 className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-accent-primary"
                 style={{
@@ -2701,7 +2628,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   key={t.key}
                   data-tab={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`flex h-full cursor-pointer items-center px-4 text-[16px] font-semibold tracking-tight transition-colors ${tab === t.key ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                  className={`flex h-full cursor-pointer items-center px-4 text-[14px] font-semibold tracking-tight transition-colors ${tab === t.key ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
                 >
                   {t.label}
                 </button>
@@ -2716,29 +2643,33 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {loading ? <SkeletonAnalyseGeneral /> : null}
         <div className={loading ? "hidden" : "animate-fade-in"}>
 
-        {/* Unified view title — same size + tight subtitle for every tab */}
-        <div className={`mb-6 ${tab === "briefs" ? "px-[var(--page-px)]" : ""}`}>
-          <h2 className="text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">
-            {TAB_TITLES[tab]}
-          </h2>
-          {TAB_SUBTITLES[tab] && (
-            <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
-              {TAB_SUBTITLES[tab]}
-            </p>
-          )}
-        </div>
+        {/* Unified view title — same size + tight subtitle for every tab. Skipped for briefs (BriefsView renders its own header with inline search). */}
+        {tab !== "briefs" && (
+          <div className="mb-6">
+            <h2 className="text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">
+              {TAB_TITLES[tab]}
+            </h2>
+            {TAB_SUBTITLES[tab] && (
+              <p className="mt-1 text-[16px] tracking-subheading text-[var(--text-secondary)]">
+                {TAB_SUBTITLES[tab]}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Général tab */}
         {tab === "general" && (
           <div className="flex flex-col gap-8">
 
             {/* Stats globales */}
+            <SoftPanel>
             <div className="grid grid-cols-4 gap-3">
-              <KpiCard icon={TrendingUp} label="Trafic organique / mois" value="42 800" sub="+8,4 % vs N−1" trend="up" />
+              <KpiCard icon={TrendingUp} label="Trafic organique / mois" value="42 800" delta="+8,4 %" sub="vs N−1" />
               <KpiCard icon={LFolderOpen} label="Lots créés"              value="18"     sub="6 actifs · 12 terminés" />
               <KpiCard icon={FileText}    label="Briefs générés"          value="147"    sub="63 livrés (43 %)" />
-              <KpiCard icon={LLink}       label="Score maillage global"   value="62 %"   sub="23 orphelines" trend="down" />
+              <KpiCard icon={LLink}       label="Score maillage global"   value="62 %"   sub="23 orphelines" />
             </div>
+            </SoftPanel>
 
             {/* 4 blocs stratégiques */}
             <div>
@@ -2791,82 +2722,85 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               </div>
             </div>
 
-            {/* Bilans santé */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-                <HealthCard
-                  title="Santé technique"
-                  score={healthScores.tech}
-                  critiques={3}
-                  visitesRisk="99"
-                  color="#F59E0B"
-                  colorBg="rgba(245,158,11,0.09)"
-                  quote="3 problèmes techniques critiques impactent 99 visites/mois. Priorité : corriger les balises titres et réduire les temps de réponse pour récupérer ce trafic."
-                  actions={[
-                    { label: "Balises titres avec longueur incorrecte", visits: "68" },
-                    { label: "Balises description trop longues", visits: "31" },
-                    { label: "Temps de réponse lent (> 1s)" },
-                  ]}
-                  cta="Voir l'audit technique"
-                  ctaHref={`/analyse/${domain}/audit`}
-                />
-              </div>
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-                <HealthCard
-                  title="Santé éditoriale"
-                  score={61}
-                  critiques={2}
-                  importants={6}
-                  visitesRisk="4,1k"
-                  color="#E11D48"
-                  colorBg="rgba(225,29,72,0.07)"
-                  quote="Vos 9 pages manquent de signaux E-E-A-T, exposant 1 361 visites/mois. Priorité : renforcer la crédibilité et l'expertise avant le prochain Core Update pour sécuriser ce trafic."
-                  actions={[
-                    { label: "Signaux E-E-A-T insuffisants", visits: "1,4k" },
-                    { label: "Expressions sur-optimisées présentes", visits: "1,3k" },
-                    { label: "SOSEO inférieur à la moyenne top 3", visits: "1,3k" },
-                  ]}
-                  note="3 détecteurs avec données partielles"
-                  cta="Voir l'audit éditorial"
-                  ctaHref={`/analyse/${domain}/audit?tab=editorial`}
-                />
-              </div>
-            </div>
-
-            {/* Core Web Vitals */}
-            <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-              <div className="p-7">
-                <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
-                <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
-              </div>
-              <div className="flex px-7 pb-7 gap-4">
-                {[
-                  { key: "LCP", label: "Largest Contentful Paint", icon: PhotoIcon,            value: "4.52 s", status: "Mauvais", threshold: "≤ 2.5s",  color: "#E11D48", bg: "rgba(225,29,72,0.08)" },
-                  { key: "INP", label: "Interaction to Next Paint", icon: CursorArrowRaysIcon,  value: "4 ms",   status: "Bon",     threshold: "≤ 200ms", color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-                  { key: "CLS", label: "Cumulative Layout Shift",   icon: ArrowsPointingOutIcon, value: "0.05",  status: "Bon",     threshold: "≤ 0.1",   color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-                ].map((m) => (
-                  <div key={m.key} className="flex flex-1 items-center gap-4 px-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-medium)]">
-                      <m.icon className="h-5 w-5 text-[var(--text-primary)]" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[11px] font-semibold text-[var(--text-muted)]">{m.key}</span>
-                      <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.value}</p>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
-                        <span className="text-[11px] text-[var(--text-muted)]">{m.threshold}</span>
-                      </div>
-                    </div>
+            {/* Bilans santé + Core Web Vitals — un seul SoftPanel */}
+            <SoftPanel>
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+                    <HealthCard
+                      title="Santé technique"
+                      score={healthScores.tech}
+                      critiques={3}
+                      visitesRisk="99"
+                      color="#F59E0B"
+                      colorBg="rgba(245,158,11,0.09)"
+                      quote="3 problèmes techniques critiques impactent 99 visites/mois. Priorité : corriger les balises titres et réduire les temps de réponse pour récupérer ce trafic."
+                      actions={[
+                        { label: "Balises titres avec longueur incorrecte", visits: "68" },
+                        { label: "Balises description trop longues", visits: "31" },
+                        { label: "Temps de réponse lent (> 1s)" },
+                      ]}
+                      cta="Voir l'audit technique"
+                      ctaHref={`/analyse/${domain}/audit`}
+                    />
                   </div>
-                ))}
+                  <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+                    <HealthCard
+                      title="Santé éditoriale"
+                      score={61}
+                      critiques={2}
+                      importants={6}
+                      visitesRisk="4,1k"
+                      color="#E11D48"
+                      colorBg="rgba(225,29,72,0.07)"
+                      quote="Vos 9 pages manquent de signaux E-E-A-T, exposant 1 361 visites/mois. Priorité : renforcer la crédibilité et l'expertise avant le prochain Core Update pour sécuriser ce trafic."
+                      actions={[
+                        { label: "Signaux E-E-A-T insuffisants", visits: "1,4k" },
+                        { label: "Expressions sur-optimisées présentes", visits: "1,3k" },
+                        { label: "SOSEO inférieur à la moyenne top 3", visits: "1,3k" },
+                      ]}
+                      note="3 détecteurs avec données partielles"
+                      cta="Voir l'audit éditorial"
+                      ctaHref={`/analyse/${domain}/audit?tab=editorial`}
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+                  <div className="p-7">
+                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
+                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
+                  </div>
+                  <div className="flex px-7 pb-7 gap-4">
+                    {[
+                      { key: "LCP", label: "Largest Contentful Paint", icon: PhotoIcon,            value: "4.52 s", status: "Mauvais", threshold: "≤ 2.5s",  color: "#E11D48", bg: "rgba(225,29,72,0.08)" },
+                      { key: "INP", label: "Interaction to Next Paint", icon: CursorArrowRaysIcon,  value: "4 ms",   status: "Bon",     threshold: "≤ 200ms", color: "#10B981", bg: "rgba(16,185,129,0.08)" },
+                      { key: "CLS", label: "Cumulative Layout Shift",   icon: ArrowsPointingOutIcon, value: "0.05",  status: "Bon",     threshold: "≤ 0.1",   color: "#10B981", bg: "rgba(16,185,129,0.08)" },
+                    ].map((m) => (
+                      <div key={m.key} className="flex flex-1 items-center gap-4 px-4">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-medium)]">
+                          <m.icon className="h-5 w-5 text-[var(--text-primary)]" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-semibold text-[var(--text-muted)]">{m.key}</span>
+                          <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.value}</p>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
+                            <span className="text-[11px] text-[var(--text-muted)]">{m.threshold}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            </SoftPanel>
 
             {/* Distribution des positions + Visibilité — 2 colonnes */}
             <div className="grid grid-cols-2 gap-4">
 
               {/* Distribution des positions — bar chart */}
-              <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+              <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
@@ -2887,7 +2821,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                     </button>
                   </Tooltip>
                 </div>
-                <PositionBarChart />
+                <div className="flex-1">
+                  <PositionBarChart />
+                </div>
               </div>
 
               {/* Visibilité et trafic organique */}
@@ -2943,27 +2879,25 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         )}
 
         {/* Briefs tab */}
-        {tab === "briefs" && (
-          <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
-            <BriefsView />
-          </div>
-        )}
+        {tab === "briefs" && <BriefsView />}
 
         {/* SEO tab */}
         {tab === "seo" && (
           <div className="flex flex-col gap-4">
+            <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
-              <KpiCard icon={TrendingUp}        label="Trafic organique (30j)" value="14 280"  sub="+12 % vs mois préc." trend="up" />
-              <KpiCard icon={LChartBar}          label="Position moyenne"      value="18,4"    sub="−2,1 pts ce mois"    trend="up" />
-              <KpiCard icon={MousePointerClick} label="CTR moyen"             value="3,2 %"   sub="stable"              trend="neutral" />
-              <KpiCard icon={Trophy}            label="Mots-clés top 10"      value="312"     sub="+8 ce mois"          trend="up" />
+              <KpiCard icon={TrendingUp}        label="Trafic organique (30j)" value="14 280"  delta="+12 %" sub="vs mois préc." />
+              <KpiCard icon={LChartBar}          label="Position moyenne"      value="18,4"    delta="−2,1 pts" deltaPositiveIsGood={false} sub="ce mois" />
+              <KpiCard icon={MousePointerClick} label="CTR moyen"             value="3,2 %"   sub="stable" />
+              <KpiCard icon={Trophy}            label="Mots-clés top 10"      value="312"     delta="+8" sub="ce mois" />
               <KpiCard icon={FileText}          label="Pages indexées"        value="1 048" />
-              <KpiCard icon={Eye}               label="Impressions (30j)"     value="447 000" sub="+8 % vs mois préc."  trend="up" />
+              <KpiCard icon={Eye}               label="Impressions (30j)"     value="447 000" delta="+8 %" sub="vs mois préc." />
             </div>
+            </SoftPanel>
             <div className="grid grid-cols-2 gap-4">
 
               {/* Distribution des positions */}
-              <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+              <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
@@ -2984,7 +2918,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                     </button>
                   </Tooltip>
                 </div>
-                <PositionBarChart />
+                <div className="flex-1">
+                  <PositionBarChart />
+                </div>
               </div>
 
               {/* Visibilité et trafic organique */}
@@ -3017,14 +2953,16 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* SEA tab */}
         {tab === "sea" && (
           <div className="flex flex-col gap-4">
+            <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
-              <KpiCard icon={Euro}              label="CPC moyen"         value="0,42 €"  sub="stable vs mois préc."   trend="neutral" />
-              <KpiCard icon={MousePointerClick} label="CTR campagnes"     value="5,8 %"   sub="+0,4 pts"               trend="up" />
-              <KpiCard icon={CircleCheck}       label="Conversions (30j)" value="384"     sub="+6 %"                   trend="up" />
+              <KpiCard icon={Euro}              label="CPC moyen"         value="0,42 €"  sub="stable vs mois préc." />
+              <KpiCard icon={MousePointerClick} label="CTR campagnes"     value="5,8 %"   delta="+0,4 pts" />
+              <KpiCard icon={CircleCheck}       label="Conversions (30j)" value="384"     delta="+6 %" />
               <KpiCard icon={Banknote}          label="Coût total (30j)"  value="1 890 €" sub="budget consommé à 94%" />
-              <KpiCard icon={Euro}              label="CPA moyen"         value="4,92 €"  sub="−0,3 € vs mois préc."   trend="up" />
-              <KpiCard icon={Eye}               label="Impressions (30j)" value="210 000" sub="+3 % vs mois préc."     trend="up" />
+              <KpiCard icon={Euro}              label="CPA moyen"         value="4,92 €"  delta="−0,3 €" deltaPositiveIsGood={false} sub="vs mois préc." />
+              <KpiCard icon={Eye}               label="Impressions (30j)" value="210 000" delta="+3 %" sub="vs mois préc." />
             </div>
+            </SoftPanel>
             <ChartBar label="Évolution du CPC — 12 semaines" color="#6366F1" />
             <InsightList color="#6366F1" items={[
               "Le budget est pleinement utilisé — aucune fuite détectée",
@@ -3038,14 +2976,16 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* Forecast tab */}
         {tab === "forecast" && (
           <div className="flex flex-col gap-4">
+            <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
-              <KpiCard icon={TrendingUp} label="Trafic estimé M+3"      value="+22 %" sub="Blocs 01 + 02 exécutés"   trend="up" />
-              <KpiCard icon={TrendingUp} label="Trafic estimé M+6"      value="+38 %" sub="Plan complet exécuté"     trend="up" />
-              <KpiCard icon={LChartBar}   label="ROI SEO estimé 6 mois"  value="×3,2"  sub="basé sur 87 opportunités" trend="up" />
+              <KpiCard icon={TrendingUp} label="Trafic estimé M+3"      value="+22 %" valueColor="#10B981" sub="Blocs 01 + 02 exécutés" />
+              <KpiCard icon={TrendingUp} label="Trafic estimé M+6"      value="+38 %" valueColor="#10B981" sub="Plan complet exécuté" />
+              <KpiCard icon={LChartBar}   label="ROI SEO estimé 6 mois"  value="×3,2"  valueColor="#10B981" sub="basé sur 87 opportunités" />
               <KpiCard icon={LSearch}    label="Mots-clés opportunités" value="87 KW" sub="volume ≥ 100/mois" />
               <KpiCard icon={FilePlus}   label="Pages à créer"          value="24"    sub="Bloc 03 — création" />
               <KpiCard icon={FileText}   label="Pages à optimiser"      value="36"    sub="Bloc 01 — existant" />
             </div>
+            </SoftPanel>
             <ForecastTimeline />
             <ChartBar label="Courbe de trafic projetée — 6 mois" color="#10B981" />
             <InsightList color="#10B981" items={[
@@ -3069,11 +3009,13 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           <div className="flex flex-col gap-6">
 
             {/* 3 key metrics */}
+            <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
               <KpiCard icon={TriangleAlert} label="Pages orphelines détectées" value="23" />
               <KpiCard icon={LLink}         label="Score maillage global"      value="62 %" />
               <KpiCard icon={LLink}         label="Liens internes à créer"     value="184" />
             </div>
+            </SoftPanel>
 
             {/* Sub-sections tabs */}
             <div className="flex items-center gap-4 border-b border-[var(--border-subtle)] pb-0">

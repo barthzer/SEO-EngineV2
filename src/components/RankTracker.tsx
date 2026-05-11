@@ -766,12 +766,8 @@ export function RankTracker() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Header — title is rendered by parent tab, only meta + actions here */}
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-[13px] text-[var(--text-muted)]">
-          {kws.length} mot{kws.length > 1 ? "s" : ""}-clé{kws.length > 1 ? "s" : ""}
-          {" · "}Dernier check : 04 mai, 14:00
-        </p>
+      {/* Header — title + subtitle rendered by parent tab, only actions here */}
+      <div className="flex items-center justify-end gap-4">
         <div className="flex flex-shrink-0 items-center gap-2">
           <Button size="sm" variant="secondary">Export</Button>
           <Button size="sm" variant="secondary">Checker</Button>

@@ -12,7 +12,7 @@ interface ChartTooltipProps {
 export function ChartTooltip({ x, y, children }: ChartTooltipProps) {
   return (
     <div
-      className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[rgba(20,20,20,0.82)] px-3 py-2 shadow-[var(--shadow-floating)] backdrop-blur-md"
+      className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[rgba(20,20,20,0.82)] px-3 py-2 shadow-[var(--shadow-floating)] backdrop-blur-md transition-[left,top] duration-150 ease-out"
       style={{ left: x, top: y - 8 }}
     >
       {children}

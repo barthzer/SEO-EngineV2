@@ -12,7 +12,7 @@ export interface PillProps {
 export function Pill({ children, color, bg, className = "" }: PillProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium ${className}`}
       style={{ color, backgroundColor: bg }}
     >
       {children}

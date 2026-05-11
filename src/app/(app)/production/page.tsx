@@ -85,7 +85,7 @@ function KanbanColumn({
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />
           <span className="text-[13px] font-semibold text-[var(--text-primary)]">{stage.label}</span>
         </div>
-        <span className="rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: stage.color, backgroundColor: stage.colorBg }}>
+        <span className="rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: stage.color, backgroundColor: stage.colorBg }}>
           {articles.length}
         </span>
       </div>
@@ -135,7 +135,7 @@ function ArticleDrawer({ article: a }: { article: Article }) {
       {/* Stage + progress */}
       <div>
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: stage.color, backgroundColor: stage.colorBg }}>
+          <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: stage.color, backgroundColor: stage.colorBg }}>
             {stage.label}
           </span>
           <span className="text-[13px] font-semibold tabular-nums" style={{ color: stage.color }}>{a.progress}%</span>
@@ -308,7 +308,7 @@ export default function ProductionPage() {
                       <span className="text-[11px] tabular-nums" style={{ color: stage.color }}>{a.progress}%</span>
                     </div>
                   </div>
-                  <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: stage.color, backgroundColor: stage.colorBg }}>
+                  <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: stage.color, backgroundColor: stage.colorBg }}>
                     {stage.label}
                   </span>
                   <span className="text-[13px] text-[var(--text-secondary)]">{a.assignee}</span>

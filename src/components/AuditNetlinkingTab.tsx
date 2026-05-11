@@ -548,7 +548,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="py-2.5 text-[var(--text-secondary)]">{row.pays}</td>
                       <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -579,7 +579,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="py-2.5 text-[var(--text-secondary)]">{row.langue}</td>
                       <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -602,7 +602,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
               <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
                 <span>Min <strong className="text-[var(--text-primary)]">{tfMin}</strong></span>
                 <span>Max <strong className="text-[var(--text-primary)]">{tfMax}</strong></span>
-                <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
                   Delta {tfDelta > 0 ? "+" : ""}{tfDelta} ({tfDelta > 0 ? "+" : ""}{Math.round(tfDelta / tfData[0].value * 100)}%)
                 </span>
               </div>
@@ -883,7 +883,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                     </td>
                     {/* Statut */}
                     <td className="pr-4 py-3 text-center align-middle">
-                      <span className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+                      <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${
                         row.statut === "Follow"
                           ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]"
                           : row.statut === "Sponsored"

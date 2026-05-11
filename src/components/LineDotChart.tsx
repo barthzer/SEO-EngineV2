@@ -6,11 +6,17 @@ import { ChartTooltip } from "@/components/Tooltip";
 interface LineDotChartProps {
   data: { val: number; date: string }[];
   color?: string;
+  /** Fixed pixel height. Ignored when `fillHeight` is true. */
   height?: number;
+  /** When true, chart fills its parent container's height (via ResizeObserver). */
+  fillHeight?: boolean;
   /** true = lower value is "better" (drawn higher), e.g. position metric */
   invertY?: boolean;
   formatValue?: (v: number) => string;
+  /** Date format used inside the hover tooltip (default: full localised date) */
   formatDate?: (d: string) => string;
+  /** Date format used on the X axis labels — keep it short to avoid overcrowding (default: month only) */
+  formatXLabel?: (d: string) => string;
   /** Number of Y-axis ticks (min 2) */
   yTicks?: number;
   /** Width reserved for Y axis labels on the left */
@@ -20,25 +26,39 @@ interface LineDotChartProps {
 export function LineDotChart({
   data,
   color = "#3E50F5",
-  height = 180,
+  height: heightProp = 180,
+  fillHeight = false,
   invertY = false,
   formatValue = (v) => v.toString(),
-  formatDate = (d) => d,
+  formatDate = (d) => {
+    const dt = new Date(d);
+    return Number.isNaN(dt.getTime()) ? d : dt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  },
+  formatXLabel = (d) => {
+    const dt = new Date(d);
+    return Number.isNaN(dt.getTime()) ? d : dt.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+  },
   yTicks = 4,
   yAxisWidth = 36,
 }: LineDotChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [containerW, setContainerW] = useState(0);
+  const [containerH, setContainerH] = useState(0);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setContainerW(entry.contentRect.width));
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerW(entry.contentRect.width);
+      if (fillHeight) setContainerH(entry.contentRect.height);
+    });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [fillHeight]);
+
+  const height = fillHeight ? containerH : heightProp;
 
   if (data.length < 2) return null;
 
@@ -105,12 +125,12 @@ export function LineDotChart({
 
   const hovPt = hoverIdx !== null ? pts[hoverIdx] : null;
 
-  if (containerW === 0) {
-    return <div ref={containerRef} style={{ height }} />;
+  if (containerW === 0 || (fillHeight && containerH === 0)) {
+    return <div ref={containerRef} className={fillHeight ? "h-full w-full" : ""} style={fillHeight ? undefined : { height }} />;
   }
 
   return (
-    <div ref={containerRef} className="relative" onMouseLeave={() => setHoverIdx(null)}>
+    <div ref={containerRef} className={`relative ${fillHeight ? "h-full w-full" : ""}`} onMouseLeave={() => setHoverIdx(null)}>
       <svg
         ref={svgRef}
         width={containerW}
@@ -161,7 +181,7 @@ export function LineDotChart({
           strokeLinejoin="round"
         />
 
-        {/* Date labels under each point */}
+        {/* Date labels under each point — short month-only by default */}
         {pts.map((p, i) => (
           <text
             key={i}
@@ -171,7 +191,7 @@ export function LineDotChart({
             fontSize={10}
             fill="var(--text-muted)"
           >
-            {formatDate(p.date)}
+            {formatXLabel(p.date)}
           </text>
         ))}
 

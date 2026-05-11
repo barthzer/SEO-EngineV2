@@ -99,7 +99,7 @@ const STAGE_CONFIG = {
 function StageBadge({ stage }: { stage: Project["stage"] }) {
   const { color, bg } = STAGE_CONFIG[stage];
   return (
-    <span className="inline-flex items-center rounded-full px-3 py-1.5 text-[12px] font-medium capitalize" style={{ color, backgroundColor: bg }}>
+    <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium capitalize" style={{ color, backgroundColor: bg }}>
       {stage}
     </span>
   );

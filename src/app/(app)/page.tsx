@@ -108,7 +108,7 @@ function TraficChip({ value, dir }: { value: string; dir: Analysis["traficDir"] 
   const isDown = dir === "down";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium ${
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium ${
         isUp
           ? "bg-emerald-50 text-emerald-600"
           : isDown

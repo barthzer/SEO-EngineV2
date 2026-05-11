@@ -18,6 +18,7 @@
   --bg-card-hover:   #fafafa;
   --bg-footer:       #ebebeb;
   --bg-sidebar:      var(--bg-subtle);
+  --bg-sidebar-active: #e4e4e6;
   --bg-overlay:      #f5f5f5;
 
   /* Cards & modales */
@@ -70,6 +71,7 @@
   --bg-card-hover:   #2c2c2e;
   --bg-footer:       #161618;
   --bg-sidebar:      #161618;
+  --bg-sidebar-active: #2c2c2e;
   --bg-overlay:      #1c1c1e;
 
   /* Cards & modales */

@@ -92,7 +92,7 @@ function ConnBadge({ status }: { status: ConnStatus }) {
     error:        { label: "Erreur",        color: "#E11D48", bg: "rgba(225,29,72,0.09)", Icon: ExclamationCircleIcon },
   }[status];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium" style={{ color: config.color, backgroundColor: config.bg }}>
+    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: config.color, backgroundColor: config.bg }}>
       <config.Icon className="h-3.5 w-3.5" />
       {config.label}
     </span>

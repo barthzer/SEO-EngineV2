@@ -14,8 +14,6 @@ import {
   MoonIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
-  PlusIcon,
-  GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import {
   Squares2X2Icon as Squares2X2Solid,
@@ -130,12 +128,10 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex h-9 items-center gap-2 rounded-xl text-[13px] font-medium transition-colors duration-150 ${
+      className={`flex h-9 items-center gap-2 rounded-xl text-[13px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 ${
         isExpanded ? "w-full" : "w-9"
       } ${
-        isActive
-          ? "bg-accent-primary-soft text-accent-primary"
-          : "text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+        isActive ? "bg-[var(--bg-sidebar-active)]" : "hover:bg-[var(--bg-secondary)]"
       }`}
     >
       <Tooltip label={label} side="right" disabled={isExpanded}>
@@ -180,39 +176,13 @@ export function Sidebar() {
       <div className="flex h-14 flex-shrink-0 items-center px-4">
         <SeoEngineLogo className="h-8 w-8 flex-shrink-0 text-[var(--text-primary)]" />
         <SeoEngineWordmark
-          className="ml-3 flex-shrink-0 overflow-hidden text-[18px] text-[var(--text-primary)] transition-all duration-300"
+          className="ml-3 flex-shrink-0 overflow-hidden text-[20px] text-[var(--text-primary)] transition-all duration-300"
           style={{
             maxWidth: isExpanded ? "170px" : "0px",
             opacity: isExpanded ? 1 : 0,
             transitionTimingFunction: "var(--ease-expo)",
           }}
         />
-      </div>
-
-      {/* Nouveau projet CTA */}
-      <div className={`flex w-full flex-col gap-0.5 py-3 ${isExpanded ? "px-2" : "items-center"}`}>
-        <Tooltip label="Nouveau projet" side="right" disabled={isExpanded}>
-          <button
-            onClick={() => {}}
-            className={`flex h-9 items-center gap-2 rounded-xl bg-accent-primary text-white transition-opacity hover:opacity-90 ${
-              isExpanded ? "w-full" : "w-9"
-            }`}
-          >
-            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center">
-              <PlusIcon className="h-5 w-5" />
-            </span>
-            <span
-              className="overflow-hidden whitespace-nowrap text-[13px] font-medium transition-all duration-300"
-              style={{
-                maxWidth: isExpanded ? "160px" : "0px",
-                opacity: isExpanded ? 1 : 0,
-                transitionTimingFunction: "var(--ease-expo)",
-              }}
-            >
-              Nouveau projet
-            </span>
-          </button>
-        </Tooltip>
       </div>
 
       {/* Main nav */}
@@ -245,7 +215,7 @@ export function Sidebar() {
                 href={`/analyse/${encodeURIComponent(p.domain)}`}
                 className={`group/item flex h-9 flex-shrink-0 items-center rounded-xl transition-colors ${
                   isExpanded ? "w-full gap-2.5" : "w-9 justify-center"
-                } ${isActive ? "bg-[var(--bg-secondary)]" : "hover:bg-[var(--bg-secondary)]"}`}
+                } ${isActive ? "bg-[var(--bg-sidebar-active)]" : "hover:bg-[var(--bg-secondary)]"}`}
               >
                 <span className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center transition-all duration-200 ${!isActive ? "opacity-60 grayscale group-hover/item:opacity-100 group-hover/item:grayscale-0" : ""}`}>
                   <ProjectFavicon domain={p.domain} logo={p.logo} />
@@ -254,7 +224,7 @@ export function Sidebar() {
                     style={{ backgroundColor: color }} />
                 </span>
                 <span
-                  className="overflow-hidden whitespace-nowrap text-[13px] font-medium text-[var(--text-primary)] transition-all duration-300"
+                  className="overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-body text-[var(--text-primary)] transition-all duration-300"
                   style={{
                     maxWidth: isExpanded ? "160px" : "0px",
                     opacity: isExpanded ? 1 : 0,
@@ -293,7 +263,7 @@ export function Sidebar() {
               {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </span>
             <span
-              className="overflow-hidden whitespace-nowrap text-[13px] font-medium transition-all duration-300"
+              className="overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-body transition-all duration-300"
               style={{
                 maxWidth: isExpanded ? "160px" : "0px",
                 opacity: isExpanded ? 1 : 0,
@@ -318,7 +288,7 @@ export function Sidebar() {
               {isExpanded ? <ChevronLeftIcon className="h-5 w-5" /> : <ChevronRightIcon className="h-5 w-5" />}
             </span>
             <span
-              className="overflow-hidden whitespace-nowrap text-[13px] font-medium transition-all duration-300"
+              className="overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-body transition-all duration-300"
               style={{
                 maxWidth: isExpanded ? "160px" : "0px",
                 opacity: isExpanded ? 1 : 0,
