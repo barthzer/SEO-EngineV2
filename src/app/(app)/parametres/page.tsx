@@ -71,7 +71,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className="relative h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-200"
-      style={{ backgroundColor: checked ? "#10B981" : "var(--bg-secondary)" }}
+      style={{ backgroundColor: checked ? "var(--color-success)" : "var(--bg-secondary)" }}
     >
       <span
         className="absolute left-[3px] top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200"
@@ -87,9 +87,9 @@ type ConnStatus = "connected" | "disconnected" | "error";
 
 function ConnBadge({ status }: { status: ConnStatus }) {
   const config = {
-    connected:    { label: "Connecté",     color: "#10B981", bg: "rgba(16,185,129,0.09)", Icon: CheckCircleSolid },
+    connected:    { label: "Connecté",     color: "var(--color-success)", bg: "var(--color-success-bg)", Icon: CheckCircleSolid },
     disconnected: { label: "Non connecté", color: "var(--text-muted)", bg: "var(--bg-secondary)", Icon: ExclamationCircleIcon },
-    error:        { label: "Erreur",        color: "#E11D48", bg: "rgba(225,29,72,0.09)", Icon: ExclamationCircleIcon },
+    error:        { label: "Erreur",        color: "var(--color-danger)", bg: "var(--color-danger-bg)", Icon: ExclamationCircleIcon },
   }[status];
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: config.color, backgroundColor: config.bg }}>
@@ -273,35 +273,37 @@ export default function ParametresPage() {
     <div className="flex flex-1 flex-col overflow-y-auto">
 
       {/* Header */}
-      <div className="w-full px-[var(--page-px)] pt-8 pb-0">
-        <h1 className="mb-6 text-[28px] font-semibold tracking-tight text-[var(--text-primary)]">
+      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)] pt-[var(--page-py)] pb-4">
+        <h1 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
           Paramètres
         </h1>
       </div>
 
-      {/* Sticky Tabs */}
-      <div className="sticky top-0 z-10 bg-[var(--bg-primary)]/75 backdrop-blur-md">
-        <div className="w-full px-[var(--page-px)]">
-          <div className="flex h-16 items-center gap-1">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className="relative flex h-full items-center px-4 text-[16px] font-semibold tracking-tight transition-colors"
-                style={{ color: tab === t.key ? "var(--text-primary)" : "var(--text-muted)" }}
-              >
-                {t.label}
-                {tab === t.key && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-accent-primary" />
-                )}
-              </button>
-            ))}
+      {/* Sticky Tabs — même look que la barre Audit (h-12, text-14, underline inset, border-b) */}
+      <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/75 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
+          <div className="relative flex h-12 items-center gap-1">
+            {TABS.map((t) => {
+              const isActive = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`relative flex h-full cursor-pointer items-center px-4 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                >
+                  {t.label}
+                  {isActive && (
+                    <span className="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-primary" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="w-full px-[var(--page-px)] py-6">
+      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)] py-[var(--page-py)]">
 
         {/* ── Mon Compte ── */}
         {tab === "compte" && (

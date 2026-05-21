@@ -231,7 +231,7 @@ export function SkeletonAnalyseGeneral() {
         <Skeleton className="h-40 w-full rounded-xl" />
       </div>
 
-      {/* Lots actifs */}
+      {/* Tags actifs */}
       <div>
         <Skeleton className="mb-4 h-5 w-28 rounded-md" />
         <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">

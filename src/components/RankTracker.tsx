@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon, ArrowUpIcon, ArrowDownIcon, XMarkIcon, ChevronDownIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
-import { Upload, FileSpreadsheet, Plus } from "lucide-react";
+import { Upload, FileSpreadsheet, Plus, Trophy, Medal, Target, Activity } from "lucide-react";
 import { Button } from "@/components/Button";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 import { SearchInput } from "@/components/SearchInput";
@@ -11,6 +11,9 @@ import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { Sparkline } from "@/components/Sparkline";
 import { AreaChart } from "@/components/AreaChart";
+import { KpiCard } from "@/components/KpiCard";
+import { KpiGroup } from "@/components/KpiGroup";
+import { TableWide, type ColumnDef } from "@/components/TableWide";
 
 /* ── Types ── */
 
@@ -183,8 +186,8 @@ function filterHistory(history: HistoryPoint[], range: TimeRange): HistoryPoint[
 function PosCell({ pos }: { pos: number | null }) {
   const color =
     pos === null ? "var(--text-muted)" :
-    pos <= 3     ? "#10B981" :
-    pos <= 10    ? "#F59E0B" :
+    pos <= 3     ? "var(--color-success)" :
+    pos <= 10    ? "var(--color-warning)" :
     pos <= 30    ? "#6B7280" : "var(--text-muted)";
   return (
     <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>
@@ -198,7 +201,7 @@ function DeltaCell({ delta }: { delta: number | null }) {
   if (delta === 0)    return <span className="text-[13px] text-[var(--text-muted)]">=</span>;
   const gain = delta < 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[12px] font-semibold ${gain ? "text-[#10B981]" : "text-[#E11D48]"}`}>
+    <span className={`inline-flex items-center gap-0.5 text-[12px] font-semibold ${gain ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>
       {gain ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
       {Math.abs(delta)}
     </span>
@@ -355,7 +358,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
                     return (
                       <tr
                         key={s.rank}
-                        className={`transition-colors hover:bg-[var(--bg-secondary)] ${isOurs ? "bg-[rgba(62,80,245,0.04)]" : ""}`}
+                        className={`transition-colors hover:bg-[var(--bg-secondary)] ${isOurs ? "bg-[var(--accent-primary-soft)]" : ""}`}
                       >
                         <td className="pl-6 pr-4 py-2.5 text-[13px] font-semibold text-[var(--text-muted)]">{s.rank}</td>
                         <td className="px-4 py-2.5">
@@ -369,7 +372,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
                             <a
                               href={s.url} target="_blank" rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
-                              className={`block truncate font-mono text-[12px] transition-colors hover:underline ${isOurs ? "font-semibold text-[#3E50F5]" : "text-[var(--text-secondary)]"}`}
+                              className={`block truncate font-mono text-[12px] transition-colors hover:underline ${isOurs ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}
                             >
                               {s.url}
                             </a>
@@ -451,7 +454,7 @@ function AddKwModal({ onClose, onAdd }: {
               onChange={e => setKeyword(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleAdd()}
               placeholder="Ajouter un mot-clé"
-              className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[#3E50F5] focus:outline-none transition-colors"
+              className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none transition-colors"
             />
           </div>
 
@@ -465,7 +468,7 @@ function AddKwModal({ onClose, onAdd }: {
                 value={tag}
                 onChange={e => setTag(e.target.value)}
                 placeholder="ex : produit"
-                className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] pl-9 pr-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[#3E50F5] focus:outline-none transition-colors"
+                className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] pl-9 pr-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -581,11 +584,11 @@ function ImportCsvModal({ onClose, onImport }: {
               if (f) handleFile(f);
             }}
             onClick={() => fileInputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 transition-colors ${dragOver ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"}`}
+            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 transition-colors ${dragOver ? "border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"}`}
           >
             {file ? (
               <>
-                <FileSpreadsheet className="h-8 w-8 text-[#10B981]" />
+                <FileSpreadsheet className="h-8 w-8 text-[var(--color-success)]" />
                 <p className="text-[14px] font-medium text-[var(--text-primary)]">{file.name}</p>
                 <p className="text-[12px] tracking-caption text-[var(--text-muted)]">
                   {parsed.length} mot{parsed.length > 1 ? "s" : ""}-clé{parsed.length > 1 ? "s" : ""} détecté{parsed.length > 1 ? "s" : ""} · cliquez pour changer
@@ -608,7 +611,7 @@ function ImportCsvModal({ onClose, onImport }: {
           </div>
 
           {error && (
-            <p className="text-[12px] tracking-caption text-[#E11D48]">{error}</p>
+            <p className="text-[12px] tracking-caption text-[var(--color-danger)]">{error}</p>
           )}
 
           {/* Defaults — applied to rows without explicit tag */}
@@ -621,7 +624,7 @@ function ImportCsvModal({ onClose, onImport }: {
                 value={defaultTag}
                 onChange={e => setDefaultTag(e.target.value)}
                 placeholder="ex : produit"
-                className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[#3E50F5] focus:outline-none transition-colors"
+                className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3.5 text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none transition-colors"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -707,7 +710,7 @@ function VisibilityChart() {
         <div className="text-right">
           <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
             {vals[vals.length - 1]}
-            <span className="ml-1 text-[13px] font-medium text-[#10B981]">{deltaLabel}</span>
+            <span className="ml-1 text-[13px] font-medium text-[var(--color-success)]">{deltaLabel}</span>
           </p>
           <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">score de visibilité</p>
         </div>
@@ -727,9 +730,79 @@ function VisibilityChart() {
   );
 }
 
+/* ── Columns (TableWide) ── */
+
+const TRACKED_COLUMNS: ColumnDef<TrackedKw>[] = [
+  {
+    key: "keyword",
+    header: "Mot-clé",
+    width: 240,
+    flex: true,
+    render: (kw) => (
+      <span className="block truncate text-[13px] font-medium text-[var(--text-primary)]">{kw.keyword}</span>
+    ),
+  },
+  {
+    key: "pos", header: "Pos.", width: 70,
+    sortable: true, sortValue: (kw) => kw.pos ?? 9999,
+    render: (kw) => <PosCell pos={kw.pos} />,
+  },
+  {
+    key: "delta", header: "Delta", width: 70,
+    sortable: true, sortValue: (kw) => kw.delta ?? 0,
+    render: (kw) => <DeltaCell delta={kw.delta} />,
+  },
+  {
+    key: "url",
+    header: "URL positionnée",
+    width: 260,
+    render: (kw) => (
+      kw.url
+        ? <span className="block truncate font-mono text-[12px] text-[var(--text-muted)]">{kw.url}</span>
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span>
+    ),
+  },
+  {
+    key: "volume", header: "Volume", width: 90, align: "right",
+    sortable: true, sortValue: (kw) => kw.volume ?? -1,
+    render: (kw) => (
+      <span className="text-[13px] tabular-nums text-[var(--text-muted)]">
+        {kw.volume !== null ? kw.volume.toLocaleString("fr-FR") : "—"}
+      </span>
+    ),
+  },
+  {
+    key: "freq",
+    header: "Fréq.",
+    width: 70,
+    render: (kw) => <span className="text-[13px] text-[var(--text-muted)]">{kw.freq}</span>,
+  },
+  {
+    key: "tag",
+    header: "Tag",
+    width: 100,
+    render: (kw) => (
+      kw.tag
+        ? <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">{kw.tag}</span>
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span>
+    ),
+  },
+  {
+    key: "spark",
+    header: "30j",
+    width: 90,
+    align: "right",
+    render: (kw) => (
+      <div className="flex justify-end">
+        <Sparkline data={kw.spark} />
+      </div>
+    ),
+  },
+];
+
 /* ── Main component ── */
 
-export function RankTracker() {
+export function RankTracker({ title, subtitle }: { title?: string; subtitle?: string } = {}) {
   const [kws,      setKws]      = useState<TrackedKw[]>(INITIAL_KWS);
   const [filter,   setFilter]   = useState<RankFilter>("all");
   const [search,   setSearch]   = useState("");
@@ -766,15 +839,23 @@ export function RankTracker() {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Header — title + subtitle rendered by parent tab, only actions here */}
-      <div className="flex items-center justify-end gap-4">
+      {/* Header — title (passed by parent) on the left, CTAs on the right (space-between) */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          {title && (
+            <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h2>
+          )}
+          {subtitle && (
+            <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>
+          )}
+        </div>
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Button size="sm" variant="secondary">Export</Button>
-          <Button size="sm" variant="secondary">Checker</Button>
+          <Button variant="secondary">Export</Button>
+          <Button variant="secondary">Checker</Button>
           <DropdownMenu
             width={200}
             trigger={
-              <Button size="sm">
+              <Button>
                 <PlusIcon className="h-4 w-4" />
                 Importer
                 <ChevronDownIcon className="h-3.5 w-3.5" />
@@ -788,22 +869,12 @@ export function RankTracker() {
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: "TOP 1",       value: top1 },
-          { label: "TOP 3",       value: top3 },
-          { label: "TOP 10",      value: top10 },
-          { label: "Positionnés", value: `${positionedPct} %` },
-        ].map(m => (
-          <div key={m.label}
-            className="flex flex-col gap-1.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-5 py-4">
-            <span className="text-[12px] font-medium text-[var(--text-muted)]">{m.label}</span>
-            <span className="text-[28px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
-              {m.value}
-            </span>
-          </div>
-        ))}
-      </div>
+      <KpiGroup columns={4}>
+        <KpiCard bare icon={Trophy}   label="Top 1"       value={top1} />
+        <KpiCard bare icon={Medal}    label="Top 3"       value={top3} />
+        <KpiCard bare icon={Target}   label="Top 10"      value={top10} />
+        <KpiCard bare icon={Activity} label="Positionnés" value={`${positionedPct} %`} />
+      </KpiGroup>
 
       {/* Visibility chart */}
       <VisibilityChart />
@@ -818,81 +889,18 @@ export function RankTracker() {
         <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un mot-clé…" alwaysExpanded />
       </div>
 
-      {/* Table */}
-      <div className="bg-[var(--bg-card)]">
-        <table className="w-full table-fixed border-collapse">
-          <colgroup>
-            <col style={{ width: "22%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "24%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "8%" }} />
-          </colgroup>
-          <thead>
-            <tr className="border-b border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-muted)]">
-              <th className="px-4 py-3 text-left font-semibold">Mot-clé</th>
-              <th className="px-4 py-3 text-center font-semibold">Pos.</th>
-              <th className="px-4 py-3 text-center font-semibold">Delta</th>
-              <th className="px-4 py-3 text-left font-semibold">URL positionnée</th>
-              <th className="px-4 py-3 text-right font-semibold">Volume</th>
-              <th className="px-4 py-3 text-center font-semibold">Fréq.</th>
-              <th className="px-4 py-3 text-left font-semibold">Tag</th>
-              <th className="px-4 py-3 text-right font-semibold">30j</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-10 text-center text-[14px] text-[var(--text-muted)]">
-                  Aucun mot-clé correspondant.
-                </td>
-              </tr>
-            ) : filtered.map((kw, i) => (
-              <tr
-                key={i}
-                onClick={() => setSelIdx(i)}
-                className="cursor-pointer border-b border-[var(--border-subtle)] last:border-0 transition-colors hover:bg-[var(--bg-card-hover)]"
-              >
-                <td className="overflow-hidden px-4 py-3.5 align-middle">
-                  <span className="block truncate text-[13px] font-medium text-[var(--text-primary)]">
-                    {kw.keyword}
-                  </span>
-                </td>
-                <td className="px-4 py-3.5 text-center align-middle">
-                  <PosCell pos={kw.pos} />
-                </td>
-                <td className="px-4 py-3.5 text-center align-middle">
-                  <DeltaCell delta={kw.delta} />
-                </td>
-                <td className="overflow-hidden px-4 py-3.5 align-middle">
-                  {kw.url
-                    ? <span className="block truncate font-mono text-[12px] text-[var(--text-muted)]">{kw.url}</span>
-                    : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
-                </td>
-                <td className="px-4 py-3.5 text-right align-middle">
-                  <span className="text-[13px] tabular-nums text-[var(--text-muted)]">
-                    {kw.volume !== null ? kw.volume.toLocaleString("fr-FR") : "—"}
-                  </span>
-                </td>
-                <td className="px-4 py-3.5 text-center align-middle">
-                  <span className="text-[13px] text-[var(--text-muted)]">{kw.freq}</span>
-                </td>
-                <td className="px-4 py-3.5 align-middle">
-                  {kw.tag
-                    ? <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">{kw.tag}</span>
-                    : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
-                </td>
-                <td className="px-4 py-3.5 text-right align-middle">
-                  <Sparkline data={kw.spark} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Table — DS TableWide bordered (même look que Recommandations) */}
+      <TableWide<TrackedKw>
+        columns={TRACKED_COLUMNS}
+        data={filtered}
+        rowKey={(kw) => kw.keyword}
+        onRowClick={(_, i) => setSelIdx(i)}
+        emptyState="Aucun mot-clé correspondant."
+        minWidth={1100}
+        pageSize={25}
+        bordered
+        edgePadding="24px"
+      />
 
       {/* Add modal */}
       {modal && typeof document !== "undefined" && (

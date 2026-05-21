@@ -42,7 +42,7 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
         <>
           <div className="fixed inset-0 z-[1100]" onClick={() => setOpen(false)} />
           <div
-            className="fixed z-[1101] rounded-2xl p-2 shadow-[var(--shadow-floating)]"
+            className={`fixed z-[1101] rounded-2xl p-2 shadow-[var(--shadow-floating)] ${upward ? "animate-dropdown-up" : "animate-dropdown-down"}`}
             style={{
               top: coords.top,
               bottom: coords.bottom,
@@ -52,6 +52,7 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
               backgroundColor: "var(--dropdown-bg)",
               backdropFilter: "saturate(180%) blur(24px)",
               WebkitBackdropFilter: "saturate(180%) blur(24px)",
+              transformOrigin: upward ? "bottom center" : "top center",
             }}
           >
             {children}
@@ -78,7 +79,7 @@ export function DropdownItem({
   return (
     <button
       onClick={() => { onClick?.(); close(); }}
-      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[#E11D48]" : "text-[var(--text-primary)]"}`}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"}`}
     >
       {Icon && <Icon className="h-5 w-5 flex-shrink-0" style={{ color: iconColor }} />}
       <span className="flex-1 text-left">{children}</span>
@@ -91,14 +92,19 @@ export function DropdownSeparator() {
   return <div className="my-1.5 border-t border-[var(--border-subtle)]" />;
 }
 
+/** Hook utilisable depuis n'importe quel enfant d'un DropdownMenu pour fermer le panneau. */
+export function useDropdownClose() {
+  return useContext(DropdownCtx).close;
+}
+
 /**
- * Tertiary header for a DropdownMenu — small uppercase-tracking caption
- * to introduce a section / explain what the menu does (e.g. "Trier par").
- * Place as the first child of `<DropdownMenu>` (or above an items group).
+ * Header for a DropdownMenu — titre 13px muted avec séparateur full-width intégré.
+ * Place comme premier enfant de `<DropdownMenu>` (ou au-dessus d'un groupe d'items).
+ * Le `-mx-2 -mt-2 mb-2` annule le `p-2` du DropdownMenu pour obtenir un border-bottom edge-to-edge.
  */
 export function DropdownHeader({ children }: { children: ReactNode }) {
   return (
-    <div className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
+    <div className="-mx-2 -mt-2 mb-2 border-b border-[var(--border-subtle)] px-3 py-2 text-[13px] font-medium text-[var(--text-muted)]">
       {children}
     </div>
   );

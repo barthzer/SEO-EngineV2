@@ -48,10 +48,10 @@ const ARTICLES: Article[] = [
 /* ── Stage config ────────────────────────────────────────────────────── */
 
 const STAGES: { key: Stage; label: string; color: string; colorBg: string }[] = [
-  { key: "brief",     label: "Brief",     color: "#6366F1", colorBg: "rgba(99,102,241,0.09)" },
-  { key: "redaction", label: "Rédaction", color: "#F59E0B", colorBg: "rgba(245,158,11,0.09)" },
+  { key: "brief",     label: "Brief",     color: "var(--accent-primary)", colorBg: "rgba(99,102,241,0.09)" },
+  { key: "redaction", label: "Rédaction", color: "var(--color-warning)", colorBg: "rgba(245,158,11,0.09)" },
   { key: "relecture", label: "Relecture", color: "#0EA5E9", colorBg: "rgba(14,165,233,0.09)" },
-  { key: "publie",    label: "Publié",    color: "#10B981", colorBg: "rgba(16,185,129,0.09)" },
+  { key: "publie",    label: "Publié",    color: "var(--color-success)", colorBg: "var(--color-success-bg)" },
 ];
 
 const STAGE_MAP = Object.fromEntries(STAGES.map((s) => [s.key, s])) as Record<Stage, (typeof STAGES)[number]>;
@@ -96,7 +96,7 @@ function KanbanColumn({
           <button
             key={a.id}
             onClick={() => onOpen(a)}
-            className="group flex flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-4 text-left transition-colors hover:border-[var(--border-medium)]"
+            className="group flex flex-col gap-3 rounded-2xl bg-[var(--modal-bg)] p-4 text-left transition-colors hover:border-[var(--border-medium)]"
           >
             <p className="text-[13px] font-medium leading-snug text-[var(--text-primary)]">{a.title}</p>
 
@@ -189,7 +189,7 @@ function ArticleDrawer({ article: a }: { article: Article }) {
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2.5 text-[13px]">
               {item.done
-                ? <CheckCircleSolid className="h-5 w-5 flex-shrink-0 text-emerald-500" />
+                ? <CheckCircleSolid className="h-5 w-5 flex-shrink-0 text-[var(--color-success)]" />
                 : <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-[var(--border-medium)]" />
               }
               <span className={item.done ? "text-[var(--text-secondary)] line-through" : "text-[var(--text-primary)]"}>
@@ -225,8 +225,8 @@ export default function ProductionPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto py-8">
-      <div className="w-full px-[var(--page-px)]">
+    <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
+      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
 
         {/* Header */}
         <div className="mb-8">

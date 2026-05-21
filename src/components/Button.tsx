@@ -6,14 +6,17 @@ import { ButtonHTMLAttributes, AnchorHTMLAttributes, forwardRef } from "react";
 
 const variants = {
   primary:
-    "bg-accent-primary text-white hover:opacity-90 " +
+    "bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-bg-hover)] " +
     "disabled:bg-[var(--border-badge)] disabled:text-[var(--text-muted)] disabled:cursor-not-allowed",
   secondary:
     "border border-[var(--border-medium)] bg-transparent text-[var(--text-primary)] " +
     "hover:bg-[var(--bg-secondary)] " +
     "disabled:opacity-40 disabled:cursor-not-allowed",
+  accent:
+    "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] " +
+    "disabled:opacity-40 disabled:cursor-not-allowed",
   dark:
-    "bg-[var(--text-primary)] text-[var(--bg-primary)] hover:opacity-80 " +
+    "bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-bg-hover)] " +
     "disabled:opacity-40 disabled:cursor-not-allowed",
   ghost:
     "bg-transparent text-[var(--text-secondary)] " +

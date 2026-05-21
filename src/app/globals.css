@@ -42,13 +42,37 @@
   --color-warning:          var(--color-warning);
 
   /* Fonts */
-  --font-sans:              var(--font-outfit);
-  --font-serif:             var(--font-instrument-serif);
+  --font-sans:              var(--font-figtree);
+  --font-display:           var(--font-space-grotesk);
+  --font-mono:              var(--font-space-grotesk);
+
+  /* Accent — hover */
+  --color-accent-primary-hover: var(--accent-primary-hover);
+
+  /* CTA */
+  --color-cta-bg:           var(--cta-bg);
+  --color-cta-bg-hover:     var(--cta-bg-hover);
+  --color-cta-text:         var(--cta-text);
+
+  /* Statuts — étendus */
+  --color-success-bg:       var(--color-success-bg);
+  --color-success-soft:     var(--color-success-soft);
+  --color-danger-bg:        var(--color-danger-bg);
+  --color-danger-soft:      var(--color-danger-soft);
+  --color-warning-bg:       var(--color-warning-bg);
+  --color-warning-soft:     var(--color-warning-soft);
+  --color-info:             var(--color-info);
+  --color-info-bg:          var(--color-info-bg);
+  --color-info-soft:        var(--color-info-soft);
+  --color-neutral:          var(--color-neutral);
+  --color-neutral-bg:       var(--color-neutral-bg);
 
   /* Animations */
   --animate-fade-in:        fade-in 200ms ease-out both;
   --animate-slide-down:     slide-down 240ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
   --animate-slide-up:       slide-up 240ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
+  --animate-dropdown-down:  dropdown-down 160ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
+  --animate-dropdown-up:    dropdown-up 160ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
 }
 
 /* ──────────────── Skeleton shimmer ──────────────── */
@@ -89,6 +113,17 @@
   to   { transform: translateX(0);  opacity: 1; }
 }
 
+/* Dropdown panel — slide dans la direction d'ouverture + opacity, rapide pour UX fluide */
+@keyframes dropdown-down {
+  from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes dropdown-up {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
 /* ──────────────── Icons stroke ──────────────── */
 svg[stroke="currentColor"][fill="none"] {
   stroke-width: 2;
@@ -114,11 +149,38 @@ svg[stroke="currentColor"][fill="none"] {
 .tracking-caption    { letter-spacing: var(--tracking-caption); }
 .tracking-micro      { letter-spacing: var(--tracking-micro); }
 
+/* ──────────────── Card system ────────────────
+   Convention DS :
+   - .card-static : surface d'affichage (KPI, graphs, données). Pas de border.
+   - .card-action : surface interactive (clickable). Border + hover state.
+   Le contour = affordance d'action. */
+.card-static {
+  background-color: var(--bg-card);
+  border-radius: 24px;
+}
+.card-action {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  transition: border-color 200ms var(--ease-out), background-color 200ms var(--ease-out);
+}
+.card-action:hover {
+  border-color: var(--border-medium);
+  background-color: var(--bg-subtle);
+}
+
 /* Auto-apply by tag — peut être surchargé par les classes ci-dessus */
+/* Titres : Space Grotesk (geometric, futuristic) → différenciation visuelle */
+h1, h2, h3 {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+}
 h1 { letter-spacing: var(--tracking-display); }
 h2 { letter-spacing: var(--tracking-heading); }
 h3 { letter-spacing: var(--tracking-subheading); }
 .tracking-tight { letter-spacing: var(--tracking-heading); }
+
+.font-display { font-family: var(--font-display), var(--font-sans), system-ui, sans-serif; }
 
 /* ──────────────── Inverse surface (NBA card) ────────────────
    Scope qui inverse le thème courant — utilisé pour faire ressortir
@@ -154,10 +216,12 @@ h3 { letter-spacing: var(--tracking-subheading); }
   color:               #0a0a0a;
 }
 
-/* ──────────────── Page horizontal padding ──────────────── */
-:root { --page-px: 24px; }
-@media (min-width: 768px)  { :root { --page-px: 32px; } }
-@media (min-width: 1280px) { :root { --page-px: 80px; } }
+/* ──────────────── Page paddings + content max-width ──────────────── */
+:root {
+  --page-px: 40px;        /* horizontal padding intérieur de chaque vue */
+  --page-py: 40px;        /* vertical padding intérieur de chaque vue */
+  --page-max-w: none;     /* largeur max du contenu — none = pleine largeur du main */
+}
 
 
 /* ──────────────── Base body ──────────────── */

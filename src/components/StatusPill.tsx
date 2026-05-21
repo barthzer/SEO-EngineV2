@@ -6,8 +6,8 @@ export type Status = "todo" | "doing" | "done";
 
 export const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string; text: string }> = {
   todo:  { label: "À faire",  color: "var(--text-muted)", bg: "var(--bg-subtle)",           text: "var(--text-primary)"   },
-  doing: { label: "En cours", color: "#F59E0B",            bg: "rgba(245,158,11,0.09)",      text: "#B45309"               },
-  done:  { label: "Terminé",  color: "#10B981",            bg: "rgba(16,185,129,0.09)",      text: "#059669"               },
+  doing: { label: "En cours", color: "var(--color-warning)",            bg: "rgba(245,158,11,0.09)",      text: "#B45309"               },
+  done:  { label: "Terminé",  color: "var(--color-success)",            bg: "var(--color-success-bg)",      text: "var(--color-success)"               },
 };
 
 /** Status pill — pill ronde avec dot couleur à gauche */

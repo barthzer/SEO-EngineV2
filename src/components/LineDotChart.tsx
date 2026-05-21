@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { ChartTooltip } from "@/components/Tooltip";
 
 interface LineDotChartProps {
@@ -25,7 +25,7 @@ interface LineDotChartProps {
 
 export function LineDotChart({
   data,
-  color = "#3E50F5",
+  color = "var(--accent-primary)",
   height: heightProp = 180,
   fillHeight = false,
   invertY = false,
@@ -96,7 +96,8 @@ export function LineDotChart({
   const baselineY = (PAD_TOP + chartH).toFixed(1);
   const areaD = `${pathD} L ${pts[pts.length - 1].x.toFixed(1)} ${baselineY} L ${pts[0].x.toFixed(1)} ${baselineY} Z`;
 
-  const gradId = `linedotchart-grad-${color.replace("#", "")}`;
+  const reactId = useId().replace(/:/g, "");
+  const gradId = `linedotchart-grad-${reactId}`;
 
   const tickCount = Math.max(2, yTicks);
   const ticks = Array.from({ length: tickCount }, (_, i) => {
@@ -140,8 +141,8 @@ export function LineDotChart({
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
+            <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.22 }} />
+            <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
           </linearGradient>
         </defs>
 
@@ -158,9 +159,9 @@ export function LineDotChart({
             />
             <text
               x={yAxisWidth - 6}
-              y={t.y + 3}
+              y={t.y + 4}
               textAnchor="end"
-              fontSize={10}
+              fontSize={12}
               fill="var(--text-muted)"
             >
               {formatValue(t.v)}
@@ -175,7 +176,7 @@ export function LineDotChart({
         <path
           d={pathD}
           fill="none"
-          stroke={color}
+          style={{ stroke: color }}
           strokeWidth={1.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -188,7 +189,7 @@ export function LineDotChart({
             x={p.x}
             y={height - 4}
             textAnchor="middle"
-            fontSize={10}
+            fontSize={12}
             fill="var(--text-muted)"
           >
             {formatXLabel(p.date)}
@@ -202,7 +203,7 @@ export function LineDotChart({
             cx={p.x}
             cy={p.y}
             r={hoverIdx === i ? 5 : 4}
-            fill={color}
+            style={{ fill: color }}
             stroke="#FFFFFF"
             strokeWidth={2}
           />
@@ -222,14 +223,21 @@ export function LineDotChart({
         )}
       </svg>
 
-      {hovPt && (
-        <ChartTooltip x={hovPt.x} y={hovPt.y - 8}>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] text-white/60">{formatDate(hovPt.date)}</span>
-            <span className="text-[13px] font-semibold text-white">{formatValue(hovPt.val)}</span>
-          </div>
-        </ChartTooltip>
-      )}
+      {hovPt && (() => {
+        // Coordonnées viewport (le tooltip est en portail position:fixed pour échapper
+        // à tout conteneur clippé ou avec z-index plus haut autour de la modale).
+        const rect = svgRef.current?.getBoundingClientRect();
+        const tipX = (rect?.left ?? 0) + hovPt.x;
+        const tipY = (rect?.top ?? 0) + hovPt.y - 8;
+        return (
+          <ChartTooltip x={tipX} y={tipY} portal>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11px] text-white/60">{formatDate(hovPt.date)}</span>
+              <span className="text-[13px] font-semibold text-white">{formatValue(hovPt.val)}</span>
+            </div>
+          </ChartTooltip>
+        );
+      })()}
     </div>
   );
 }

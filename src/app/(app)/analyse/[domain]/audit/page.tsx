@@ -22,7 +22,7 @@ export default function AuditPage({ params, searchParams }: {
   );
 
   return (
-    <div className="w-full px-[var(--page-px)] py-8">
+    <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)] py-[var(--page-py)]">
       <div className="mb-6 flex items-center gap-4">
         <Link
           href={`/analyse/${domain}`}

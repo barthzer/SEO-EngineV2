@@ -17,22 +17,28 @@ export function DeltaBadge({ value, positiveIsGood = true, showIcon = true, clas
   const isPositive = num > 0;
   const isNeutral = num === 0 || Number.isNaN(num);
 
+  // isGood = la variation est-elle bénéfique (amélioration) ?
+  // → C'est ce qui détermine couleur ET direction de la flèche, pour cohérence visuelle.
+  // Ex. Position : delta -2 (passe de #12 à #10) = isGood ✓ → flèche ↑ verte (perf en hausse),
+  // même si le nombre affiché reste "-2".
+  const isGood = positiveIsGood ? isPositive : !isPositive;
+
   let color: string;
   let bg: string;
 
   if (isNeutral) {
     color = "var(--text-muted)";
     bg = "var(--bg-subtle)";
-  } else if (positiveIsGood ? isPositive : !isPositive) {
-    color = "#10B981";
+  } else if (isGood) {
+    color = "var(--color-success)";
     bg = "rgba(16,185,129,0.1)";
   } else {
-    color = "#E11D48";
+    color = "var(--color-danger)";
     bg = "rgba(225,29,72,0.1)";
   }
 
   const display = typeof value === "string" ? value : `${isPositive ? "+" : ""}${value}`;
-  const Icon = isNeutral ? null : isPositive ? ArrowUpIcon : ArrowDownIcon;
+  const Icon = isNeutral ? null : isGood ? ArrowUpIcon : ArrowDownIcon;
 
   return (
     <span

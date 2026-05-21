@@ -12,7 +12,7 @@ interface ProgressBarProps {
 export function ProgressBar({
   value,
   max = 100,
-  color = "#3E50F5",
+  color = "var(--accent-primary)",
   height = 6,
   className = "",
   showLabel = false,

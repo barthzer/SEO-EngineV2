@@ -136,31 +136,31 @@ const CRAWL_CHARTS = [
   {
     label: "Codes de réponse",
     total: 133,
-    slices: [{ label: "2xx", count: 133, color: "#10B981" }],
+    slices: [{ label: "2xx", count: 133, color: "var(--color-success)" }],
   },
   {
     label: "Indexabilité",
     total: 133,
     slices: [
-      { label: "Indexable", count: 132, color: "#10B981" },
-      { label: "Bloqué",    count: 1,   color: "#E11D48" },
+      { label: "Indexable", count: 132, color: "var(--color-success)" },
+      { label: "Bloqué",    count: 1,   color: "var(--color-danger)" },
     ],
   },
   {
     label: "Titles",
     total: 132,
     slices: [
-      { label: "Unique",  count: 130, color: "#10B981" },
-      { label: "Doublon", count: 2,   color: "#F59E0B" },
+      { label: "Unique",  count: 130, color: "var(--color-success)" },
+      { label: "Doublon", count: 2,   color: "var(--color-warning)" },
     ],
   },
   {
     label: "Méta-descriptions",
     total: 132,
     slices: [
-      { label: "Unique",   count: 127, color: "#10B981" },
-      { label: "Doublon",  count: 2,   color: "#F59E0B" },
-      { label: "Manquant", count: 3,   color: "#E11D48" },
+      { label: "Unique",   count: 127, color: "var(--color-success)" },
+      { label: "Doublon",  count: 2,   color: "var(--color-warning)" },
+      { label: "Manquant", count: 3,   color: "var(--color-danger)" },
     ],
   },
 ];
@@ -222,12 +222,12 @@ function nextStatus(s: Status): Status {
 }
 
 function scoreColor(n: number) {
-  return n >= 70 ? "#10B981" : n >= 50 ? "#F59E0B" : "#E11D48";
+  return n >= 70 ? "var(--color-success)" : n >= 50 ? "var(--color-warning)" : "var(--color-danger)";
 }
 
 function impactColor(impact: string) {
-  if (impact.includes("fort")) return "#E11D48";
-  if (impact === "moyen") return "#F59E0B";
+  if (impact.includes("fort")) return "var(--color-danger)";
+  if (impact === "moyen") return "var(--color-warning)";
   return "var(--text-muted)";
 }
 
@@ -256,12 +256,12 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
   return (
     <button onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all ${
-        status === "done"  ? "border-[#10B981] bg-[#10B981]" :
-        status === "doing" ? "border-[#F59E0B] bg-[rgba(245,158,11,0.1)]" :
+        status === "done"  ? "border-[var(--color-success)] bg-[var(--color-success)]" :
+        status === "doing" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
         "border-[var(--text-muted)]"
       }`}>
       {status === "done"  && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-      {status === "doing" && <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />}
+      {status === "doing" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
     </button>
   );
 }
@@ -310,14 +310,14 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         <div className="grid grid-cols-[2fr_1fr] gap-8 items-center">
           <div className="min-w-0">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#10B981]">Audit terminé</span>
+              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-success)]">Audit terminé</span>
               <span className="text-[13px] text-[var(--text-muted)]">31 mars 2026</span>
               <span className="text-[13px] text-[var(--text-muted)]">·</span>
               <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
             </div>
             <h1 className="text-[32px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
               Site sain mais{" "}
-              <span style={{ color: "#E11D48" }}>~99 visites/mois</span>
+              <span style={{ color: "var(--color-danger)" }}>~99 visites/mois</span>
               <br />menacées par 5 urgences techniques.
             </h1>
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
@@ -344,7 +344,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
           <div className="flex flex-col items-center gap-3">
             <ScoreRing score={84} size={160} strokeWidth={7} />
             <p className="text-[13px] font-medium text-[var(--text-muted)]">Score technique</p>
-            <p className="text-[12px] text-[var(--text-muted)]">Grade <strong style={{ color: "#10B981" }}>B</strong> · médiane secteur 72</p>
+            <p className="text-[12px] text-[var(--text-muted)]">Grade <strong style={{ color: "var(--color-success)" }}>B</strong> · médiane secteur 72</p>
           </div>
         </div>
       </div>
@@ -352,12 +352,12 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
       {/* Verdict cards — hors du hero */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { key: "blocker",     color: "#E11D48", label: "Bloqueur",     text: "67% des pages (88/133) ont des problèmes de titres ou méta — les snippets Google sont tronqués, le CTR est en baisse sur 246K impressions/mois." },
-          { key: "opportunity", color: "#3E50F5", label: "Opportunité",  text: "Corriger les 45 titres mal dimensionnés — ratio impact/effort optimal car 88% des pages crawlées ont des impressions GSC." },
-          { key: "crawl",       color: "#10B981", label: "Crawl budget", text: "Profondeur idéale (1.5), 0 erreur HTTP, 1 seule orpheline, sitemap correct. Le crawl budget est optimisé sur ce site de 133 pages." },
+          { key: "blocker",     color: "var(--color-danger)", label: "Bloqueur",     text: "67% des pages (88/133) ont des problèmes de titres ou méta — les snippets Google sont tronqués, le CTR est en baisse sur 246K impressions/mois." },
+          { key: "opportunity", color: "var(--accent-primary)", label: "Opportunité",  text: "Corriger les 45 titres mal dimensionnés — ratio impact/effort optimal car 88% des pages crawlées ont des impressions GSC." },
+          { key: "crawl",       color: "var(--color-success)", label: "Crawl budget", text: "Profondeur idéale (1.5), 0 erreur HTTP, 1 seule orpheline, sitemap correct. Le crawl budget est optimisé sur ce site de 133 pages." },
         ].map((v) => (
           <div key={v.key} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
-            style={{ background: `linear-gradient(to bottom, ${v.color}12 0%, var(--bg-card) 60%)` }}>
+            style={{ background: `linear-gradient(to bottom, color-mix(in oklab, ${v.color} 7%, transparent) 0%, var(--bg-card) 60%)` }}>
             <div className="px-5 pt-5 pb-6">
               <div className="mb-3 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
@@ -382,7 +382,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
           {URGENT_ISSUES.map((iss) => {
             const status = getU(iss.id);
             const isCritique = iss.severity === "critique";
-            const accentColor = isCritique ? "#E11D48" : "#F59E0B";
+            const accentColor = isCritique ? "var(--color-danger)" : "var(--color-warning)";
             return (
               <div key={iss.id} className={`overflow-hidden rounded-2xl border bg-[var(--bg-card)] ${status === "done" ? "opacity-50" : ""}`}
                 style={{ borderColor: "var(--border-subtle)", borderLeftColor: accentColor, borderLeftWidth: 3 }}>
@@ -390,7 +390,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold"
-                        style={{ color: accentColor, backgroundColor: isCritique ? "rgba(225,29,72,0.08)" : "rgba(245,158,11,0.1)" }}>
+                        style={{ color: accentColor, backgroundColor: isCritique ? "var(--color-danger-bg)" : "rgba(245,158,11,0.1)" }}>
                         {iss.tag}
                       </span>
                     </div>
@@ -425,14 +425,14 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         <div className="mb-4 overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
           <div className="mb-5 flex items-baseline justify-between">
             <h3 className="text-[19px] font-semibold tracking-tight text-[var(--text-primary)]">
-              Croisement <span className="text-[#3E50F5]">Crawl × GSC</span>
+              Croisement <span className="text-[var(--accent-primary)]">Crawl × GSC</span>
             </h3>
             <span className="text-[12px] text-[var(--text-muted)]">Snapshot · 27 avril 2026</span>
           </div>
 
           {/* Couverture headline */}
           <div className="mb-5 flex items-start gap-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6">
-            <span className="text-[52px] font-semibold leading-none tracking-tight" style={{ color: "#10B981" }}>89<span className="text-[22px] text-[var(--text-muted)]">%</span></span>
+            <span className="text-[52px] font-semibold leading-none tracking-tight" style={{ color: "var(--color-success)" }}>89<span className="text-[22px] text-[var(--text-muted)]">%</span></span>
             <div>
               <p className="mb-1 text-[12px] font-semibold text-[var(--text-muted)]">Couverture GSC</p>
               <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
@@ -446,8 +446,8 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
           <div className="mb-5 grid grid-cols-5 divide-x divide-[var(--border-subtle)]">
             {[
               { v: "133",   l: "URLs crawlées",     c: "var(--text-primary)" },
-              { v: "118",   l: "Avec impressions",  c: "#3E50F5" },
-              { v: "15",    l: "Sans impression",   c: "#F59E0B" },
+              { v: "118",   l: "Avec impressions",  c: "var(--accent-primary)" },
+              { v: "15",    l: "Sans impression",   c: "var(--color-warning)" },
               { v: "214.1K",l: "Impressions/mois",  c: "var(--text-primary)" },
               { v: "246",   l: "Clics/mois",        c: "var(--text-primary)" },
             ].map((s) => (
@@ -460,12 +460,12 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
 
           {/* Stacked bar */}
           <div className="mb-2 flex h-7 overflow-hidden rounded-lg">
-            <div className="flex items-center justify-center text-[12px] font-semibold text-white" style={{ flex: 118, backgroundColor: "#10B981" }}>118</div>
-            <div className="flex items-center justify-center text-[12px] font-semibold text-white" style={{ flex: 15,  backgroundColor: "#F59E0B" }}>15</div>
+            <div className="flex items-center justify-center text-[12px] font-semibold text-white" style={{ flex: 118, backgroundColor: "var(--color-success)" }}>118</div>
+            <div className="flex items-center justify-center text-[12px] font-semibold text-white" style={{ flex: 15,  backgroundColor: "var(--color-warning)" }}>15</div>
           </div>
           <div className="mb-4 flex gap-5 text-[13px] text-[var(--text-muted)]">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "#10B981" }} />Crawl + impressions GSC · 118 (89%)</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "#F59E0B" }} />Crawlées sans impression · 15 (11%)</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "var(--color-success)" }} />Crawl + impressions GSC · 118 (89%)</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "var(--color-warning)" }} />Crawlées sans impression · 15 (11%)</span>
           </div>
           <Callout variant="warning">
             <strong>À retenir :</strong> ces 15 pages sont bien indexées par Google (pas un blocage technique), mais leur ranking est trop bas pour apparaître en SERP. C'est un signal de pertinence ou de maillage interne insuffisant — à diagnostiquer page par page.
@@ -484,7 +484,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               {PRIORITY_ACTIONS.map((action, i) => {
                 const status = getA(action.id);
                 const isOpen = expandedAction === action.id;
-                const priorityColor = action.priority === "high" ? "#E11D48" : action.priority === "medium" ? "#F59E0B" : "var(--text-muted)";
+                const priorityColor = action.priority === "high" ? "var(--color-danger)" : action.priority === "medium" ? "var(--color-warning)" : "var(--text-muted)";
                 return (
                   <div key={action.id} className={i < PRIORITY_ACTIONS.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}>
                     <button onClick={() => setExpandedAction(isOpen ? null : action.id)}
@@ -518,7 +518,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
           <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
             <div className="px-6 py-4">
               <p className="text-[14px] font-semibold text-[var(--text-primary)]">
-                Schemas <span style={{ color: "#E11D48" }}>25/100</span>
+                Schemas <span style={{ color: "var(--color-danger)" }}>25/100</span>
               </p>
               <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">2 schemas critiques manquants · 3 présents</p>
             </div>
@@ -527,7 +527,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                 const overrideStatus = schemaStatus[s.id];
                 const canToggle = s.status !== "ok";
                 const effectiveStatus: Status = canToggle ? (overrideStatus ?? "todo") : "done";
-                const statusColors = { ok: "#10B981", missing: "#E11D48", suggest: "#F59E0B" };
+                const statusColors = { ok: "var(--color-success)", missing: "var(--color-danger)", suggest: "var(--color-warning)" };
                 const statusLabels = { ok: "Détecté", missing: "Critique", suggest: "Recommandé" };
                 return (
                   <div key={s.id} className={`flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-6 py-4 last:border-0 ${effectiveStatus === "done" && canToggle ? "opacity-50" : ""}`}>
@@ -543,7 +543,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                       {canToggle && (
                         <StatusDot status={effectiveStatus} onClick={() => setSchemaStatus((p) => ({ ...p, [s.id]: nextStatus(effectiveStatus) }))} />
                       )}
-                      {!canToggle && <CheckCircleIcon className="h-4 w-4 text-[#10B981]" />}
+                      {!canToggle && <CheckCircleIcon className="h-4 w-4 text-[var(--color-success)]" />}
                     </div>
                   </div>
                 );
@@ -639,7 +639,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               <div key={i} className={`grid grid-cols-[1fr_56px_64px_64px_56px_56px] items-center gap-3 border-t border-[var(--border-subtle)] px-7 py-3 text-[13px]`}>
                 <span className="truncate font-mono text-[var(--text-muted)]">{row.url}</span>
                 <span className="text-right font-semibold text-[var(--text-primary)]">{row.score}</span>
-                <span className="text-right" style={{ color: lcpBad ? "#E11D48" : "#F59E0B" }}>{row.lcp}</span>
+                <span className="text-right" style={{ color: lcpBad ? "var(--color-danger)" : "var(--color-warning)" }}>{row.lcp}</span>
                 <span className="text-right text-[var(--text-muted)]">{row.fcp}</span>
                 <span className="text-right text-[var(--text-muted)]">{row.cls}</span>
                 <span className="text-right text-[var(--text-muted)]">{row.ttfb}</span>
@@ -649,15 +649,15 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         </div>
 
         {/* AI Readiness */}
-        <div className="overflow-hidden rounded-3xl border border-[rgba(62,80,245,0.2)] bg-[rgba(62,80,245,0.04)] p-7">
+        <div className="overflow-hidden rounded-3xl border border-[rgba(62,80,245,0.2)] bg-[var(--accent-primary-soft)] p-7">
           <div className="flex items-center gap-6">
             <div>
-              <span className="text-[52px] font-semibold leading-none tracking-tight" style={{ color: "#3E50F5" }}>100</span>
+              <span className="text-[52px] font-semibold leading-none tracking-tight" style={{ color: "var(--accent-primary)" }}>100</span>
               <span className="text-[22px] text-[var(--text-muted)]">/100</span>
             </div>
             <div className="flex-1">
               <p className="mb-1 text-[17px] font-semibold tracking-tight text-[var(--text-primary)]">
-                AI Readiness · <span style={{ color: "#3E50F5" }}>excellence GEO</span>
+                AI Readiness · <span style={{ color: "var(--accent-primary)" }}>excellence GEO</span>
               </p>
               <p className="mb-3 text-[14px] leading-relaxed text-[var(--text-secondary)]">
                 7 crawlers IA autorisés sur 7. Votre site est entièrement accessible à GPTBot, ClaudeBot, PerplexityBot et OAI-SearchBot.
@@ -665,7 +665,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               <div className="flex flex-wrap gap-2">
                 {CRAWLERS.map((c) => (
                   <span key={c.name} className="rounded-full px-2 py-1 text-[12px] font-semibold"
-                    style={{ backgroundColor: c.ok === true ? "rgba(16,185,129,0.1)" : "var(--bg-secondary)", color: c.ok === true ? "#10B981" : "var(--text-muted)" }}>
+                    style={{ backgroundColor: c.ok === true ? "rgba(16,185,129,0.1)" : "var(--bg-secondary)", color: c.ok === true ? "var(--color-success)" : "var(--text-muted)" }}>
                     {c.name}{c.ok === true ? " ✓" : ""}
                   </span>
                 ))}
@@ -691,9 +691,9 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-28 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
-                    <div className="h-full rounded-full bg-[#10B981] transition-all" style={{ width: `${pilotPct}%` }} />
+                    <div className="h-full rounded-full bg-[var(--color-success)] transition-all" style={{ width: `${pilotPct}%` }} />
                   </div>
-                  <span className="font-mono text-[13px] font-semibold" style={{ color: "#10B981" }}>{pilotPct}%</span>
+                  <span className="font-mono text-[13px] font-semibold" style={{ color: "var(--color-success)" }}>{pilotPct}%</span>
                 </div>
                 <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)] transition-transform" style={{ transform: rawOpen ? "rotate(180deg)" : "none" }} />
               </div>
@@ -706,8 +706,8 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                   <div className="flex gap-2">
                     {(["todo", "doing", "done"] as const).map((s) => (
                       <span key={s} className="rounded-full px-2 py-1 text-[12px] font-semibold"
-                        style={{ backgroundColor: s === "todo" ? "rgba(225,29,72,0.08)" : s === "doing" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
-                                 color: s === "todo" ? "#E11D48" : s === "doing" ? "#F59E0B" : "#10B981" }}>
+                        style={{ backgroundColor: s === "todo" ? "var(--color-danger-bg)" : s === "doing" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
+                                 color: s === "todo" ? "var(--color-danger)" : s === "doing" ? "var(--color-warning)" : "var(--color-success)" }}>
                         {pilotCounts[s]} {{ todo: "À faire", doing: "En cours", done: "Terminé" }[s].toLowerCase()}
                       </span>
                     ))}
@@ -732,7 +732,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                   return (
                     <div key={p.id} className={`grid grid-cols-[32px_48px_1fr_90px_90px_100px_100px] items-center gap-3 border-b border-[var(--border-subtle)] px-7 py-3 last:border-0 transition-opacity ${st === "done" ? "opacity-50" : ""}`}>
                       <StatusDot status={st} onClick={() => setPilotStatus((prev) => ({ ...prev, [p.id]: nextStatus(st) }))} />
-                      <span className={`rounded-md px-2 py-0.5 text-center font-mono text-[13px] font-semibold ${p.count === 0 ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" : "bg-[rgba(225,29,72,0.08)] text-[#E11D48]"}`}>
+                      <span className={`rounded-md px-2 py-0.5 text-center font-mono text-[13px] font-semibold ${p.count === 0 ? "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]" : "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"}`}>
                         {p.count}
                       </span>
                       <span className={`text-[14px] font-medium ${st === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
@@ -779,7 +779,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                         <span className="truncate font-mono text-[var(--text-muted)]">{row.url}</span>
                         <span className="truncate text-[var(--text-secondary)]">{row.target}</span>
                         <span className="font-mono text-[12px] text-[var(--text-muted)]">{row.type}</span>
-                        <span className={`font-medium ${row.note === "OK" ? "text-[#10B981]" : row.note.includes("vérifier") || row.note.includes("Temporaire") ? "text-[#F59E0B]" : "text-[var(--text-muted)]"}`}>
+                        <span className={`font-medium ${row.note === "OK" ? "text-[var(--color-success)]" : row.note.includes("vérifier") || row.note.includes("Temporaire") ? "text-[var(--color-warning)]" : "text-[var(--text-muted)]"}`}>
                           {row.note}
                         </span>
                       </div>

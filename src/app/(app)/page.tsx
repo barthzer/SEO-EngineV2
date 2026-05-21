@@ -33,36 +33,36 @@ type Analysis = {
   score: number;
   trafic: string;
   traficDir: "up" | "down" | "neutral";
-  lotsActifs: number;
+  tagsActifs: number;
   briefs: number;
   status: "actif" | "archive";
 };
 
 const MOCK_ANALYSES: Analysis[] = [
-  { id: 1,  domain: "leboncoin.fr",      updatedAt: "2026-04-28", gscConnected: true,  score: 84, trafic: "+12 %", traficDir: "up",   lotsActifs: 6,  briefs: 42,  status: "actif"   },
-  { id: 2,  domain: "doctolib.fr",       updatedAt: "2026-04-15", gscConnected: true,  score: 61, trafic: "−3 %",  traficDir: "down", lotsActifs: 2,  briefs: 18,  status: "actif"   },
-  { id: 3,  domain: "backmarket.com",    updatedAt: "2026-04-02", gscConnected: false, score: 73, trafic: "+5 %",  traficDir: "up",   lotsActifs: 4,  briefs: 31,  status: "actif"   },
-  { id: 4,  domain: "sephora.fr",        updatedAt: "2026-04-28", gscConnected: true,  score: 91, trafic: "+18 %", traficDir: "up",   lotsActifs: 9,  briefs: 67,  status: "actif"   },
-  { id: 5,  domain: "fnac.com",          updatedAt: "2026-04-24", gscConnected: false, score: 78, trafic: "+7 %",  traficDir: "up",   lotsActifs: 5,  briefs: 38,  status: "actif"   },
-  { id: 6,  domain: "decathlon.fr",      updatedAt: "2026-04-22", gscConnected: true,  score: 87, trafic: "+9 %",  traficDir: "up",   lotsActifs: 7,  briefs: 55,  status: "actif"   },
-  { id: 7,  domain: "lafourchette.com",  updatedAt: "2026-04-19", gscConnected: false, score: 66, trafic: "+2 %",  traficDir: "up",   lotsActifs: 3,  briefs: 22,  status: "actif"   },
-  { id: 8,  domain: "boulanger.com",     updatedAt: "2026-04-17", gscConnected: false, score: 71, trafic: "−1 %",  traficDir: "down", lotsActifs: 4,  briefs: 29,  status: "actif"   },
-  { id: 9,  domain: "veepee.fr",         updatedAt: "2026-04-14", gscConnected: true,  score: 58, trafic: "+4 %",  traficDir: "up",   lotsActifs: 2,  briefs: 15,  status: "actif"   },
-  { id: 10, domain: "blablacar.fr",      updatedAt: "2026-04-10", gscConnected: false, score: 79, trafic: "+11 %", traficDir: "up",   lotsActifs: 5,  briefs: 41,  status: "actif"   },
-  { id: 11, domain: "mano-mano.fr",      updatedAt: "2026-04-20", gscConnected: true,  score: 69, trafic: "+9 %",  traficDir: "up",   lotsActifs: 3,  briefs: 24,  status: "archive" },
-  { id: 12, domain: "cdiscount.com",     updatedAt: "2026-04-18", gscConnected: false, score: 82, trafic: "+14 %", traficDir: "up",   lotsActifs: 7,  briefs: 54,  status: "archive" },
-  { id: 13, domain: "lemonde.fr",        updatedAt: "2026-04-12", gscConnected: true,  score: 88, trafic: "+6 %",  traficDir: "up",   lotsActifs: 8,  briefs: 61,  status: "archive" },
-  { id: 14, domain: "kiabi.com",         updatedAt: "2026-04-05", gscConnected: false, score: 38, trafic: "−8 %",  traficDir: "down", lotsActifs: 1,  briefs: 9,   status: "archive" },
-  { id: 15, domain: "darty.com",         updatedAt: "2026-04-03", gscConnected: true,  score: 74, trafic: "+3 %",  traficDir: "up",   lotsActifs: 5,  briefs: 37,  status: "archive" },
-  { id: 16, domain: "leroymerlin.fr",    updatedAt: "2026-04-01", gscConnected: true,  score: 92, trafic: "+21 %", traficDir: "up",   lotsActifs: 11, briefs: 89,  status: "archive" },
-  { id: 17, domain: "seloger.com",       updatedAt: "2026-03-28", gscConnected: false, score: 55, trafic: "−5 %",  traficDir: "down", lotsActifs: 2,  briefs: 13,  status: "archive" },
-  { id: 18, domain: "lequipe.fr",        updatedAt: "2026-03-25", gscConnected: true,  score: 83, trafic: "+16 %", traficDir: "up",   lotsActifs: 6,  briefs: 48,  status: "archive" },
+  { id: 1,  domain: "leboncoin.fr",      updatedAt: "2026-04-28", gscConnected: true,  score: 84, trafic: "+12 %", traficDir: "up",   tagsActifs: 6,  briefs: 42,  status: "actif"   },
+  { id: 2,  domain: "doctolib.fr",       updatedAt: "2026-04-15", gscConnected: true,  score: 61, trafic: "−3 %",  traficDir: "down", tagsActifs: 2,  briefs: 18,  status: "actif"   },
+  { id: 3,  domain: "backmarket.com",    updatedAt: "2026-04-02", gscConnected: false, score: 73, trafic: "+5 %",  traficDir: "up",   tagsActifs: 4,  briefs: 31,  status: "actif"   },
+  { id: 4,  domain: "sephora.fr",        updatedAt: "2026-04-28", gscConnected: true,  score: 91, trafic: "+18 %", traficDir: "up",   tagsActifs: 9,  briefs: 67,  status: "actif"   },
+  { id: 5,  domain: "fnac.com",          updatedAt: "2026-04-24", gscConnected: false, score: 78, trafic: "+7 %",  traficDir: "up",   tagsActifs: 5,  briefs: 38,  status: "actif"   },
+  { id: 6,  domain: "decathlon.fr",      updatedAt: "2026-04-22", gscConnected: true,  score: 87, trafic: "+9 %",  traficDir: "up",   tagsActifs: 7,  briefs: 55,  status: "actif"   },
+  { id: 7,  domain: "lafourchette.com",  updatedAt: "2026-04-19", gscConnected: false, score: 66, trafic: "+2 %",  traficDir: "up",   tagsActifs: 3,  briefs: 22,  status: "actif"   },
+  { id: 8,  domain: "boulanger.com",     updatedAt: "2026-04-17", gscConnected: false, score: 71, trafic: "−1 %",  traficDir: "down", tagsActifs: 4,  briefs: 29,  status: "actif"   },
+  { id: 9,  domain: "veepee.fr",         updatedAt: "2026-04-14", gscConnected: true,  score: 58, trafic: "+4 %",  traficDir: "up",   tagsActifs: 2,  briefs: 15,  status: "actif"   },
+  { id: 10, domain: "blablacar.fr",      updatedAt: "2026-04-10", gscConnected: false, score: 79, trafic: "+11 %", traficDir: "up",   tagsActifs: 5,  briefs: 41,  status: "actif"   },
+  { id: 11, domain: "mano-mano.fr",      updatedAt: "2026-04-20", gscConnected: true,  score: 69, trafic: "+9 %",  traficDir: "up",   tagsActifs: 3,  briefs: 24,  status: "archive" },
+  { id: 12, domain: "cdiscount.com",     updatedAt: "2026-04-18", gscConnected: false, score: 82, trafic: "+14 %", traficDir: "up",   tagsActifs: 7,  briefs: 54,  status: "archive" },
+  { id: 13, domain: "lemonde.fr",        updatedAt: "2026-04-12", gscConnected: true,  score: 88, trafic: "+6 %",  traficDir: "up",   tagsActifs: 8,  briefs: 61,  status: "archive" },
+  { id: 14, domain: "kiabi.com",         updatedAt: "2026-04-05", gscConnected: false, score: 38, trafic: "−8 %",  traficDir: "down", tagsActifs: 1,  briefs: 9,   status: "archive" },
+  { id: 15, domain: "darty.com",         updatedAt: "2026-04-03", gscConnected: true,  score: 74, trafic: "+3 %",  traficDir: "up",   tagsActifs: 5,  briefs: 37,  status: "archive" },
+  { id: 16, domain: "leroymerlin.fr",    updatedAt: "2026-04-01", gscConnected: true,  score: 92, trafic: "+21 %", traficDir: "up",   tagsActifs: 11, briefs: 89,  status: "archive" },
+  { id: 17, domain: "seloger.com",       updatedAt: "2026-03-28", gscConnected: false, score: 55, trafic: "−5 %",  traficDir: "down", tagsActifs: 2,  briefs: 13,  status: "archive" },
+  { id: 18, domain: "lequipe.fr",        updatedAt: "2026-03-25", gscConnected: true,  score: 83, trafic: "+16 %", traficDir: "up",   tagsActifs: 6,  briefs: 48,  status: "archive" },
 ];
 
 /* ── Score circle ────────────────────────────────────────────────────── */
 
 function ScoreCircle({ score }: { score: number }) {
-  const color = score >= 70 ? "#10B981" : score >= 50 ? "#F97316" : "#E11D48";
+  const color = score >= 70 ? "var(--color-success)" : score >= 50 ? "var(--color-warning)" : "var(--color-danger)";
   const r = 22;
   const stroke = 3;
   const size = (r + stroke) * 2;
@@ -110,9 +110,9 @@ function TraficChip({ value, dir }: { value: string; dir: Analysis["traficDir"] 
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium ${
         isUp
-          ? "bg-emerald-50 text-emerald-600"
+          ? "bg-[var(--color-success-bg)] text-[var(--color-success)]"
           : isDown
-          ? "bg-red-50 text-red-500"
+          ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"
           : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
       }`}
     >
@@ -210,14 +210,14 @@ function StatusPill({
         width={176}
         trigger={
           <button className="flex items-center gap-1.5 rounded-full bg-[var(--bg-secondary)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--border-subtle)]">
-            <span className={`h-1.5 w-1.5 rounded-full ${isActif ? "bg-emerald-500" : "bg-[var(--text-muted)]"}`} />
+            <span className={`h-1.5 w-1.5 rounded-full ${isActif ? "bg-[var(--color-success)]" : "bg-[var(--text-muted)]"}`} />
             {isActif ? "Actif" : "Archivé"}
           </button>
         }
       >
         {(["actif", "archive"] as const).map((s) => (
           <DropdownItem key={s} onClick={() => onChange(s)}>
-            <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${s === "actif" ? "bg-emerald-500" : "bg-[var(--text-muted)]"}`} />
+            <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${s === "actif" ? "bg-[var(--color-success)]" : "bg-[var(--text-muted)]"}`} />
             <span className={status === s ? "font-semibold text-[var(--text-primary)]" : ""}>{s === "actif" ? "Actif" : "Archivé"}</span>
           </DropdownItem>
         ))}
@@ -231,11 +231,11 @@ function GscPill({ connected }: { connected: boolean }) {
     <span
       className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium"
       style={{
-        borderColor: connected ? "#10B981" : "#E11D48",
-        color: connected ? "#10B981" : "#E11D48",
+        borderColor: connected ? "var(--color-success)" : "var(--color-danger)",
+        color: connected ? "var(--color-success)" : "var(--color-danger)",
       }}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-500"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-[var(--color-success)]" : "bg-[var(--color-danger)]"}`} />
       GSC
     </span>
   );
@@ -266,14 +266,14 @@ function AnalysisCard({
       <div className="mt-4 grid grid-cols-3 gap-2">
         <div className="flex flex-col gap-1.5 px-1 py-1">
           <p className="text-[10px] text-[var(--text-muted)]">Trafic/mois</p>
-          <p className="text-[18px] font-semibold leading-none" style={{ color: a.traficDir === "up" ? "#10B981" : a.traficDir === "down" ? "#E11D48" : "var(--text-muted)" }}>
+          <p className="text-[18px] font-semibold leading-none" style={{ color: a.traficDir === "up" ? "var(--color-success)" : a.traficDir === "down" ? "var(--color-danger)" : "var(--text-muted)" }}>
             {a.trafic}
           </p>
           <p className="text-[10px] text-[var(--text-muted)]">vs N−1</p>
         </div>
         <div className="flex flex-col gap-1.5 px-1 py-1">
-          <p className="text-[10px] text-[var(--text-muted)]">Lots actifs</p>
-          <p className="text-[18px] font-semibold leading-none text-[var(--text-primary)]">{a.lotsActifs}</p>
+          <p className="text-[10px] text-[var(--text-muted)]">Tags actifs</p>
+          <p className="text-[18px] font-semibold leading-none text-[var(--text-primary)]">{a.tagsActifs}</p>
         </div>
         <div className="flex flex-col gap-1.5 px-1 py-1">
           <p className="text-[10px] text-[var(--text-muted)]">URLs</p>
@@ -356,7 +356,7 @@ function AnalyseModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="w-full max-w-lg rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]"
+        className="w-full max-w-lg rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]"
       >
         <Stepper steps={2} current={step} onClose={onClose} />
 
@@ -460,7 +460,7 @@ export default function DashboardPage() {
           score: Math.floor(Math.random() * 40 + 55),
           trafic: "+0 %",
           traficDir: "neutral",
-          lotsActifs: 0,
+          tagsActifs: 0,
           briefs: 0,
           status: "actif" as const,
         },
@@ -471,14 +471,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto py-8">
-      <div className="w-full px-[var(--page-px)]">
+    <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
+      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
 
         {/* Header */}
         <div className="mb-5">
-          <h1 className="mb-5 text-[28px] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 className="mb-1 text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
             Vos projets
           </h1>
+          <p className="mb-5 text-[14px] tracking-body text-[var(--text-secondary)]">
+            Liste de vos projets actifs et archivés.
+          </p>
           <div className="flex items-center gap-4">
             <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un domaine…" alwaysExpanded />
             <FilterTabs

@@ -15,7 +15,7 @@ import { Callout } from "@/components/Callout";
 type Dimension = "eeat" | "soseo" | "suropt" | "intent" | "hn" | "canib";
 type Severity  = "critique" | "important" | "moyen";
 
-type IssueUrl = { url: string; clicks?: number | null; impr: string; lot?: string };
+type IssueUrl = { url: string; clicks?: number | null; impr: string; tag?: string };
 type Issue = {
   id: string; label: string; pages: number; visits: string | null;
   severity: Severity; dimension: Dimension;
@@ -32,9 +32,9 @@ const ISSUES: Issue[] = [
     description: "3 pages avec 30 expressions sur-optimisées (10.0 par page en moyenne). Ratio jugé toxique par les algorithmes de pertinence sémantique de Google.",
     fix: "Réduire les occurrences des mots listés. Cibler une densité de 1.5–2× la médiane SERP par expression.",
     urls: [
-      { url: "/agence-marketing-digital-tourisme-voyage/", clicks: 17,   impr: "54.1k", lot: "Top trafic" },
-      { url: "/agence-marketing-digital-sante/",          clicks: null,  impr: "41k",   lot: "Top trafic" },
-      { url: "/formation/formation-seo/",                 clicks: null,  impr: "6.4k",  lot: "Formation"  },
+      { url: "/agence-marketing-digital-tourisme-voyage/", clicks: 17,   impr: "54.1k", tag: "Top trafic" },
+      { url: "/agence-marketing-digital-sante/",          clicks: null,  impr: "41k",   tag: "Top trafic" },
+      { url: "/formation/formation-seo/",                 clicks: null,  impr: "6.4k",  tag: "Formation"  },
     ],
   },
   {
@@ -43,9 +43,9 @@ const ISSUES: Issue[] = [
     description: "3 pages avec mot-clé cible absent vs la médiane SERP — signal de pertinence à ajuster. Google attend au minimum une occurrence dans le title, le H1 et le premier paragraphe.",
     fix: "Intégrer le mot-clé cible en title + H1 + premier paragraphe avec une densité proche de la médiane SERP.",
     urls: [
-      { url: "/agence-marketing-digital-tourisme-voyage/", clicks: 17,   impr: "54.1k", lot: "Top trafic" },
-      { url: "/agence-marketing-digital-sante/",          clicks: null,  impr: "41k",   lot: "Top trafic" },
-      { url: "/formation/formation-seo/",                 clicks: null,  impr: "6.4k",  lot: "Formation"  },
+      { url: "/agence-marketing-digital-tourisme-voyage/", clicks: 17,   impr: "54.1k", tag: "Top trafic" },
+      { url: "/agence-marketing-digital-sante/",          clicks: null,  impr: "41k",   tag: "Top trafic" },
+      { url: "/formation/formation-seo/",                 clicks: null,  impr: "6.4k",  tag: "Formation"  },
     ],
   },
   /* ── IMPORTANT ── */
@@ -55,14 +55,14 @@ const ISSUES: Issue[] = [
     description: "9 pages avec 0.6/3 signaux E-E-A-T détectés en moyenne — risque Core Update élevé. Google valorise désormais la traçabilité auteur, la fraîcheur et la richesse multimédia.",
     fix: "Ajouter une byline auteur visible, une date de publication/MAJ, et enrichir avec chiffres + images (≥ 800 mots, ≥ 1 image / 1000 mots).",
     urls: [
-      { url: "/",                                                         clicks: 1528, impr: "173.6k", lot: "Top trafic" },
-      { url: "/agence-marketing-digital-tourisme-voyage/",                clicks: 17,   impr: "54.1k",  lot: "Top trafic" },
-      { url: "/agence-marketing-digital-b2b/",                           clicks: 7,    impr: "75k",    lot: "Top trafic" },
+      { url: "/",                                                         clicks: 1528, impr: "173.6k", tag: "Top trafic" },
+      { url: "/agence-marketing-digital-tourisme-voyage/",                clicks: 17,   impr: "54.1k",  tag: "Top trafic" },
+      { url: "/agence-marketing-digital-b2b/",                           clicks: 7,    impr: "75k",    tag: "Top trafic" },
       { url: "/analyse-de-logs-seo-10-bonnes-raisons-de-les-exploiter/", clicks: 4,    impr: "8.9k"  },
       { url: "/agence-seo-mirakl/",                                       clicks: 2,    impr: "9.6k"  },
       { url: "/seo-et-erreur-404-le-guide-pratique/",                     clicks: 2,    impr: "6.4k"  },
-      { url: "/agence-marketing-digital-mode-pret-a-porter/",             clicks: null, impr: "8k",    lot: "Top trafic" },
-      { url: "/agence-marketing-digital-sante/",                         clicks: null, impr: "41k",   lot: "Top trafic" },
+      { url: "/agence-marketing-digital-mode-pret-a-porter/",             clicks: null, impr: "8k",    tag: "Top trafic" },
+      { url: "/agence-marketing-digital-sante/",                         clicks: null, impr: "41k",   tag: "Top trafic" },
       { url: "/seo-salesforce-commerce-cloud/",                          clicks: null, impr: "22.8k" },
     ],
   },
@@ -84,8 +84,8 @@ const ISSUES: Issue[] = [
     description: "2 pages avec un type qui ne correspond pas à l'intention SERP majoritaire — risque majeur de perte de ranking.",
     fix: "Refondre la page pour matcher l'intent SERP majoritaire (ex. commercial → informationnel ou inverse).",
     urls: [
-      { url: "/agence-marketing-digital-tourisme-voyage/", clicks: 17,   impr: "54.1k", lot: "Top trafic" },
-      { url: "/agence-marketing-digital-sante/",          clicks: null,  impr: "41k",   lot: "Top trafic" },
+      { url: "/agence-marketing-digital-tourisme-voyage/", clicks: 17,   impr: "54.1k", tag: "Top trafic" },
+      { url: "/agence-marketing-digital-sante/",          clicks: null,  impr: "41k",   tag: "Top trafic" },
     ],
   },
   {
@@ -144,9 +144,9 @@ const ISSUES: Issue[] = [
 ];
 
 
-/* ── Lots ─────────────────────────────────────────────────────────────── */
+/* ── Tags ─────────────────────────────────────────────────────────────── */
 
-type LotData = {
+type TagData = {
   label: string; count: number; pct: number;
   visitsAtRisk: string; headlineEm: string; headlineTail: string;
   sub: string; score: number; grade: string;
@@ -155,9 +155,9 @@ type LotData = {
   dims: Record<Dimension, number>;
 };
 
-const LOTS: Record<string, LotData> = {
+const LOTS: Record<string, TagData> = {
   all: {
-    label: "Tous les lots", count: 11, pct: 8,
+    label: "Tous les tags", count: 11, pct: 8,
     visitsAtRisk: "4,1k", headlineEm: "−4.1k visites/mois", headlineTail: "menacées\npar 9 signaux E-E-A-T faibles.",
     sub: "Neuf pages manquent de signaux d'expertise et d'autorité, mettant en danger 1 361 visites par mois. Priorité avant le prochain Core Update : enrichir le contenu et expliciter les sources.",
     score: 62, grade: "C",
@@ -175,7 +175,7 @@ const LOTS: Record<string, LotData> = {
     issues: ["toxic-cat","kw-absent","dseo-1"],
     verdictBlocker: "30 expressions sur-optimisées détectées sur les 3 pages — densité jugée toxique par les modèles BERT/MUM.",
     verdictOpp: "Réintroduire le mot-clé cible en title, H1 et premier paragraphe sur les 3 pages — gain attendu : retour dans le top 10 SERP.",
-    verdictCov: "3 pages catégorie Jean analysées · 100% du lot couvert.",
+    verdictCov: "3 pages catégorie Jean analysées · 100% du tag couvert.",
     dims: { eeat: 70, soseo: 30, suropt: 18, intent: 65, hn: 80, canib: 95 },
   },
   "top-trafic": {
@@ -197,18 +197,18 @@ const LOTS: Record<string, LotData> = {
     issues: ["eeat-1","eeat-2","soseo"],
     verdictBlocker: "0 mention d'auteur sur les 2 pages YMYL — le facteur le plus pénalisant pour les sujets sensibles.",
     verdictOpp: "Ajouter une bio auteur experte + références scientifiques sur les 2 pages YMYL : priorité absolue.",
-    verdictCov: "2 pages YMYL identifiées · 100% du lot couvert.",
+    verdictCov: "2 pages YMYL identifiées · 100% du tag couvert.",
     dims: { eeat: 18, soseo: 52, suropt: 88, intent: 90, hn: 65, canib: 100 },
   },
   "formation": {
     label: "Formation & services", count: 4, pct: 3,
-    visitsAtRisk: "850", headlineEm: "−850 visites/mois", headlineTail: "sur le lot\nFormation & services.",
+    visitsAtRisk: "850", headlineEm: "−850 visites/mois", headlineTail: "sur le tag\nFormation & services.",
     sub: "4 pages formation présentent une sur-optimisation modérée et un SOSEO inférieur de 25 points au top 3 SERP. Le mot-clé cible est mal placé.",
     score: 64, grade: "C",
     issues: ["toxic-cat","kw-absent","soseo","toxic-low"],
     verdictBlocker: "SOSEO −25 points vs top 3 sur 3 des 4 pages formation — champ lexical SERP insuffisamment couvert.",
     verdictOpp: "Enrichir avec termes manquants YTG + intégrer le mot-clé cible en intro = retour potentiel dans le top 5.",
-    verdictCov: "4 pages formation/services · 100% du lot couvert.",
+    verdictCov: "4 pages formation/services · 100% du tag couvert.",
     dims: { eeat: 65, soseo: 42, suropt: 55, intent: 88, hn: 80, canib: 100 },
   },
   "case-studies": {
@@ -219,12 +219,12 @@ const LOTS: Record<string, LotData> = {
     issues: ["canib","hn"],
     verdictBlocker: "2 case studies en cannibalisation sur la même requête commerciale — clics dilués entre 2 URLs.",
     verdictOpp: "Merge 301 ou réassignation d'intent sur les 2 pages : voir l'onglet Cannibalisation.",
-    verdictCov: "3 case studies · 100% du lot couvert.",
+    verdictCov: "3 case studies · 100% du tag couvert.",
     dims: { eeat: 75, soseo: 80, suropt: 92, intent: 85, hn: 70, canib: 60 },
   },
 };
 
-const LOT_KEYS = ["all","cat-jean","top-trafic","ymyl","formation","case-studies"];
+const TAG_KEYS = ["all","cat-jean","top-trafic","ymyl","formation","case-studies"];
 
 /* ── Dimensions ───────────────────────────────────────────────────────── */
 
@@ -238,8 +238,8 @@ const DIMENSION_CONFIG: { key: Dimension; label: string; meta: string }[] = [
 ];
 
 const SEVERITY_CONFIG: Record<Severity, { label: string; color: string; bg: string }> = {
-  critique:  { label: "Critique",  color: "#E11D48", bg: "rgba(225,29,72,0.08)"  },
-  important: { label: "Important", color: "#F59E0B", bg: "rgba(245,158,11,0.1)"  },
+  critique:  { label: "Critique",  color: "var(--color-danger)", bg: "var(--color-danger-bg)"  },
+  important: { label: "Important", color: "var(--color-warning)", bg: "rgba(245,158,11,0.1)"  },
   moyen:     { label: "Moyen",     color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
 };
 
@@ -252,7 +252,7 @@ function nextStatus(s: Status): Status {
 }
 
 function scoreColor(n: number) {
-  return n >= 70 ? "#10B981" : n >= 50 ? "#F59E0B" : "#E11D48";
+  return n >= 70 ? "var(--color-success)" : n >= 50 ? "var(--color-warning)" : "var(--color-danger)";
 }
 
 /* ── Micro-components ─────────────────────────────────────────────────── */
@@ -261,12 +261,12 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
   return (
     <button onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all ${
-        status === "done"  ? "border-[#10B981] bg-[#10B981]" :
-        status === "doing" ? "border-[#F59E0B] bg-[rgba(245,158,11,0.1)]" :
+        status === "done"  ? "border-[var(--color-success)] bg-[var(--color-success)]" :
+        status === "doing" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
         "border-[var(--text-muted)]"
       }`}>
       {status === "done"  && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-      {status === "doing" && <span className="h-2 w-2 rounded-full bg-[#F59E0B]" />}
+      {status === "doing" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
     </button>
   );
 }
@@ -305,8 +305,8 @@ function IssueCard({ issue, status, onStatusChange }: {
       {open && (
         <div className="border-t border-[var(--border-subtle)] px-6 py-5">
           <p className="mb-3 text-[14px] leading-relaxed text-[var(--text-secondary)]">{issue.description}</p>
-          <div className="mb-4 rounded-r-xl border-l-2 border-[#3E50F5] bg-[rgba(62,80,245,0.05)] px-4 py-3 text-[14px] leading-snug text-[var(--text-secondary)]">
-            <strong className="text-[#3E50F5]">Action :</strong> {issue.fix}
+          <div className="mb-4 rounded-r-xl border-l-2 border-[var(--accent-primary)] bg-[var(--accent-primary-soft)] px-4 py-3 text-[14px] leading-snug text-[var(--text-secondary)]">
+            <strong className="text-[var(--accent-primary)]">Action :</strong> {issue.fix}
           </div>
           {issue.urls && issue.urls.length > 0 && (
             <>
@@ -320,9 +320,9 @@ function IssueCard({ issue, status, onStatusChange }: {
                 <div key={idx} className="grid grid-cols-[1fr_80px_96px] items-center gap-3 border-t border-[var(--border-subtle)] py-2.5 text-[13px]">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="truncate font-mono text-[var(--text-muted)]">{u.url}</span>
-                    {u.lot && (
+                    {u.tag && (
                       <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                        style={{ backgroundColor: "rgba(62,80,245,0.1)", color: "#3E50F5" }}>{u.lot}</span>
+                        style={{ backgroundColor: "rgba(62,80,245,0.1)", color: "var(--accent-primary)" }}>{u.tag}</span>
                     )}
                   </div>
                   <span className="text-right font-medium text-[var(--text-primary)]">{u.clicks != null ? u.clicks : "—"}</span>
@@ -340,16 +340,16 @@ function IssueCard({ issue, status, onStatusChange }: {
 /* ── Main ─────────────────────────────────────────────────────────────── */
 
 export function AuditEditorialTab({ domain }: { domain: string }) {
-  const [activeLot, setActiveLot]       = useState<string>("all");
+  const [activeTag, setActiveTag]       = useState<string>("all");
   const [activeDim, setActiveDim]       = useState<Dimension | null>(null);
   const [issueStatuses, setIssueStatuses] = useState<Record<string, Status>>({});
 
-  const lot = LOTS[activeLot];
+  const tag = LOTS[activeTag];
 
   const visibleIssues = ISSUES.filter((iss) => {
-    const inLot = lot.issues.includes(iss.id);
+    const inTag = tag.issues.includes(iss.id);
     const inDim = !activeDim || iss.dimension === activeDim;
-    return inLot && inDim;
+    return inTag && inDim;
   });
 
   const countBySeverity = (sev: Severity) => visibleIssues.filter((i) => i.severity === sev).length;
@@ -357,7 +357,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
   const toggleStatus = (id: string) =>
     setIssueStatuses((prev) => ({ ...prev, [id]: nextStatus(getStatus(id)) }));
 
-  const scoreColor62 = scoreColor(lot.score);
+  const scoreColor62 = scoreColor(tag.score);
 
   return (
     <div className="flex flex-col gap-8">
@@ -367,20 +367,20 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         <div className="grid grid-cols-[2fr_1fr] items-center gap-8">
           <div className="min-w-0">
             <div className="mb-3 flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#10B981]">GSC connecté</span>
-              <span className="rounded-full bg-[rgba(62,80,245,0.08)] px-3 py-1.5 text-[12px] font-semibold text-[#3E50F5]">
-                {lot.count} pages éditoriales · {lot.pct}% du site
+              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-success)]">GSC connecté</span>
+              <span className="rounded-full bg-[var(--accent-primary-soft)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-primary)]">
+                {tag.count} pages éditoriales · {tag.pct}% du site
               </span>
               <span className="text-[13px] text-[var(--text-muted)]">27 avril 2026</span>
             </div>
             <h1 className="text-[32px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
-              <span style={{ color: "#E11D48" }}>{lot.headlineEm}</span>
-              {" "}{lot.headlineTail.split("\n")[0]}
-              <br />{lot.headlineTail.split("\n")[1]}
+              <span style={{ color: "var(--color-danger)" }}>{tag.headlineEm}</span>
+              {" "}{tag.headlineTail.split("\n")[0]}
+              <br />{tag.headlineTail.split("\n")[1]}
             </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">{lot.sub}</p>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">{tag.sub}</p>
             <div className="mt-5 flex flex-wrap gap-6 text-[13px] text-[var(--text-muted)]">
-              <span><strong className="text-[15px] text-[var(--text-primary)]">{lot.count}</strong> pages analysées / 133 crawlées</span>
+              <span><strong className="text-[15px] text-[var(--text-primary)]">{tag.count}</strong> pages analysées / 133 crawlées</span>
               <span><strong className="text-[15px] text-[var(--text-primary)]">{visibleIssues.length}</strong> issues détectées</span>
               <span>Snapshot GSC <strong className="text-[var(--text-primary)]">27/04</strong></span>
             </div>
@@ -392,10 +392,10 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
             </div>
           </div>
           <div className="flex flex-col items-center gap-3">
-            <ScoreRing score={lot.score} size={160} strokeWidth={7} />
+            <ScoreRing score={tag.score} size={160} strokeWidth={7} />
             <p className="text-[13px] font-medium text-[var(--text-muted)]">Score éditorial</p>
             <p className="text-[12px] text-[var(--text-muted)]">
-              Grade <strong style={{ color: scoreColor62 }}>{lot.grade}</strong> · pondéré par trafic
+              Grade <strong style={{ color: scoreColor62 }}>{tag.grade}</strong> · pondéré par trafic
             </p>
           </div>
         </div>
@@ -404,12 +404,12 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
       {/* Verdict cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { color: "#E11D48", label: "Bloqueur",    text: lot.verdictBlocker },
-          { color: "#3E50F5", label: "Opportunité", text: lot.verdictOpp },
-          { color: "#B888FF", label: "Couverture",  text: lot.verdictCov },
+          { color: "var(--color-danger)", label: "Bloqueur",    text: tag.verdictBlocker },
+          { color: "var(--accent-primary)", label: "Opportunité", text: tag.verdictOpp },
+          { color: "#B888FF", label: "Couverture",  text: tag.verdictCov },
         ].map((v) => (
           <div key={v.label} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
-            style={{ background: `linear-gradient(to bottom, ${v.color}12 0%, var(--bg-card) 60%)` }}>
+            style={{ background: `linear-gradient(to bottom, color-mix(in oklab, ${v.color} 7%, transparent) 0%, var(--bg-card) 60%)` }}>
             <div className="px-5 pt-5 pb-6">
               <div className="mb-3 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
@@ -422,17 +422,17 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
       </div>
 
       {/* ── FILTRES PAR LOT ─────────────────────────────────────────── */}
-      <div id="edi-lots" className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
+      <div id="edi-tags" className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-[13px] font-semibold text-[var(--text-primary)]">Filtrer par lot</p>
+          <p className="text-[13px] font-semibold text-[var(--text-primary)]">Filtrer par tag</p>
           <p className="text-[12px] text-[var(--text-muted)]">
-            Lots définis dans <span className="text-[var(--text-secondary)]">Recommandation de page</span> · synchronisés il y a 2 jours
+            Tags définis dans <span className="text-[var(--text-secondary)]">Recommandation de page</span> · synchronisés il y a 2 jours
           </p>
         </div>
         <FilterTabs
-          tabs={LOT_KEYS.map(key => ({ key, label: LOTS[key].label, count: LOTS[key].count }))}
-          value={activeLot}
-          onChange={(key) => { setActiveLot(key as string); setActiveDim(null); }}
+          tabs={TAG_KEYS.map(key => ({ key, label: LOTS[key].label, count: LOTS[key].count }))}
+          value={activeTag}
+          onChange={(key) => { setActiveTag(key as string); setActiveDim(null); }}
         />
       </div>
 
@@ -444,16 +444,16 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         />
 
         <Callout variant="error" className="mb-5">
-          <strong>~{lot.visitsAtRisk} visites/mois à risque</strong>{" "}
-          sur le périmètre {lot.label}{activeDim ? ` · filtre dimension actif` : ""}.
+          <strong>~{tag.visitsAtRisk} visites/mois à risque</strong>{" "}
+          sur le périmètre {tag.label}{activeDim ? ` · filtre dimension actif` : ""}.
           {countBySeverity("critique") > 0 && ` Les ${countBySeverity("critique")} issues critiques concernent les pages les plus stratégiques.`}
         </Callout>
 
         {/* Active dimension filter banner */}
         {activeDim && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[rgba(62,80,245,0.3)] bg-[rgba(62,80,245,0.05)] px-5 py-3">
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[rgba(62,80,245,0.3)] bg-[var(--accent-primary-soft)] px-5 py-3">
             <p className="text-[14px] text-[var(--text-secondary)]">
-              Filtre actif sur la dimension <strong className="text-[#3E50F5]">{DIMENSION_CONFIG.find((d) => d.key === activeDim)?.label}</strong> · {visibleIssues.length} issue(s) affichée(s)
+              Filtre actif sur la dimension <strong className="text-[var(--accent-primary)]">{DIMENSION_CONFIG.find((d) => d.key === activeDim)?.label}</strong> · {visibleIssues.length} issue(s) affichée(s)
             </p>
             <button onClick={() => setActiveDim(null)}
               className="flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] cursor-pointer">
@@ -509,9 +509,9 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
 
         {/* Detector note */}
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-5 py-4">
-          <span className="text-[#F59E0B] text-[16px]">⚠</span>
+          <span className="text-[var(--color-warning)] text-[16px]">⚠</span>
           <p className="text-[13px] text-[var(--text-secondary)]">
-            <strong className="text-[#F59E0B]">3 détecteurs n'ont pas pu tourner</strong> — certaines données sont manquantes pour{" "}
+            <strong className="text-[var(--color-warning)]">3 détecteurs n'ont pas pu tourner</strong> — certaines données sont manquantes pour{" "}
             <span className="font-mono text-[12px]">detector_freshness</span>,{" "}
             <span className="font-mono text-[12px]">knowledge_graph_match</span> et{" "}
             <span className="font-mono text-[12px]">brand_mentions</span>. Reconnecter les sources pour activer ces analyses.
@@ -521,18 +521,18 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
 
       {/* ── 02. DIAGNOSTIC PAR DIMENSION ────────────────────────────── */}
       <div id="edi-dimensions">
-        <SectionHead num="02." title="Diagnostic" em="par dimension" meta={`Score moyen sur ${lot.count} pages éditoriales`} />
+        <SectionHead num="02." title="Diagnostic" em="par dimension" meta={`Score moyen sur ${tag.count} pages éditoriales`} />
 
         <div className="grid grid-cols-6 gap-3">
           {DIMENSION_CONFIG.map((dim) => {
-            const score = lot.dims[dim.key];
+            const score = tag.dims[dim.key];
             const color = scoreColor(score);
             const isActive = activeDim === dim.key;
             return (
               <button key={dim.key} onClick={() => setActiveDim(isActive ? null : dim.key)}
                 className="relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer"
                 style={{
-                  borderColor: isActive ? "#3E50F5" : "var(--border-subtle)",
+                  borderColor: isActive ? "var(--accent-primary)" : "var(--border-subtle)",
                   background: isActive
                     ? "linear-gradient(to bottom, rgba(62,80,245,0.08) 0%, var(--bg-card) 100%)"
                     : "var(--bg-card)",
@@ -557,20 +557,20 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         <div className="flex flex-col divide-y divide-[var(--border-subtle)]">
           {[
             {
-              id: "perimetre", title: "Couverture du périmètre éditorial", sub: `${lot.count} / 133 pages`,
-              body: `${lot.count} pages importées dans Recommandation de page sont analysées sur les 133 du site. Les autres pages restent suivies en santé technique mais ne reçoivent pas d'analyse éditoriale (E-E-A-T, SOSEO, intent). Pour étendre le périmètre, importer plus de pages dans Recommandation de page.`,
+              id: "perimetre", title: "Couverture du périmètre éditorial", sub: `${tag.count} / 133 pages`,
+              body: `${tag.count} pages importées dans Recommandation de page sont analysées sur les 133 du site. Les autres pages restent suivies en santé technique mais ne reçoivent pas d'analyse éditoriale (E-E-A-T, SOSEO, intent). Pour étendre le périmètre, importer plus de pages dans Recommandation de page.`,
             },
             {
               id: "detectors", title: "Détecteurs et statut", sub: "11 actifs / 14 disponibles",
               body: "11 détecteurs ont tourné sur ce périmètre. 3 inactifs : detector_freshness (date manquante), knowledge_graph_match (pas de schema Organization), brand_mentions (Ahrefs non connecté).",
             },
             {
-              id: "lots-detail", title: "Lots éditoriaux", sub: "5 lots définis",
-              body: "Catégorie Jean (3) · Top trafic (5) · YMYL (2) · Formation & services (4) · Case studies (3). Les lots sont définis dans l'onglet Recommandation de page et synchronisés à chaque audit.",
+              id: "tags-detail", title: "Tags éditoriaux", sub: "5 tags définis",
+              body: "Catégorie Jean (3) · Top trafic (5) · YMYL (2) · Formation & services (4) · Case studies (3). Les tags sont définis dans l'onglet Recommandation de page et synchronisés à chaque audit.",
             },
             {
               id: "snapshot", title: "Snapshot GSC", sub: "27 avril 2026",
-              body: `Données GSC utilisées pour pondérer les visites à risque : 246 clics/mois, 214.1k impressions sur le périmètre du site complet. Sur les ${lot.count} pages éditoriales analysées : 1 588 clics/mois cumulés, 343k impressions cumulées.`,
+              body: `Données GSC utilisées pour pondérer les visites à risque : 246 clics/mois, 214.1k impressions sur le périmètre du site complet. Sur les ${tag.count} pages éditoriales analysées : 1 588 clics/mois cumulés, 343k impressions cumulées.`,
             },
           ].map((acc) => (
             <SimpleAccordion key={acc.id} title={acc.title} sub={acc.sub} body={acc.body} />

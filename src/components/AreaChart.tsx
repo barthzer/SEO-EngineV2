@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChartTooltip } from "@/components/Tooltip";
 
 export interface AreaChartPoint {
@@ -26,7 +26,7 @@ interface AreaChartProps {
 
 export function AreaChart({
   data,
-  color = "#3E50F5",
+  color = "var(--accent-primary)",
   height: chartH = 160,
   yMin: yMinProp,
   yMax: yMaxProp,
@@ -78,10 +78,12 @@ export function AreaChart({
     const cpX = (pts[i - 1].x + pts[i].x) / 2;
     linePath += ` C ${cpX} ${pts[i - 1].y}, ${cpX} ${pts[i].y}, ${pts[i].x} ${pts[i].y}`;
   }
-  const areaBase = inverted ? tm : tm + chartH;
+  // Le fill descend toujours sous la ligne (même en mode inverted) — visuellement plus naturel.
+  const areaBase = tm + chartH;
   const areaPath = `${linePath} L ${pts[pts.length - 1].x} ${areaBase} L ${pts[0].x} ${areaBase} Z`;
 
-  const gradId = gradientId ?? `area-grad-${color.replace("#", "")}`;
+  const reactId = useId().replace(/:/g, "");
+  const gradId = gradientId ?? `area-grad-${reactId}`;
 
   const yTick1 = yMin + yRange * 0.25;
   const yTick2 = yMin + yRange * 0.5;
@@ -120,8 +122,8 @@ export function AreaChart({
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={inverted ? "0" : "0.14"} />
-            <stop offset="100%" stopColor={color} stopOpacity={inverted ? "0.14" : "0"} />
+            <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.14 }} />
+            <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
           </linearGradient>
         </defs>
 
@@ -132,7 +134,7 @@ export function AreaChart({
           return (
             <g key={v}>
               <line x1={lm} y1={y} x2={lm + chartW} y2={y} stroke="var(--border-subtle)" strokeWidth="1" />
-              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={11} fill="var(--text-muted)">{label}</text>
+              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{label}</text>
             </g>
           );
         })}
@@ -145,19 +147,35 @@ export function AreaChart({
             return i === 0 || i === pts.length - 1 || i % step === 0;
           })
           .map((pt) => (
-            <text key={pt.label} x={pt.x} y={tm + chartH + 16} textAnchor="middle" fontSize={11} fill="var(--text-muted)">{pt.label}</text>
+            <text key={pt.label} x={pt.x} y={tm + chartH + 16} textAnchor="middle" fontSize={12} fill="var(--text-muted)">{pt.label}</text>
           ))}
 
         {/* Area + line */}
         <path d={areaPath} fill={`url(#${gradId})`} />
-        <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={linePath} fill="none" style={{ stroke: color }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* Action dots */}
+        {/* Action markers — trait vertical pointillé + petit triangle au sommet */}
         {actionDots?.map((dot) => {
           const pt = pts[dot.idx];
           if (!pt) return null;
+          const accent = "var(--accent-primary)";
           return (
-            <circle key={dot.idx} cx={pt.x} cy={pt.y} r={4} fill="#F59E0B" stroke="var(--bg-card)" strokeWidth="2" />
+            <g key={dot.idx}>
+              <line
+                x1={pt.x}
+                y1={tm}
+                x2={pt.x}
+                y2={tm + chartH}
+                style={{ stroke: accent }}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                opacity={0.5}
+              />
+              <polygon
+                points={`${pt.x - 4},${tm} ${pt.x + 4},${tm} ${pt.x},${tm + 5}`}
+                style={{ fill: accent }}
+              />
+            </g>
           );
         })}
 
@@ -165,23 +183,29 @@ export function AreaChart({
         {hovPt && (
           <>
             <line x1={hovPt.x} y1={tm} x2={hovPt.x} y2={tm + chartH} stroke="var(--border-subtle)" strokeWidth="1" strokeDasharray="4 3" />
-            <circle cx={hovPt.x} cy={hovPt.y} r={4} fill={color} stroke="var(--bg-card)" strokeWidth="2" />
+            <circle cx={hovPt.x} cy={hovPt.y} r={4} style={{ fill: color }} stroke="var(--bg-card)" strokeWidth="2" />
           </>
         )}
       </svg>
 
-      {hovered !== null && hovPt && (
-        <ChartTooltip x={hovered.x} y={hovered.y - 8}>
-          {formatTooltip
-            ? formatTooltip(hovPt)
-            : (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-white/60">{hovPt.label}</span>
-                <span className="text-[13px] font-semibold text-white">{hovPt.value}</span>
-              </div>
-            )}
-        </ChartTooltip>
-      )}
+      {hovered !== null && hovPt && (() => {
+        // Portail position:fixed pour échapper aux conteneurs clippés et stacking contexts
+        const rect = svgRef.current?.getBoundingClientRect();
+        const tipX = (rect?.left ?? 0) + hovered.x;
+        const tipY = (rect?.top ?? 0) + hovered.y - 8;
+        return (
+          <ChartTooltip x={tipX} y={tipY} portal>
+            {formatTooltip
+              ? formatTooltip(hovPt)
+              : (
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[11px] text-white/60">{hovPt.label}</span>
+                  <span className="text-[13px] font-semibold text-white">{hovPt.value}</span>
+                </div>
+              )}
+          </ChartTooltip>
+        );
+      })()}
     </div>
   );
 }

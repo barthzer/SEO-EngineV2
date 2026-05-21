@@ -5,10 +5,10 @@ import type { ReactNode } from "react";
 type CalloutVariant = "info" | "warning" | "error" | "success";
 
 const VARIANTS: Record<CalloutVariant, { bg: string; border: string; iconColor: string }> = {
-  info:    { bg: "rgba(62,80,245,0.05)",   border: "rgba(62,80,245,0.15)",   iconColor: "#3E50F5" },
-  warning: { bg: "rgba(245,158,11,0.05)",  border: "rgba(245,158,11,0.15)",  iconColor: "#F59E0B" },
-  error:   { bg: "rgba(225,29,72,0.05)",   border: "rgba(225,29,72,0.12)",   iconColor: "#E11D48" },
-  success: { bg: "rgba(16,185,129,0.05)",  border: "rgba(16,185,129,0.12)",  iconColor: "#10B981" },
+  info:    { bg: "rgba(62,80,245,0.05)",   border: "rgba(62,80,245,0.15)",   iconColor: "var(--accent-primary)" },
+  warning: { bg: "rgba(245,158,11,0.05)",  border: "rgba(245,158,11,0.15)",  iconColor: "var(--color-warning)" },
+  error:   { bg: "rgba(225,29,72,0.05)",   border: "rgba(225,29,72,0.12)",   iconColor: "var(--color-danger)" },
+  success: { bg: "rgba(16,185,129,0.05)",  border: "var(--color-success-soft)",  iconColor: "var(--color-success)" },
 };
 
 function Icon({ color }: { color: string }) {

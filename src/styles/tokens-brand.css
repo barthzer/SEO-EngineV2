@@ -1,123 +1,165 @@
 /**
  * tokens-brand.css
  * ─────────────────────────────────────────────────────────────────────────
- * Palette Apple-like : blanc pur, grises neutres, accent rose #3E50F5.
- * Inspirations : Mobbin, Cosmoos.
- *
- * Light = défaut. Dark = Apple dark (000 / 1c1c1e / 2c2c2e).
+ * Palette warm-neutral + accent Discord-ish blue-purple #6573E0.
+ * CTAs en sombre (text-primary), accent réservé aux data viz et signaux.
+ * Inspirations : Mercury, Sana AI, Profound, Visitors.
  */
 
 /* ──────────────── Light mode (défaut) ──────────────── */
 :root,
 [data-theme="light"] {
-  /* Surfaces */
-  --bg-primary:      #ffffff;
-  --bg-secondary:    #f2f2f2;
-  --bg-subtle:       #f8f8f8;
-  --bg-card:         #ffffff;
-  --bg-card-hover:   #fafafa;
-  --bg-footer:       #ebebeb;
-  --bg-sidebar:      var(--bg-subtle);
-  --bg-sidebar-active: #e4e4e6;
-  --bg-overlay:      #f5f5f5;
+  /* Surfaces — cool-tint neutre */
+  --bg-primary:        #F8F9FC;
+  --bg-secondary:      #edeff3;
+  --bg-subtle:         #F2F3F7;
+  --bg-card:           #ffffff;
+  --bg-card-hover:     #edeff3;
+  --bg-footer:         #ECEDF2;
+  --bg-sidebar:        #F8F9FC;
+  --bg-sidebar-active: #F2F3F7;
+  --bg-overlay:        #F2F3F7;
 
-  /* Cards & modales */
-  --card-inner-bg:   rgba(0, 0, 0, 0.025);
-  --card-inner-border: rgba(0, 0, 0, 0.06);
-  --modal-bg:        rgba(255, 255, 255, 0.98);
-  --dropdown-bg:     rgba(255, 255, 255, 0.72);
-  --input-bg:        #ffffff;
+  /* Cards & modales — éléments imbriqués en blanc */
+  --card-inner-bg:     #ffffff;
+  --card-inner-border: rgba(15, 23, 42, 0.07);
+  --modal-bg:          #ffffff;
+  --dropdown-bg:       #ffffff;
+  --input-bg:          #ffffff;
 
-  /* Bordures */
-  --border-subtle:   rgba(0, 0, 0, 0.07);
-  --border-badge:    rgba(0, 0, 0, 0.10);
-  --border-medium:   rgba(0, 0, 0, 0.13);
+  /* Bordures — slate cool undertone */
+  --border-subtle:     rgba(15, 23, 42, 0.07);
+  --border-badge:      rgba(15, 23, 42, 0.10);
+  --border-medium:     rgba(15, 23, 42, 0.13);
 
-  /* Accent — Rose de marque */
-  --accent-primary:       #3E50F5;
-  --accent-primary-soft:  rgba(62, 80, 245, 0.08);
-  --accent-primary-mid:   rgba(62, 80, 245, 0.16);
+  /* Accent — Discord-ish blue-purple */
+  --accent-primary:       #3D4FFF;
+  --accent-primary-soft:  rgba(61, 79, 255, 0.08);
+  --accent-primary-mid:   rgba(61, 79, 255, 0.16);
+  --accent-primary-hover: #2D3FF5;
+
+  /* CTA — sombre (sépare action / signal) */
+  --cta-bg:            #0a0a0a;
+  --cta-bg-hover:      #1f1f1f;
+  --cta-text:          #ffffff;
+  --cta-border:        transparent;
 
   /* Texte */
-  --text-primary:    #0a0a0a;
-  --text-heading:    #0a0a0a;
-  --text-secondary:  #6e6e73;
-  --text-muted:      #8e8e93;
-  --text-input:      #8e8e93;
+  --text-primary:      #0a0a0a;
+  --text-heading:      #0a0a0a;
+  --text-secondary:    #6e6e73;
+  --text-muted:        #8e8e93;
+  --text-input:        #8e8e93;
+
+  /* Statuts — calibrés pour fond warm light */
+  --color-success:      #059669;
+  --color-success-bg:   rgba(5, 150, 105, 0.09);
+  --color-success-soft: rgba(5, 150, 105, 0.18);
+  --color-danger:       #BE123C;
+  --color-danger-bg:    rgba(190, 18, 60, 0.09);
+  --color-danger-soft:  rgba(190, 18, 60, 0.18);
+  --color-warning:      #C2410C;
+  --color-warning-bg:   rgba(194, 65, 12, 0.09);
+  --color-warning-soft: rgba(194, 65, 12, 0.18);
+  --color-info:         #3D4FFF;
+  --color-info-bg:      rgba(61, 79, 255, 0.09);
+  --color-info-soft:    rgba(61, 79, 255, 0.18);
+  --color-neutral:      #6e6e73;
+  --color-neutral-bg:   rgba(110, 110, 115, 0.09);
 
   /* Composants spécifiques */
-  --arc-bg:          #f1f1f1;
+  --arc-bg:            #efedea;
 
   /* Ombres */
-  --shadow-card:     none;
-  --shadow-floating: 0 20px 60px rgba(0,0,0,0.14);
-  --shadow-cta:      0 4px 16px rgba(62, 80, 245, 0.28);
+  --shadow-card:       none;
+  --shadow-floating:   0 20px 60px rgba(20, 14, 10, 0.14);
+  --shadow-cta:        0 4px 16px rgba(10, 10, 10, 0.22);
 
-  --floating-bar-bg:   #1a1a1a;
-  --floating-bar-text: #ffffff;
-  --floating-bar-sep:  rgba(255,255,255,0.15);
-  --floating-bar-hover: rgba(255,255,255,0.08);
+  --floating-bar-bg:    #1a1a1a;
+  --floating-bar-text:  #ffffff;
+  --floating-bar-sep:   rgba(255, 255, 255, 0.15);
+  --floating-bar-hover: rgba(255, 255, 255, 0.08);
 
   --color-scheme: light;
 }
 
-/* ──────────────── Dark mode — Apple dark ──────────────── */
+/* ──────────────── Dark mode — warm-leaning Apple dark ──────────────── */
 [data-theme="dark"] {
-  /* Surfaces */
-  --bg-primary:      #111113;
-  --bg-secondary:    #1c1c1e;
-  --bg-subtle:       #19191b;
-  --bg-card:         #1c1c1e;
-  --bg-card-hover:   #2c2c2e;
-  --bg-footer:       #161618;
-  --bg-sidebar:      #161618;
-  --bg-sidebar-active: #2c2c2e;
-  --bg-overlay:      #1c1c1e;
+  /* Surfaces — slightly warm dark */
+  --bg-primary:        #131211;
+  --bg-secondary:      #1d1c1a;
+  --bg-subtle:         #1a1917;
+  --bg-card:           #1d1c1a;
+  --bg-card-hover:     #2c2b29;
+  --bg-footer:         #161514;
+  --bg-sidebar:        #161514;
+  --bg-sidebar-active: #2c2b29;
+  --bg-overlay:        #1d1c1a;
 
   /* Cards & modales */
-  --card-inner-bg:   rgba(255, 255, 255, 0.04);
+  --card-inner-bg:     rgba(255, 255, 255, 0.04);
   --card-inner-border: rgba(255, 255, 255, 0.06);
-  --modal-bg:        rgba(28, 28, 30, 0.98);
-  --dropdown-bg:     rgba(28, 28, 30, 0.72);
-  --input-bg:        #3a3a3c;
+  --modal-bg:          #1d1c1a;
+  --dropdown-bg:       #1d1c1a;
+  --input-bg:          #3a3a38;
 
   /* Bordures */
-  --border-subtle:   rgba(255, 255, 255, 0.08);
-  --border-badge:    rgba(255, 255, 255, 0.10);
-  --border-medium:   rgba(255, 255, 255, 0.14);
+  --border-subtle:     rgba(255, 255, 255, 0.08);
+  --border-badge:      rgba(255, 255, 255, 0.10);
+  --border-medium:     rgba(255, 255, 255, 0.14);
 
   /* Accent */
-  --accent-primary:       #3E50F5;
-  --accent-primary-soft:  rgba(62, 80, 245, 0.14);
-  --accent-primary-mid:   rgba(62, 80, 245, 0.22);
+  --accent-primary:       #3D4FFF;
+  --accent-primary-soft:  rgba(61, 79, 255, 0.14);
+  --accent-primary-mid:   rgba(61, 79, 255, 0.24);
+  --accent-primary-hover: #5B6BFF;
+
+  /* CTA — inverse en dark : blanc */
+  --cta-bg:            #ffffff;
+  --cta-bg-hover:      #ebebeb;
+  --cta-text:          #0a0a0a;
+  --cta-border:        transparent;
 
   /* Texte */
-  --text-primary:    #ffffff;
-  --text-heading:    #ffffff;
-  --text-secondary:  #98989d;
-  --text-muted:      #636366;
-  --text-input:      #636366;
+  --text-primary:      #ffffff;
+  --text-heading:      #ffffff;
+  --text-secondary:    #98989d;
+  --text-muted:        #636366;
+  --text-input:        #636366;
 
-  /* Composants spécifiques */
-  --arc-bg:          #2c2c2e;
+  /* Statuts — saturés pour dark */
+  --color-success:      #34d399;
+  --color-success-bg:   rgba(52, 211, 153, 0.12);
+  --color-success-soft: rgba(52, 211, 153, 0.22);
+  --color-danger:       #f87171;
+  --color-danger-bg:    rgba(248, 113, 113, 0.12);
+  --color-danger-soft:  rgba(248, 113, 113, 0.22);
+  --color-warning:      #fbbf24;
+  --color-warning-bg:   rgba(251, 191, 36, 0.12);
+  --color-warning-soft: rgba(251, 191, 36, 0.22);
+  --color-info:         #3D4FFF;
+  --color-info-bg:      rgba(61, 79, 255, 0.14);
+  --color-info-soft:    rgba(61, 79, 255, 0.24);
+  --color-neutral:      #98989d;
+  --color-neutral-bg:   rgba(152, 152, 157, 0.12);
 
-  /* Ombres */
-  --shadow-card:     0 1px 3px rgba(0,0,0,0.40);
-  --shadow-floating: 0 20px 60px rgba(0,0,0,0.60);
-  --shadow-cta:      0 4px 16px rgba(62, 80, 245, 0.35);
+  --arc-bg:            #2c2b29;
 
-  --floating-bar-bg:   #ffffff;
-  --floating-bar-text: #0a0a0a;
-  --floating-bar-sep:  rgba(0,0,0,0.12);
-  --floating-bar-hover: rgba(0,0,0,0.06);
+  --shadow-card:       0 1px 3px rgba(0, 0, 0, 0.40);
+  --shadow-floating:   0 20px 60px rgba(0, 0, 0, 0.60);
+  --shadow-cta:        0 4px 16px rgba(0, 0, 0, 0.45);
+
+  --floating-bar-bg:    #ffffff;
+  --floating-bar-text:  #0a0a0a;
+  --floating-bar-sep:   rgba(0, 0, 0, 0.12);
+  --floating-bar-hover: rgba(0, 0, 0, 0.06);
 
   --color-scheme: dark;
 }
 
 /* ──────────────── Fonts ──────────────── */
 :root {
-  --font-sans:   var(--font-outfit);
-  --font-serif:  var(--font-instrument-serif);
-  --font-manrope: var(--font-manrope);
-  --font-space:  var(--font-space-grotesk);
+  --font-sans:    var(--font-figtree);
+  --font-display: var(--font-space-grotesk);
+  --font-mono:    var(--font-space-grotesk);
 }

@@ -52,8 +52,8 @@ const TF_DATA_3M = TF_DATA_1AN.slice(-4);
 /* ── Topical TTF ──────────────────────────────────────────────────────── */
 
 const YOUR_TOPICS = [
-  { label: "Marketing Digital", color: "#3E50F5" },
-  { label: "SEO / SEM",         color: "#10B981" },
+  { label: "Marketing Digital", color: "var(--accent-primary)" },
+  { label: "SEO / SEM",         color: "var(--color-success)" },
   { label: "Formation",         color: "#B888FF" },
 ];
 
@@ -70,9 +70,9 @@ const COMP_TOPICS = [
 /* ── Anchors ──────────────────────────────────────────────────────────── */
 
 const ANCHOR_SEGS = [
-  { label: "Marque",    pct: 59, color: "#3E50F5", count: 33 },
+  { label: "Marque",    pct: 59, color: "var(--accent-primary)", count: 33 },
   { label: "Générique", pct: 27, color: "#B888FF", count: 15 },
-  { label: "Autre",     pct: 14, color: "#94A3B8", count: 8  },
+  { label: "Autre",     pct: 14, color: "var(--text-muted)", count: 8  },
 ];
 
 const TOP_ANCHORS = [
@@ -218,21 +218,21 @@ function RadarChart() {
             fill="rgba(148,163,184,0.08)" stroke="rgba(148,163,184,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
           {/* Vous polygon */}
           <polygon points={toPoints(youPts)}
-            fill="rgba(62,80,245,0.15)" stroke="#3E50F5" strokeWidth="2" strokeLinejoin="round" />
+            fill="rgba(62,80,245,0.15)" stroke="var(--accent-primary)" strokeWidth="2" strokeLinejoin="round" />
           {/* Vertex dots — Competitors */}
           {compPts.map((pt, i) => (
             <circle key={`cd-${i}`} cx={pt.x} cy={pt.y} r={3} fill="rgba(148,163,184,0.8)" stroke="white" strokeWidth="1.5" />
           ))}
           {/* Vertex dots — Vous */}
           {youPts.map((pt, i) => (
-            <circle key={`yd-${i}`} cx={pt.x} cy={pt.y} r={3.5} fill="#3E50F5" stroke="white" strokeWidth="1.5" />
+            <circle key={`yd-${i}`} cx={pt.x} cy={pt.y} r={3.5} fill="var(--accent-primary)" stroke="white" strokeWidth="1.5" />
           ))}
           {/* Labels */}
           {RADAR_AXES.map((label, i) => (
             <text key={i}
               x={labelPts[i].x} y={labelPts[i].y + 4}
               textAnchor="middle" fontSize={11} fontWeight={600}
-              fill={hoveredAxis === label ? "#3E50F5" : "var(--text-secondary)"}
+              fill={hoveredAxis === label ? "var(--accent-primary)" : "var(--text-secondary)"}
               style={{ transition: "fill 0.1s" }}
             >
               {label}
@@ -279,7 +279,7 @@ function RadarChart() {
       {/* Legend */}
       <div className="flex items-center gap-5 text-[12px] text-[var(--text-muted)]">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#3E50F5]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent-primary)]" />
           Vous <strong className="ml-0.5 text-[var(--text-primary)]">48%</strong>
         </span>
         <span className="flex items-center gap-1.5">
@@ -299,9 +299,9 @@ const anchorTotal = ANCHOR_SEGS.reduce((a, s) => a + s.count, 0);
 /* ── Score ring helper ────────────────────────────────────────────────── */
 
 function scoreColor(s: number) {
-  if (s >= 70) return "#10B981";
-  if (s >= 45) return "#F59E0B";
-  return "#E11D48";
+  if (s >= 70) return "var(--color-success)";
+  if (s >= 45) return "var(--color-warning)";
+  return "var(--color-danger)";
 }
 
 /* ── Main component ───────────────────────────────────────────────────── */
@@ -326,7 +326,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
           <div className="grid grid-cols-[2fr_1fr] items-center gap-8">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[rgba(245,158,11,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#F59E0B]">Netlinking · rapport Majestic</span>
+                <span className="rounded-full bg-[var(--color-warning-bg)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-warning)]">Netlinking · rapport Majestic</span>
                 <span className="text-[13px] text-[var(--text-muted)]">5 mai 2026</span>
                 <span className="text-[13px] text-[var(--text-muted)]">·</span>
                 <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
@@ -378,7 +378,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
               <p className="text-[12px] text-[var(--text-muted)]">{kpi.label}</p>
               <p className="mt-1 text-[28px] font-semibold leading-none text-[var(--text-primary)]">{kpi.val}</p>
               <p className="mt-2 text-[11px] text-[var(--text-muted)]">{kpi.bench}</p>
-              <p className={`mt-0.5 text-[11px] font-medium ${kpi.delta < 0 ? "text-[#E11D48]" : "text-[#10B981]"}`}>
+              <p className={`mt-0.5 text-[11px] font-medium ${kpi.delta < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"}`}>
                 {kpi.delta > 0 ? "+" : ""}{kpi.delta}{kpi.suffix ?? ""}
               </p>
             </div>
@@ -419,13 +419,13 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                             alt="" width={14} height={14} className="flex-shrink-0 rounded-sm"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                           />
-                          <span className={`truncate font-mono text-[12px] ${c.isYou ? "font-semibold text-[#3E50F5]" : "text-[var(--text-secondary)]"}`}>
+                          <span className={`truncate font-mono text-[12px] ${c.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
                             {c.domain}{c.isYou ? " (vous)" : ""}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center align-middle">
-                        <span className={`font-semibold ${c.isYou ? "text-[#3E50F5]" : "text-[var(--text-primary)]"}`}>{c.tf}</span>
+                        <span className={`font-semibold ${c.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{c.tf}</span>
                       </td>
                       <td className="px-4 py-3 text-center align-middle text-[var(--text-secondary)]">{c.cf}</td>
                       <td className="px-4 py-3 text-center align-middle text-[var(--text-secondary)]">{c.refDomains.toLocaleString("fr-FR")}</td>
@@ -474,7 +474,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <span className="text-[var(--text-muted)]">{row.label}</span>
                       <span className="flex items-center gap-3 text-[var(--text-muted)]">
                         <span className="flex items-center gap-1">
-                          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[#3E50F5]" />
+                          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[var(--accent-primary)]" />
                           Follow {row.follow}%
                         </span>
                         <span className="flex items-center gap-1">
@@ -484,8 +484,8 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       </span>
                     </div>
                     <div className="flex h-3 overflow-hidden rounded-full">
-                      <div style={{ width: `${row.follow}%`, backgroundColor: "#3E50F5" }} />
-                      <div style={{ width: `${row.nofollow}%`, backgroundColor: "#94A3B8" }} />
+                      <div style={{ width: `${row.follow}%`, backgroundColor: "var(--accent-primary)" }} />
+                      <div style={{ width: `${row.nofollow}%`, backgroundColor: "var(--text-muted)" }} />
                     </div>
                   </div>
                 ))}
@@ -504,7 +504,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <span className="text-[var(--text-muted)]">{row.label}</span>
                       <span className="flex items-center gap-3 text-[var(--text-muted)]">
                         <span className="flex items-center gap-1">
-                          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[#10B981]" />
+                          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[var(--color-success)]" />
                           Texte {row.texte}%
                         </span>
                         <span className="flex items-center gap-1">
@@ -514,8 +514,8 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       </span>
                     </div>
                     <div className="flex h-3 overflow-hidden rounded-full">
-                      <div style={{ width: `${row.texte}%`, backgroundColor: "#10B981" }} />
-                      <div style={{ width: `${row.image}%`, backgroundColor: "#94A3B8" }} />
+                      <div style={{ width: `${row.texte}%`, backgroundColor: "var(--color-success)" }} />
+                      <div style={{ width: `${row.image}%`, backgroundColor: "var(--text-muted)" }} />
                     </div>
                   </div>
                 ))}
@@ -548,7 +548,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="py-2.5 text-[var(--text-secondary)]">{row.pays}</td>
                       <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[var(--color-danger)]" : "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -579,7 +579,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <td className="py-2.5 text-[var(--text-secondary)]">{row.langue}</td>
                       <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[var(--color-danger)]" : "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -602,7 +602,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
               <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
                 <span>Min <strong className="text-[var(--text-primary)]">{tfMin}</strong></span>
                 <span>Max <strong className="text-[var(--text-primary)]">{tfMax}</strong></span>
-                <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[#E11D48]" : "bg-[rgba(16,185,129,0.1)] text-[#10B981]"}`}>
+                <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[rgba(225,29,72,0.1)] text-[var(--color-danger)]" : "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]"}`}>
                   Delta {tfDelta > 0 ? "+" : ""}{tfDelta} ({tfDelta > 0 ? "+" : ""}{Math.round(tfDelta / tfData[0].value * 100)}%)
                 </span>
               </div>
@@ -654,12 +654,12 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                   const isYours = YOUR_TOPICS.some((y) => y.label === t.label);
                   return (
                     <div key={t.label} className="flex items-center gap-3">
-                      <span className={`w-28 flex-shrink-0 text-[12px] font-medium truncate ${isYours ? "text-[#3E50F5]" : "text-[var(--text-secondary)]"}`}>
+                      <span className={`w-28 flex-shrink-0 text-[12px] font-medium truncate ${isYours ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
                         {t.label}
                       </span>
                       <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-card-hover)]">
                         <div className="h-full rounded-full transition-all"
-                          style={{ width: `${(t.count / t.max) * 100}%`, backgroundColor: isYours ? "#3E50F5" : "var(--text-muted)" }} />
+                          style={{ width: `${(t.count / t.max) * 100}%`, backgroundColor: isYours ? "var(--accent-primary)" : "var(--text-muted)" }} />
                       </div>
                       <span className="w-8 flex-shrink-0 text-right text-[11px] text-[var(--text-muted)]">{t.count}/{t.max}</span>
                     </div>
@@ -682,7 +682,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-6 py-5 flex flex-col items-center gap-4 min-w-[220px]">
               <div className="flex w-full items-center justify-between">
                 <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Répartition</p>
-                <span className="rounded-full bg-[rgba(225,29,72,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[#E11D48]">
+                <span className="rounded-full bg-[rgba(225,29,72,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-danger)]">
                   Risque élevé
                 </span>
               </div>
@@ -713,7 +713,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
               </div>
               <div className="flex w-full items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-3.5 py-2.5">
                 <span className="text-[12px] text-[var(--text-muted)]">Score ancres</span>
-                <span className="text-[18px] font-semibold text-[#E11D48]">22<span className="text-[12px] font-medium text-[var(--text-muted)]">/100</span></span>
+                <span className="text-[18px] font-semibold text-[var(--color-danger)]">22<span className="text-[12px] font-medium text-[var(--text-muted)]">/100</span></span>
               </div>
             </div>
 
@@ -780,13 +780,13 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                           alt="" width={14} height={14} className="flex-shrink-0 rounded-sm"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
-                        <span className={`truncate font-mono text-[12px] ${row.isYou ? "font-semibold text-[#3E50F5]" : "text-[var(--text-secondary)]"}`}>
+                        <span className={`truncate font-mono text-[12px] ${row.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
                           {row.domain}{row.isYou ? " (vous)" : ""}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center align-middle">
-                      <span className={`font-semibold ${row.isYou ? "text-[#3E50F5]" : "text-[var(--text-primary)]"}`}>{row.vis}</span>
+                      <span className={`font-semibold ${row.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{row.vis}</span>
                     </td>
                     <td className="px-4 py-3 text-center align-middle text-[var(--text-secondary)]">{row.top3}</td>
                     <td className="px-4 py-3 text-center align-middle text-[var(--text-secondary)]">{row.top10}</td>
@@ -800,7 +800,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       ) : row.gap === "0" ? (
                         <span className="text-[13px] text-[var(--text-muted)]">0</span>
                       ) : (
-                        <span className="text-[13px] font-semibold text-[#10B981]">{row.gap}</span>
+                        <span className="text-[13px] font-semibold text-[var(--color-success)]">{row.gap}</span>
                       )}
                     </td>
                   </tr>
@@ -885,9 +885,9 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                     <td className="pr-4 py-3 text-center align-middle">
                       <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${
                         row.statut === "Follow"
-                          ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]"
+                          ? "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]"
                           : row.statut === "Sponsored"
-                          ? "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]"
+                          ? "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"
                           : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
                       }`}>
                         {row.statut}

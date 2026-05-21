@@ -6,8 +6,9 @@ import { FilterTabs } from "@/components/FilterTabs";
 import { DonutChart } from "@/components/DonutChart";
 import { AreaChart } from "@/components/AreaChart";
 import { KpiCard } from "@/components/KpiCard";
-import { SoftPanel } from "@/components/SoftPanel";
+import { KpiGroup } from "@/components/KpiGroup";
 import { TriangleAlert, FileText, MousePointerClick, Percent } from "lucide-react";
+import { TableWide, type ColumnDef } from "@/components/TableWide";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
 
@@ -97,9 +98,9 @@ const CANNIBAL_HISTORY_BY_PERIOD = {
 };
 
 const CANNIBAL_SEV_CONFIG: Record<CannibalSev, { label: string; color: string; bg: string }> = {
-  HIGH:   { label: "HIGH",   color: "#E11D48", bg: "rgba(225,29,72,0.08)"  },
-  MEDIUM: { label: "MEDIUM", color: "#F59E0B", bg: "rgba(245,158,11,0.1)"  },
-  LOW:    { label: "LOW",    color: "#10B981", bg: "rgba(16,185,129,0.09)" },
+  HIGH:   { label: "HIGH",   color: "var(--color-danger)", bg: "var(--color-danger-bg)"  },
+  MEDIUM: { label: "MEDIUM", color: "var(--color-warning)", bg: "rgba(245,158,11,0.1)"  },
+  LOW:    { label: "LOW",    color: "var(--color-success)", bg: "var(--color-success-bg)" },
 };
 
 /* ── Sub-components ───────────────────────────────────────────────────── */
@@ -152,7 +153,7 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
           <span className="text-[13px] tabular-nums font-medium text-[var(--text-primary)]">{totalClicks}</span>
         </td>
         <td className="px-4 py-3.5 text-right align-middle">
-          <span className="text-[13px] tabular-nums text-[#E11D48]">
+          <span className="text-[13px] tabular-nums text-[var(--color-danger)]">
             {kw.lostClicks !== null ? kw.lostClicks : "—"}
           </span>
         </td>
@@ -166,9 +167,9 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
         </td>
         <td className="pr-6 py-3.5 align-middle">
           <span className={`inline-flex rounded-full px-2 py-1 text-[12px] font-semibold ${
-            kw.status === "resolved" ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]" :
+            kw.status === "resolved" ? "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]" :
             kw.status === "ignored"  ? "bg-[var(--bg-secondary)] text-[var(--text-muted)]" :
-            "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]"}`}>
+            "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"}`}>
             {kw.status === "resolved" ? "Résolu" : kw.status === "ignored" ? "Ignoré" : "Ouvert"}
           </span>
         </td>
@@ -208,7 +209,7 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 flex-1 rounded-full bg-[var(--bg-card-hover)]">
-                          <div className="h-full rounded-full bg-[#3E50F5]" style={{ width: `${u.clickShare}%` }} />
+                          <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${u.clickShare}%` }} />
                         </div>
                         <span className="w-8 shrink-0 text-right text-[12px] font-semibold tabular-nums text-[var(--text-primary)]">{u.clickShare}%</span>
                       </div>
@@ -236,6 +237,40 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
   );
 }
 
+/* ── Columns Pages (TableWide) ────────────────────────────────────────── */
+
+const PAGES_COLUMNS: ColumnDef<CannibalPage>[] = [
+  {
+    key: "url",
+    header: "Page URL",
+    width: 320,
+    flex: true,
+    render: (p) => (
+      <span className="block truncate font-mono text-[12px] text-[var(--text-secondary)]">{p.url}</span>
+    ),
+  },
+  {
+    key: "kwConflicts", header: "# KW en conflit", width: 140, align: "right",
+    sortable: true, sortValue: (p) => p.kwConflicts,
+    render: (p) => (
+      <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{p.kwConflicts}</span>
+    ),
+  },
+  {
+    key: "clicksAtRisk", header: "Clics à risque", width: 140, align: "right",
+    sortable: true, sortValue: (p) => p.clicksAtRisk,
+    render: (p) => (
+      <span className="text-[13px] font-medium tabular-nums text-[var(--color-danger)]">{p.clicksAtRisk}</span>
+    ),
+  },
+  {
+    key: "maxSeverity",
+    header: "Sévérité max",
+    width: 130,
+    render: (p) => <CannibalSevBadge sev={p.maxSeverity} />,
+  },
+];
+
 /* ── Main view ────────────────────────────────────────────────────────── */
 
 export function CannibalView() {
@@ -247,8 +282,8 @@ export function CannibalView() {
   const total  = CANNIBAL_KWS.length;
 
   const donutSlices = [
-    { label: "Medium", value: medium, color: "#F59E0B" },
-    { label: "Low",    value: low,    color: "#10B981" },
+    { label: "Medium", value: medium, color: "var(--color-warning)" },
+    { label: "Low",    value: low,    color: "var(--color-success)" },
   ].filter(s => s.value > 0);
 
   return (
@@ -256,30 +291,28 @@ export function CannibalView() {
 
 
       {/* KPI cards */}
-      <SoftPanel>
-        <div className="grid grid-cols-4 gap-3">
-          <KpiCard icon={TriangleAlert}     label="Keywords cannibalisés" value={String(total)}                  sub="/ 53 suivis"     valueColor="#E11D48" />
-          <KpiCard icon={FileText}          label="Pages impactées"       value={String(CANNIBAL_PAGES.length)}  sub="URLs en conflit"  valueColor="#F59E0B" />
-          <KpiCard icon={MousePointerClick} label="Trafic à risque"       value="295"                            sub="clics / mois"    valueColor="#F59E0B" />
-          <KpiCard icon={Percent}           label="% cannibalisation"     value="7.5%"                           sub="du trafic SEO" />
-        </div>
-      </SoftPanel>
+      <KpiGroup columns={4}>
+        <KpiCard bare icon={TriangleAlert}     label="Keywords cannibalisés" value={String(total)}                  sub="/ 53 suivis" />
+        <KpiCard bare icon={FileText}          label="Pages impactées"       value={String(CANNIBAL_PAGES.length)}  sub="URLs en conflit" />
+        <KpiCard bare icon={MousePointerClick} label="Trafic à risque"       value="295"                            sub="clics / mois" />
+        <KpiCard bare icon={Percent}           label="% cannibalisation"     value="7,5 %"                          sub="du trafic SEO" />
+      </KpiGroup>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Charts row — 1/3 + 2/3, hauteur étendue */}
+      <div className="grid grid-cols-3 gap-4">
 
-        {/* Donut — répartition sévérité */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+        {/* Donut — répartition sévérité (1/3) */}
+        <div className="col-span-1 flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
           <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Répartition par sévérité</p>
-          <div className="flex items-center gap-8">
+          <div className="flex flex-1 items-center justify-center gap-6">
             <DonutChart
               slices={donutSlices}
-              size={112}
-              strokeWidth={9}
+              size={160}
+              strokeWidth={12}
               center={
                 <div className="flex flex-col items-center">
-                  <span className="text-[22px] font-semibold leading-none text-[var(--text-primary)]">{total}</span>
-                  <span className="mt-0.5 text-[10px] text-[var(--text-muted)]">KW</span>
+                  <span className="text-[28px] font-semibold leading-none text-[var(--text-primary)]">{total}</span>
+                  <span className="mt-1 text-[11px] text-[var(--text-muted)]">KW</span>
                 </div>
               }
               formatTooltip={(s, pct) => (
@@ -289,19 +322,20 @@ export function CannibalView() {
                 </div>
               )}
             />
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-3">
               {donutSlices.map(s => (
                 <div key={s.label} className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
                   <span className="text-[13px] text-[var(--text-secondary)]">{s.label}</span>
+                  <span className="ml-auto text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{s.value}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Evolution chart */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+        {/* Evolution chart (2/3) */}
+        <div className="col-span-2 flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution des cannibalisations</p>
             <FilterTabs
@@ -310,7 +344,9 @@ export function CannibalView() {
               onChange={setHistPeriod}
             />
           </div>
-          <AreaChart data={CANNIBAL_HISTORY_BY_PERIOD[histPeriod]} color="#E11D48" height={64} gradientId="cannibal-evol-grad" />
+          <div className="flex-1">
+            <AreaChart data={CANNIBAL_HISTORY_BY_PERIOD[histPeriod]} height={220} gradientId="cannibal-evol-grad" />
+          </div>
         </div>
       </div>
 
@@ -328,7 +364,10 @@ export function CannibalView() {
         </div>
 
         {view === "keywords" && (
-          <div className="bg-[var(--bg-card)]">
+          <div
+            className="flex flex-col overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
+            style={{ clipPath: "inset(0 round 1.5rem)" }}
+          >
             <table className="w-full table-fixed border-collapse">
               <colgroup>
                 <col style={{ width: "22%" }} />
@@ -341,15 +380,15 @@ export function CannibalView() {
                 <col style={{ width: "14%" }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-muted)]">
-                  <th className="px-6 py-3 text-left font-semibold">Mot-clé</th>
-                  <th className="px-4 py-3 text-left font-semibold">Sévérité</th>
-                  <th className="px-4 py-3 text-center font-semibold">URLs</th>
-                  <th className="px-4 py-3 text-right font-semibold">Clics</th>
-                  <th className="px-4 py-3 text-right font-semibold">Perte est.</th>
-                  <th className="px-4 py-3 text-right font-semibold">Volume</th>
-                  <th className="px-4 py-3 text-left font-semibold">Action</th>
-                  <th className="pr-6 py-3 text-left font-semibold">Statut</th>
+                <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)] text-[12px] font-medium text-[var(--text-muted)]">
+                  <th className="py-2.5 pl-6 pr-4 text-left font-medium">Mot-clé</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Sévérité</th>
+                  <th className="px-4 py-2.5 text-center font-medium">URLs</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Clics</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Perte est.</th>
+                  <th className="px-4 py-2.5 text-right font-medium">Volume</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Action</th>
+                  <th className="py-2.5 pl-4 pr-6 text-left font-medium">Statut</th>
                 </tr>
               </thead>
               <tbody>
@@ -360,42 +399,15 @@ export function CannibalView() {
         )}
 
         {view === "pages" && (
-          <div className="bg-[var(--bg-card)]">
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col style={{ width: "46%" }} />
-                <col style={{ width: "18%" }} />
-                <col style={{ width: "18%" }} />
-                <col style={{ width: "18%" }} />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-muted)]">
-                  <th className="px-6 py-3 text-left font-semibold">Page URL</th>
-                  <th className="px-4 py-3 text-center font-semibold"># KW en conflit</th>
-                  <th className="px-4 py-3 text-right font-semibold">Clics à risque</th>
-                  <th className="pr-6 py-3 text-left font-semibold">Sévérité max</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {CANNIBAL_PAGES.map((p, i) => (
-                  <tr key={i} className="transition-colors hover:bg-[var(--bg-card-hover)]">
-                    <td className="overflow-hidden px-6 py-3.5 align-middle">
-                      <span className="block truncate font-mono text-[12px] text-[var(--text-secondary)]">{p.url}</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-center align-middle">
-                      <span className="text-[13px] font-semibold text-[var(--text-primary)]">{p.kwConflicts}</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-right align-middle">
-                      <span className="text-[13px] tabular-nums text-[#E11D48] font-medium">{p.clicksAtRisk}</span>
-                    </td>
-                    <td className="pr-6 py-3.5 align-middle">
-                      <CannibalSevBadge sev={p.maxSeverity} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TableWide<CannibalPage>
+            columns={PAGES_COLUMNS}
+            data={CANNIBAL_PAGES}
+            rowKey={(p) => p.url}
+            emptyState="Aucune page en conflit."
+            minWidth={900}
+            bordered
+            edgePadding="24px"
+          />
         )}
       </div>
     </div>

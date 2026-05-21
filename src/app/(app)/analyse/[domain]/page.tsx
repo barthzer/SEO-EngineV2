@@ -4,17 +4,22 @@ import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "re
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { use } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePageMeta } from "@/context/PageMetaContext";
 import { Button } from "@/components/Button";
 import { useToast } from "@/context/ToastContext";
 import { Tooltip, ChartTooltip } from "@/components/Tooltip";
 import { AnimateIn } from "@/components/AnimateIn";
 import { NumberInput } from "@/components/NumberInput";
-import { BriefsView, LotList } from "@/components/BriefsView";
+import { BriefsView, TagList } from "@/components/BriefsView";
 import { AuditTechniqueTab } from "@/components/AuditTechniqueTab";
 import { AuditEditorialTab } from "@/components/AuditEditorialTab";
 import { AuditNetlinkingTab } from "@/components/AuditNetlinkingTab";
 import { Stepper } from "@/components/Stepper";
+import { BlocCard, type BlocDef } from "@/components/BlocCard";
 import { CannibalView } from "@/components/CannibalView";
+import { DeltaIndicator } from "@/components/DeltaIndicator";
+import { NetlinkingView } from "@/components/NetlinkingView";
 import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
 import { AuditToc, type TocItem } from "@/components/AuditToc";
@@ -66,12 +71,23 @@ import {
   Sparkles as LSparkles,
   Settings,
   FileSpreadsheet,
+  Loader2,
+  RefreshCw,
+  Layers as LLayers,
+  Target as LTarget,
+  Boxes,
+  ArrowUpRight,
+  Tag as LTag,
+  Play as LPlay,
 } from "lucide-react";
 import { CheckCircleIcon as CheckCircleSolid, SparklesIcon } from "@heroicons/react/24/solid";
 import { AIInsight } from "@/components/AIInsight";
 import { KpiCard } from "@/components/KpiCard";
-import { SoftPanel } from "@/components/SoftPanel";
-import { HorizontalBarChart } from "@/components/HorizontalBarChart";
+import { KpiGroup } from "@/components/KpiGroup";
+import { VerticalBarChart } from "@/components/VerticalBarChart";
+import { TableWide, type ColumnDef } from "@/components/TableWide";
+import { SegmentedControl } from "@/components/SegmentedControl";
+import { SearchInput } from "@/components/SearchInput";
 import { EmptyState } from "@/components/EmptyState";
 import { AreaChart } from "@/components/AreaChart";
 import { FilterTabs } from "@/components/FilterTabs";
@@ -83,7 +99,7 @@ type Tab = "general" | "briefs" | "seo" | "tracking" | "sea" | "forecast" | "net
 
 
 const GRADIENTS = [
-  "linear-gradient(to bottom, #3E50F5, #7B8FF8)",
+  "linear-gradient(to bottom, #3D4FFF, #6877FF)",
   "linear-gradient(to bottom, #2563eb, #93c5fd)",
   "linear-gradient(to bottom, #4f46e5, #a5b4fc)",
   "linear-gradient(to bottom, #0284c7, #7dd3fc)",
@@ -97,12 +113,14 @@ function domainGradient(domain: string) {
 
 function FaviconStretch({ domain }: { domain: string }) {
   const [customImg, setCustomImg] = useState<string | null>(null);
+  const [faviconError, setFaviconError] = useState(false);
   const [hovered, setHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(`project-logo:${domain}`);
     if (saved) setCustomImg(saved);
+    setFaviconError(false);
   }, [domain]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,15 +152,24 @@ function FaviconStretch({ domain }: { domain: string }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Logo clickable area */}
+        {/* Logo clickable area — même fallback que ProjectFavicon (dropdown) :
+            custom → Google favicon → gradient + initial */}
         <div
-          className="relative h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
+          className="relative h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
           onClick={() => inputRef.current?.click()}
         >
-          {customImg
-            ? <img src={customImg} alt={domain} className="h-full w-full object-contain" />
-            : <div className="flex h-full w-full items-center justify-center text-[22px] font-semibold text-white" style={{ background: gradient }}>{initial}</div>
-          }
+          {customImg ? (
+            <img src={customImg} alt={domain} className="h-full w-full object-contain" />
+          ) : !faviconError ? (
+            <img
+              src={`https://www.google.com/s2/favicons?domain=${domain}&sz=128`}
+              alt={domain}
+              onError={() => setFaviconError(true)}
+              className="h-full w-full object-contain p-2"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[22px] font-semibold text-white" style={{ background: gradient }}>{initial}</div>
+          )}
 
           {/* Hover overlay — "+" icon */}
           <div className={`absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] transition-opacity duration-150 ${hovered ? "opacity-100" : "opacity-0"}`}>
@@ -167,7 +194,7 @@ function FaviconStretch({ domain }: { domain: string }) {
 }
 
 function ScoreRing({ score, lg = false, md = false }: { score: number; lg?: boolean; md?: boolean }) {
-  const color  = score >= 70 ? "#10B981" : score >= 50 ? "#F97316" : "#E11D48";
+  const color  = score >= 70 ? "var(--color-success)" : score >= 50 ? "var(--color-warning)" : "var(--color-danger)";
   const r = lg ? 44 : md ? 32 : 28;
   const stroke = lg ? 5 : md ? 4 : 3.5;
   const sz = (r + stroke) * 2;
@@ -193,8 +220,8 @@ type HealthAction = { label: string; visits?: string };
 
 function SeverityBadge({ level, count }: { level: "critique" | "important"; count: number }) {
   const cfg = level === "critique"
-    ? { color: "#E11D48", bg: "rgba(225,29,72,0.09)", label: count === 1 ? "critique" : "critiques" }
-    : { color: "#F59E0B", bg: "rgba(245,158,11,0.09)", label: count === 1 ? "important" : "importants" };
+    ? { color: "var(--color-danger)", bg: "var(--color-danger-bg)", label: count === 1 ? "critique" : "critiques" }
+    : { color: "var(--color-warning)", bg: "rgba(245,158,11,0.09)", label: count === 1 ? "important" : "importants" };
   return (
     <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
       {count} {cfg.label}
@@ -203,14 +230,15 @@ function SeverityBadge({ level, count }: { level: "critique" | "important"; coun
 }
 
 function HealthCard({
-  title, score, critiques, importants, visitesRisk, actions, note, cta, ctaHref, color, colorBg, quote,
+  title, score, critiques, importants, visitesRisk, note, ctaHref, quote,
 }: {
   title: string; score?: number; critiques: number; importants?: number;
-  visitesRisk: string; actions: HealthAction[]; note?: string; cta: string; ctaHref?: string;
-  color: string; colorBg: string; quote?: string;
+  visitesRisk: string; actions?: HealthAction[]; note?: string;
+  cta?: string; ctaHref?: string;
+  color?: string; colorBg?: string; quote?: string;
 }) {
-  return (
-    <div className="flex flex-1 flex-col min-w-0">
+  const inner = (
+    <div className="group/health flex flex-1 flex-col min-w-0">
       {/* Header */}
       <div className="flex items-start gap-4 p-7 min-h-[128px]">
         <div className="flex-1 min-w-0">
@@ -229,33 +257,20 @@ function HealthCard({
           <AIInsight>{quote}</AIInsight>
         </div>
       )}
-      <div className="px-7 pb-4">
-        <p className="mb-3 text-[13px] font-semibold text-[var(--text-secondary)]">Top actions</p>
-        <div className="flex flex-col gap-2.5">
-          {actions.map((a, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--bg-card-hover)] text-[15px] font-bold text-[var(--text-secondary)]">
-                {i + 1}
-              </span>
-              <span className="flex-1 text-[13px] font-medium leading-snug text-[var(--text-primary)]">{a.label}</span>
-              {a.visits && (
-                <span className="flex-shrink-0 rounded-full px-2 py-1 text-[12px] font-semibold tabular-nums" style={{ color, backgroundColor: colorBg }}>
-                  {a.visits} vis.
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-auto flex items-center justify-between px-7 pb-7 pt-1">
-        {note ? <span className="text-[11px] text-[var(--text-muted)]">{note}</span> : <span />}
-        {ctaHref
-          ? <Link href={ctaHref}><Button size="sm" variant="secondary">{cta}</Button></Link>
-          : <Button size="sm" variant="secondary">{cta}</Button>
-        }
+
+      {/* Footer — note (optionnelle) à gauche, flèche bottom-right */}
+      <div className="mt-auto flex items-center justify-between gap-4 px-7 pb-5 pt-2">
+        {note ? (
+          <span className="text-[11px] text-[var(--text-muted)]">{note}</span>
+        ) : <span />}
+        {ctaHref && (
+          <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-[var(--text-secondary)] transition-colors duration-150 group-hover/health:text-[var(--accent-primary)]" />
+        )}
       </div>
     </div>
   );
+
+  return ctaHref ? <Link href={ctaHref} className="block">{inner}</Link> : inner;
 }
 
 /* ── Metric card ─────────────────────────────────────────────────────── */
@@ -271,12 +286,39 @@ const POSITION_BARS = [
   { label: "51 – 100", value: 14 },
 ];
 
+const POSITION_TOOLTIP_DETAILS: Record<string, { description: string; ctrEstime: string; recommandation: string }> = {
+  "Top 3":    { description: "Première page, zone d'or",       ctrEstime: "~22–30 %", recommandation: "Maintenir et défendre les positions" },
+  "4 – 10":   { description: "Première page, hors podium",     ctrEstime: "~4–9 %",   recommandation: "Pousser vers le top 3 (ROI ×3)" },
+  "11 – 50":  { description: "Pages 2 à 5 — visibilité faible", ctrEstime: "~1–2 %",   recommandation: "Optimiser pour atteindre le top 10" },
+  "51 – 100": { description: "Au-delà de la page 5",            ctrEstime: "<0,5 %",  recommandation: "Renforcer contenu + autorité" },
+};
+
 function PositionBarChart() {
   return (
-    <HorizontalBarChart
+    <VerticalBarChart
       data={POSITION_BARS}
-      color="#3E50F5"
+      color="var(--accent-primary)"
       formatValue={(v) => v.toString()}
+      tooltip={(item, _i, total) => {
+        const pct = total > 0 ? ((item.value / total) * 100).toFixed(0) : "0";
+        const d = POSITION_TOOLTIP_DETAILS[item.label];
+        return (
+          <div className="flex max-w-[260px] flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[13px] font-semibold text-white">{item.label}</span>
+              <span className="text-[11px] text-white/60">{pct} % du total</span>
+            </div>
+            <div className="text-[12px] font-medium text-white">{item.value.toLocaleString("fr-FR")} mots-clés</div>
+            {d && (
+              <div className="mt-1 space-y-1 border-t border-white/10 pt-2 text-[11px] leading-snug text-white/70">
+                <div>{d.description}</div>
+                <div><span className="text-white/55">CTR estimé : </span>{d.ctrEstime}</div>
+                <div><span className="text-white/55">→ </span>{d.recommandation}</div>
+              </div>
+            )}
+          </div>
+        );
+      }}
     />
   );
 }
@@ -321,94 +363,95 @@ function DomainSquircle({ domain }: { domain: string }) {
   );
 }
 
-function DeltaIndicator({ value, ref: refValue }: { value: number; ref: number }) {
-  if (value === refValue) {
-    return <span className="ml-1.5 inline-block w-2 text-center text-[10px] tracking-micro text-[var(--text-muted)]">—</span>;
-  }
-  const isUp = value > refValue;
-  // Higher is better for all 4 metrics (TF/CF/BAS/RefDomains) — competitor higher = bad for you (red), lower = good (green)
-  const color = isUp ? "#E11D48" : "#10B981";
-  return (
-    <svg
-      viewBox="0 0 10 10"
-      className="ml-1.5 inline-block h-2.5 w-2.5"
-      style={{ fill: color }}
-      aria-hidden="true"
-    >
-      {isUp ? <polygon points="5,1.5 9,8 1,8" /> : <polygon points="5,8.5 1,2 9,2" />}
-    </svg>
-  );
-}
+/* DeltaIndicator — déplacé vers @/components/DeltaIndicator (réutilisé en plusieurs endroits) */
 
 function OrganicCompetitorsTable() {
   const rows = [ORGANIC_YOU, ...ORGANIC_COMPETITORS];
   const youCols = ORGANIC_YOU;
 
+  const columns: ColumnDef<OrganicRow>[] = [
+    {
+      key: "domain",
+      header: "Domaine",
+      width: 280,
+      flex: true,
+      render: (c) => (
+        <div className="flex items-center gap-3 min-w-0">
+          <DomainSquircle domain={c.domain} />
+          <span className={`block truncate text-[13px] ${c.isYou ? "font-semibold text-[var(--accent-primary)]" : "font-medium text-[var(--text-primary)]"}`}>
+            {c.domain}
+          </span>
+          {c.isYou && (
+            <span className="flex-shrink-0 rounded-full bg-[var(--accent-primary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-micro text-white">
+              Vous
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "tf",
+      header: <ColHeaderInfo label="TF" align="right" tooltip={<TfTip />} />,
+      width: 90, align: "right",
+      sortable: true, sortValue: (c) => c.tf,
+      render: (c) => (
+        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+          {c.tf}
+          {!c.isYou && <DeltaIndicator value={c.tf} ref={youCols.tf} />}
+        </span>
+      ),
+    },
+    {
+      key: "cf",
+      header: <ColHeaderInfo label="CF" align="right" tooltip={<CfTip />} />,
+      width: 90, align: "right",
+      sortable: true, sortValue: (c) => c.cf,
+      render: (c) => (
+        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+          {c.cf}
+          {!c.isYou && <DeltaIndicator value={c.cf} ref={youCols.cf} />}
+        </span>
+      ),
+    },
+    {
+      key: "bas",
+      header: <ColHeaderInfo label="BAS" align="right" tooltip={<BasTip />} />,
+      width: 90, align: "right",
+      sortable: true, sortValue: (c) => c.bas,
+      render: (c) => (
+        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+          {c.bas}
+          {!c.isYou && <DeltaIndicator value={c.bas} ref={youCols.bas} />}
+        </span>
+      ),
+    },
+    {
+      key: "refDomains",
+      header: <ColHeaderInfo label="Ref Domains" align="right" tooltip={<RefDomTip />} />,
+      width: 120, align: "right",
+      sortable: true, sortValue: (c) => c.refDomains,
+      render: (c) => (
+        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+          {c.refDomains.toLocaleString("fr-FR")}
+          {!c.isYou && <DeltaIndicator value={c.refDomains} ref={youCols.refDomains} />}
+        </span>
+      ),
+    },
+  ];
+
   return (
-    <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-      <div className="px-7 pt-6 pb-4">
-        <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Concurrents organiques</p>
-        <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Comparaison Trust Flow · Citation Flow · BAS · Domaines référents</p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-y border-[var(--border-subtle)] text-[11px] tracking-caption font-semibold text-[var(--text-muted)]">
-              <th className="px-7 py-3 text-left">Domaine</th>
-              <th className="px-4 py-3 text-right">TF</th>
-              <th className="px-4 py-3 text-right">CF</th>
-              <th className="px-4 py-3 text-right">BAS</th>
-              <th className="pr-7 pl-4 py-3 text-right">Ref Domains</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((c, i) => (
-              <tr
-                key={c.domain}
-                className={`text-[13px] transition-colors ${c.isYou ? "bg-[rgba(62,80,245,0.06)]" : "hover:bg-[var(--bg-card-hover)]"} ${i < rows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
-              >
-                <td className="px-7 py-3 text-[var(--text-primary)]">
-                  <div className="flex items-center gap-3">
-                    <DomainSquircle domain={c.domain} />
-                    <span className={`truncate ${c.isYou ? "font-semibold text-[#3E50F5]" : "font-medium"}`}>
-                      {c.domain}
-                    </span>
-                    {c.isYou && (
-                      <span className="flex-shrink-0 rounded-full bg-[#3E50F5] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-micro text-white">
-                        Vous
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
-                    {c.tf}
-                    {!c.isYou && <DeltaIndicator value={c.tf} ref={youCols.tf} />}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
-                    {c.cf}
-                    {!c.isYou && <DeltaIndicator value={c.cf} ref={youCols.cf} />}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
-                    {c.bas}
-                    {!c.isYou && <DeltaIndicator value={c.bas} ref={youCols.bas} />}
-                  </span>
-                </td>
-                <td className="pr-7 pl-4 py-3 text-right tabular-nums">
-                  <span className="inline-flex items-center justify-end font-semibold text-[var(--text-primary)]">
-                    {c.refDomains.toLocaleString("fr-FR")}
-                    {!c.isYou && <DeltaIndicator value={c.refDomains} ref={youCols.refDomains} />}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="flex flex-col gap-3">
+      <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Concurrents organiques</p>
+      <TableWide<OrganicRow>
+        columns={columns}
+        data={rows}
+        rowKey={(r) => r.domain}
+        isRowActive={(r) => !!r.isYou}
+        minWidth={900}
+        bordered
+        edgePadding="24px"
+        hidePagination
+      />
     </div>
   );
 }
@@ -416,18 +459,18 @@ function OrganicCompetitorsTable() {
 /* ── VisibilityLineChart ─────────────────────────────────────────────── */
 
 const VISIBILITY_DATA = [
-  { month: "Mai 25",   value: 18  },
-  { month: "Juin 25",  value: 28  },
-  { month: "Juil 25",  value: 35  },
-  { month: "Août 25",  value: 43  },
-  { month: "Sept 25",  value: 58  },
-  { month: "Oct 25",   value: 67  },
-  { month: "Nov 25",   value: 72  },
-  { month: "Déc 25",   value: 79  },
-  { month: "Janv 26",  value: 87  },
-  { month: "Févr 26",  value: 92  },
-  { month: "Mars 26",  value: 99  },
-  { month: "Avr 26",   value: 107 },
+  { month: "Mai",   value: 18  },
+  { month: "Juin",  value: 28  },
+  { month: "Juil",  value: 35  },
+  { month: "Août",  value: 43  },
+  { month: "Sept",  value: 58  },
+  { month: "Oct",   value: 67  },
+  { month: "Nov",   value: 72  },
+  { month: "Déc",   value: 79  },
+  { month: "Janv",  value: 87  },
+  { month: "Févr",  value: 92  },
+  { month: "Mars",  value: 99  },
+  { month: "Avr",   value: 107 },
 ];
 
 // Fluctuations déterministes pour les 4 sous-points entre chaque mois
@@ -526,8 +569,8 @@ function VisibilityLineChart() {
       <svg ref={svgRef} width={containerW || undefined} height={svgH} className="overflow-visible" onMouseMove={handleMouseMove}>
         <defs>
           <linearGradient id="vis-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3E50F5" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#3E50F5" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: "var(--accent-primary)", stopOpacity: 0.12 }} />
+            <stop offset="100%" style={{ stopColor: "var(--accent-primary)", stopOpacity: 0 }} />
           </linearGradient>
         </defs>
         {[11, 36, 61, 86, 111].map((v) => {
@@ -543,9 +586,9 @@ function VisibilityLineChart() {
           <text key={i} x={pt.x} y={tm + chartH + 18} textAnchor="middle" fontSize={12} fill="var(--text-muted)">{pt.month}</text>
         ))}
         <path d={areaPath} fill="url(#vis-grad)" />
-        <path d={linePath} fill="none" stroke="#3E50F5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={linePath} fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {hovPt && (
-          <circle cx={hovPt.x} cy={hovPt.y} r={4} fill="#3E50F5" stroke="var(--bg-card)" strokeWidth="2" />
+          <circle cx={hovPt.x} cy={hovPt.y} r={4} fill="var(--accent-primary)" stroke="var(--bg-card)" strokeWidth="2" />
         )}
       </svg>
       {hovered && hovPt && (
@@ -559,80 +602,7 @@ function VisibilityLineChart() {
   );
 }
 
-/* ── BlocDef ─────────────────────────────────────────────────────────── */
-
-type BlocDef = {
-  iconPaths: (fill: string) => React.ReactNode;
-  gradFrom: string;
-  gradTo: string;
-  iconBottomColor: string;
-  title: string;
-  metric: string;
-  metricLabel: string;
-  color: string;
-  colorBg: string;
-  features: string[];
-  cta: string;
-};
-
-function BlocCard({ bloc, index }: { bloc: BlocDef; index: number }) {
-  const iconGradId = `bloc-icon-${index}`;
-  return (
-    <Link
-      href={bloc.cta}
-      className="group/bloc relative flex flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-subtle)] p-5 transition-colors duration-200 hover:bg-[var(--bg-secondary)]"
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div
-          className="flex-shrink-0 overflow-hidden rounded-xl p-px"
-          style={{ background: `linear-gradient(to bottom, ${bloc.gradFrom}99, ${bloc.gradTo}80)` }}
-        >
-          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px]" style={{ background: `linear-gradient(to bottom, ${bloc.gradFrom}, ${bloc.gradTo})` }}>
-            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-              <defs>
-                <linearGradient id={iconGradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="white" stopOpacity="1" />
-                  <stop offset="100%" stopColor="white" stopOpacity="0.60" />
-                </linearGradient>
-              </defs>
-              {bloc.iconPaths(`url(#${iconGradId})`)}
-            </svg>
-          </div>
-        </div>
-        <div className="group/info relative" onClick={(e) => e.preventDefault()}>
-          <button className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
-              <path d="M7.5 6.5v4M7.5 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-          </button>
-          <div className="pointer-events-none absolute bottom-8 right-0 z-50 w-48 rounded-2xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-3 opacity-0 shadow-[var(--shadow-floating)] transition-opacity duration-150 group-hover/info:opacity-100">
-            <ul className="space-y-1.5">
-              {bloc.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-                  <span className="h-1 w-1 flex-shrink-0 rounded-full bg-[var(--text-muted)]" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-      {/* Title */}
-      <p className="mt-4 text-[14px] font-semibold leading-tight text-[var(--text-primary)]">{bloc.title}</p>
-      {/* Metric */}
-      <div className="mt-2 flex items-baseline gap-1.5">
-        <span className="text-[32px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{bloc.metric}</span>
-        <span className="text-[11px] text-[var(--text-muted)]">{bloc.metricLabel}</span>
-      </div>
-      {/* Arrow */}
-      <div className="mt-auto flex justify-end pt-5">
-        <ArrowRightIcon className="h-4 w-4 text-[var(--text-muted)]" />
-      </div>
-    </Link>
-  );
-}
+/* BlocDef + BlocCard sont définis dans le DS : @/components/BlocCard */
 
 /* ── Traffic chart ───────────────────────────────────────────────────── */
 
@@ -696,7 +666,7 @@ const TRAFFIC_BY_PERIOD = {
 function TrafficChart() {
   const [period, setPeriod] = useState<"3m" | "6m" | "1an">("3m");
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+    <div className="rounded-2xl bg-[var(--bg-card)] p-5">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution du trafic organique</p>
         <FilterTabs
@@ -715,7 +685,7 @@ function TrafficChart() {
 function ChartBar({ label, color = "var(--accent-primary)" }: { label: string; color?: string }) {
   const bars = [42, 55, 48, 67, 74, 62, 81, 77, 85, 91, 79, 96];
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+    <div className="rounded-2xl bg-[var(--bg-card)] p-5">
       <p className="mb-4 text-[12px] font-medium text-[var(--text-muted)]">{label}</p>
       <div className="flex h-32 items-end gap-1.5">
         {bars.map((h, i) => (
@@ -733,7 +703,7 @@ function ChartBar({ label, color = "var(--accent-primary)" }: { label: string; c
 
 function InsightList({ items, color = "var(--accent-primary)" }: { items: string[]; color?: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+    <div className="rounded-2xl bg-[var(--bg-card)] p-5">
       <p className="mb-3 text-[12px] font-medium text-[var(--text-muted)]">Insights clés</p>
       <ul className="space-y-2.5">
         {items.map((item) => (
@@ -749,176 +719,139 @@ function InsightList({ items, color = "var(--accent-primary)" }: { items: string
 
 /* ── Top pages table ─────────────────────────────────────────────────── */
 
+type TopPage = {
+  url: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+  ctr: string;
+  trend: number[];
+};
+
+const TOP_PAGES_ALL: TopPage[] = [
+  { url: "/blog/seo-local",            clicks: 3240, impressions: 53100, position: 4.2,  ctr: "6.1%", trend: [18,22,28,24,32,30,36] },
+  { url: "/services/audit-seo",        clicks: 2180, impressions: 50700, position: 7.8,  ctr: "4.3%", trend: [20,18,22,25,21,24,22] },
+  { url: "/blog/link-building",        clicks: 1640, impressions: 52900, position: 11.2, ctr: "3.1%", trend: [12,14,13,16,15,18,17] },
+  { url: "/",                          clicks: 1320, impressions: 15200, position: 3.1,  ctr: "8.7%", trend: [10,11,10,12,13,11,13] },
+  { url: "/blog/core-web-vitals",      clicks:  980, impressions: 25800, position: 9.4,  ctr: "3.8%", trend: [8,9,11,10,12,11,12]  },
+  { url: "/services/netlinking",       clicks:  870, impressions: 19400, position: 12.1, ctr: "4.5%", trend: [6,7,8,7,9,8,10]      },
+  { url: "/blog/balises-title",        clicks:  730, impressions: 17800, position: 8.6,  ctr: "4.1%", trend: [5,6,7,7,8,9,9]       },
+  { url: "/services/seo-ecommerce",    clicks:  610, impressions: 22300, position: 14.3, ctr: "2.7%", trend: [4,5,4,6,5,7,6]       },
+  { url: "/blog/redirection-301",      clicks:  540, impressions: 14600, position: 10.8, ctr: "3.7%", trend: [4,4,5,5,6,5,7]       },
+  { url: "/blog/schema-markup",        clicks:  490, impressions: 16200, position: 13.5, ctr: "3.0%", trend: [3,4,4,5,5,5,6]       },
+];
+
+function MiniSparkline({ vals }: { vals: number[] }) {
+  const max = Math.max(...vals);
+  const min = Math.min(...vals);
+  const range = max - min || 1;
+  const w = 60, h = 22;
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  }).join(" ");
+  return (
+    <svg width={w} height={h} className="overflow-visible">
+      <polyline points={pts} fill="none" stroke="var(--accent-primary)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PosTag({ pos }: { pos: number }) {
+  const color = pos <= 3 ? "var(--color-success)" : pos <= 10 ? "var(--accent-primary)" : pos <= 20 ? "var(--color-warning)" : "var(--text-muted)";
+  return (
+    <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
+      #{pos.toFixed(1)}
+    </span>
+  );
+}
+
 function TopPages() {
-  const ALL_PAGES = [
-    { url: "/blog/seo-local",            clicks: 3240, impressions: 53100, position: 4.2,  ctr: "6.1%", trend: [18,22,28,24,32,30,36] },
-    { url: "/services/audit-seo",        clicks: 2180, impressions: 50700, position: 7.8,  ctr: "4.3%", trend: [20,18,22,25,21,24,22] },
-    { url: "/blog/link-building",        clicks: 1640, impressions: 52900, position: 11.2, ctr: "3.1%", trend: [12,14,13,16,15,18,17] },
-    { url: "/",                          clicks: 1320, impressions: 15200, position: 3.1,  ctr: "8.7%", trend: [10,11,10,12,13,11,13] },
-    { url: "/blog/core-web-vitals",      clicks:  980, impressions: 25800, position: 9.4,  ctr: "3.8%", trend: [8,9,11,10,12,11,12]  },
-    { url: "/services/netlinking",       clicks:  870, impressions: 19400, position: 12.1, ctr: "4.5%", trend: [6,7,8,7,9,8,10]      },
-    { url: "/blog/balises-title",        clicks:  730, impressions: 17800, position: 8.6,  ctr: "4.1%", trend: [5,6,7,7,8,9,9]       },
-    { url: "/services/seo-ecommerce",    clicks:  610, impressions: 22300, position: 14.3, ctr: "2.7%", trend: [4,5,4,6,5,7,6]       },
-    { url: "/blog/redirection-301",      clicks:  540, impressions: 14600, position: 10.8, ctr: "3.7%", trend: [4,4,5,5,6,5,7]       },
-    { url: "/blog/schema-markup",        clicks:  490, impressions: 16200, position: 13.5, ctr: "3.0%", trend: [3,4,4,5,5,5,6]       },
+  const [search, setSearch] = useState("");
+  const [urlFilter, setUrlFilter] = useState<"all" | "/blog" | "/services" | "/">("all");
+
+  const filtered = TOP_PAGES_ALL.filter((p) => {
+    if (search && !p.url.toLowerCase().includes(search.toLowerCase())) return false;
+    if (urlFilter === "all") return true;
+    if (urlFilter === "/") return p.url === "/";
+    return p.url.startsWith(urlFilter);
+  });
+
+  const columns: ColumnDef<TopPage>[] = [
+    {
+      key: "url",
+      header: "URL",
+      width: 280,
+      flex: true,
+      render: (p) => (
+        <span className="block truncate font-mono text-[13px] text-[var(--text-secondary)]">{p.url}</span>
+      ),
+    },
+    {
+      key: "clicks", header: "Clics", width: 90, align: "right",
+      sortable: true, sortValue: (p) => p.clicks,
+      render: (p) => <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{p.clicks.toLocaleString("fr-FR")}</span>,
+    },
+    {
+      key: "impressions", header: "Impressions", width: 110, align: "right",
+      sortable: true, sortValue: (p) => p.impressions,
+      render: (p) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{p.impressions.toLocaleString("fr-FR")}</span>,
+    },
+    {
+      key: "position", header: "Position", width: 90,
+      sortable: true, sortValue: (p) => p.position,
+      render: (p) => <PosTag pos={p.position} />,
+    },
+    {
+      key: "ctr", header: "CTR", width: 70, align: "right",
+      sortable: true, sortValue: (p) => parseFloat(p.ctr),
+      render: (p) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{p.ctr}</span>,
+    },
+    {
+      key: "trend", header: "Tendance", width: 90,
+      render: (p) => <div className="flex justify-start"><MiniSparkline vals={p.trend} /></div>,
+    },
   ];
-
-  const URL_FILTERS = [
-    { value: "all",       label: "Toutes les URLs" },
-    { value: "/blog",     label: "/blog" },
-    { value: "/services", label: "/services" },
-    { value: "/",         label: "/ (accueil)" },
-  ];
-
-  const [urlFilter, setUrlFilter] = useState("all");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
-  const [filterPos, setFilterPos] = useState({ top: 0, left: 0 });
-
-  useEffect(() => {
-    if (!filterOpen) return;
-    function onClickOutside(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [filterOpen]);
-
-  function openFilter(e: React.MouseEvent<HTMLButtonElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX });
-    setFilterOpen((v) => !v);
-  }
-
-  const pages = urlFilter === "all"
-    ? ALL_PAGES
-    : urlFilter === "/"
-    ? ALL_PAGES.filter((p) => p.url === "/")
-    : ALL_PAGES.filter((p) => p.url.startsWith(urlFilter));
-
-  const activeLabel = URL_FILTERS.find((f) => f.value === urlFilter)?.label ?? "URL";
-
-  function MiniSparkline({ vals }: { vals: number[] }) {
-    const max = Math.max(...vals);
-    const min = Math.min(...vals);
-    const range = max - min || 1;
-    const w = 52, h = 20;
-    const pts = vals.map((v, i) => {
-      const x = (i / (vals.length - 1)) * w;
-      const y = h - ((v - min) / range) * (h - 4) - 2;
-      return `${x},${y}`;
-    }).join(" ");
-    return (
-      <svg width={w} height={h} className="overflow-visible">
-        <polyline points={pts} fill="none" stroke="#3E50F5" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  function PosTag({ pos }: { pos: number }) {
-    const color = pos <= 3 ? "#10B981" : pos <= 10 ? "#3E50F5" : pos <= 20 ? "#F59E0B" : "#94A3B8";
-    return (
-      <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
-        #{pos.toFixed(1)}
-      </span>
-    );
-  }
 
   return (
-    <>
-    <div className="bg-[var(--bg-card)]">
-      <div className="border-b border-[var(--border-subtle)] px-5 py-3">
-        <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Top pages organiques</p>
+    <div className="flex flex-col gap-3">
+      {/* Toolbar — search + filter button */}
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchInput value={search} onChange={setSearch} placeholder="Rechercher une URL…" alwaysExpanded />
+        <DropdownMenu
+          width={200}
+          trigger={
+            <button
+              type="button"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all ${urlFilter !== "all" ? "bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
+            >
+              {urlFilter === "all" ? "Toutes les URLs" : urlFilter === "/" ? "Accueil" : urlFilter}
+              <ChevronDownIcon className="h-3 w-3 flex-shrink-0 opacity-70" />
+            </button>
+          }
+        >
+          <DropdownItem selected={urlFilter === "all"}       onClick={() => setUrlFilter("all")}>Toutes les URLs</DropdownItem>
+          <DropdownItem selected={urlFilter === "/blog"}     onClick={() => setUrlFilter("/blog")}>/blog</DropdownItem>
+          <DropdownItem selected={urlFilter === "/services"} onClick={() => setUrlFilter("/services")}>/services</DropdownItem>
+          <DropdownItem selected={urlFilter === "/"}         onClick={() => setUrlFilter("/")}>/ (accueil)</DropdownItem>
+        </DropdownMenu>
+        <span className="ml-auto text-[12px] tabular-nums text-[var(--text-muted)]">
+          {filtered.length} / {TOP_PAGES_ALL.length}
+        </span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed border-collapse">
-          <colgroup>
-            <col style={{ width: "35%" }} />
-            <col style={{ width: "13%" }} />
-            <col style={{ width: "13%" }} />
-            <col style={{ width: "13%" }} />
-            <col style={{ width: "13%" }} />
-            <col style={{ width: "13%" }} />
-          </colgroup>
-          <thead>
-            <tr className="border-b border-[var(--border-subtle)]">
-              <th className="px-4 py-2.5 text-left">
-                <button
-                  onClick={openFilter}
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold transition-colors ${urlFilter !== "all" ? "bg-[rgba(62,80,245,0.08)] text-[#3E50F5]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
-                >
-                  {activeLabel}
-                  <ChevronDownIcon className="h-3 w-3 flex-shrink-0" />
-                </button>
-              </th>
-              {[
-                { label: "Clics",        align: "text-right"  },
-                { label: "Impressions",  align: "text-right"  },
-                { label: "Position",     align: "text-center" },
-                { label: "CTR",          align: "text-right"  },
-                { label: "Tendance",     align: "text-center" },
-              ].map(({ label, align }) => (
-                <th key={label} className={`px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)] ${align}`}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-subtle)]">
-            {pages.map((p) => (
-              <tr key={p.url} className="group hover:bg-[var(--bg-secondary)] transition-colors">
-                <td className="px-4 py-3">
-                  <span className="block truncate font-mono text-[12px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
-                    {p.url}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <span className="text-[13px] font-semibold text-[var(--text-primary)]">{p.clicks.toLocaleString()}</span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <span className="text-[13px] text-[var(--text-secondary)]">{p.impressions.toLocaleString()}</span>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <PosTag pos={p.position} />
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <span className="text-[13px] text-[var(--text-secondary)]">{p.ctr}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-center">
-                    <MiniSparkline vals={p.trend} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
 
-    {filterOpen && typeof window !== "undefined" && (
-      <div
-        ref={filterRef}
-        className="fixed z-50 min-w-[180px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-1 shadow-lg"
-        style={{ top: filterPos.top, left: filterPos.left }}
-      >
-        {URL_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => { setUrlFilter(f.value); setFilterOpen(false); }}
-            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13px] transition-colors hover:bg-[var(--bg-secondary)]"
-          >
-            <span className={urlFilter === f.value ? "font-medium text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}>
-              {f.label}
-            </span>
-            {urlFilter === f.value && <CheckIcon className="h-3.5 w-3.5 text-[#3E50F5]" />}
-          </button>
-        ))}
-      </div>
-    )}
-    </>
+      <TableWide<TopPage>
+        columns={columns}
+        data={filtered}
+        rowKey={(p) => p.url}
+        emptyState="Aucune page pour ces filtres."
+        minWidth={900}
+        pageSize={25}
+        bordered
+        edgePadding="24px"
+      />
+    </div>
   );
 }
 
@@ -926,13 +859,13 @@ function TopPages() {
 
 function ForecastTimeline() {
   const steps = [
-    { month: "M+1", action: "Optimisation technique", gain: "+5 %", color: "#E11D48", done: false },
-    { month: "M+2", action: "Briefs Bloc 01 publiés", gain: "+12 %", color: "#F59E0B", done: false },
-    { month: "M+3", action: "Maillage interne déployé", gain: "+22 %", color: "#10B981", done: false },
-    { month: "M+6", action: "Plan complet exécuté", gain: "+38 %", color: "#6366F1", done: false },
+    { month: "M+1", action: "Optimisation technique", gain: "+5 %", color: "var(--color-danger)", done: false },
+    { month: "M+2", action: "Briefs Bloc 01 publiés", gain: "+12 %", color: "var(--color-warning)", done: false },
+    { month: "M+3", action: "Maillage interne déployé", gain: "+22 %", color: "var(--color-success)", done: false },
+    { month: "M+6", action: "Plan complet exécuté", gain: "+38 %", color: "var(--accent-primary)", done: false },
   ];
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+    <div className="rounded-2xl bg-[var(--bg-card)] p-5">
       <p className="mb-5 text-[12px] font-medium text-[var(--text-muted)]">Projection d'exécution</p>
       <div className="space-y-4">
         {steps.map((s) => (
@@ -941,7 +874,7 @@ function ForecastTimeline() {
             <div className="h-px flex-1 border-t border-dashed border-[var(--border-medium)]" />
             <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate text-[13px] text-[var(--text-secondary)]">{s.action}</span>
-              <span className="flex-shrink-0 rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: s.color, backgroundColor: `${s.color}14` }}>
+              <span className="flex-shrink-0 rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: s.color, backgroundColor: `color-mix(in oklab, ${s.color} 8%, transparent)` }}>
                 {s.gain}
               </span>
             </div>
@@ -970,7 +903,7 @@ const LINK_PLAN: LinkPlan[] = [
 ];
 
 function ImpactBar({ value }: { value: number }) {
-  const color = value >= 85 ? "#10B981" : value >= 70 ? "#F59E0B" : "#6366F1";
+  const color = value >= 85 ? "var(--color-success)" : value >= 70 ? "var(--color-warning)" : "var(--accent-primary)";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
@@ -1015,6 +948,7 @@ const TAB_SUBTITLES: Partial<Record<Tab, string>> = {
   cannibal: "Pages en conflit de positionnement — dilution du trafic et des signaux de pertinence.",
   univers:  "Identifiez les opportunités de contenu et résolvez les cannibalisations pour améliorer votre SEO.",
   tracking: "8 mots-clés · Dernier check : 04 mai, 14:00",
+  recommandations: "Étude de mots-clés croisée avec vos concurrents — pages à créer et briefs priorisés.",
 };
 
 /* ── GSC Import ──────────────────────────────────────────────────────── */
@@ -1234,7 +1168,7 @@ function ModalShell({ onClose, children }: { onClose: () => void; children: Reac
   if (typeof document === "undefined") return null;
   return createPortal(
     <div role="presentation" className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" className="relative w-full max-w-[480px] rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
+      <div role="dialog" aria-modal="true" className="relative w-full max-w-[480px] rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
         <button onClick={onClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
           <XMarkIcon className="h-5 w-5" />
         </button>
@@ -1250,7 +1184,7 @@ function FormField({ label, required, hint, children }: { label: string; require
     <div>
       <label className="mb-1.5 block text-[12px] font-medium text-[var(--text-secondary)]">
         {label}
-        {required && <span className="ml-0.5 text-[#E11D48]">*</span>}
+        {required && <span className="ml-0.5 text-[var(--color-danger)]">*</span>}
         {hint && <span className="ml-1.5 font-normal text-[var(--text-muted)]">({hint})</span>}
       </label>
       {children}
@@ -1328,11 +1262,11 @@ function ImportCSVModal({ onClose }: { onClose: () => void }) {
             onDragLeave={() => setDragging(false)}
             onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
             onClick={() => fileInputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 transition-colors ${dragging ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"}`}
+            className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 transition-colors ${dragging ? "border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"}`}
           >
             {file ? (
               <>
-                <FileSpreadsheet className="h-8 w-8 text-[#10B981]" />
+                <FileSpreadsheet className="h-8 w-8 text-[var(--color-success)]" />
                 <p className="text-[14px] font-medium text-[var(--text-primary)]">{file.name}</p>
                 <p className="text-[12px] tracking-caption text-[var(--text-muted)]">
                   {parsed.length} URL{parsed.length > 1 ? "s" : ""} détectée{parsed.length > 1 ? "s" : ""} · cliquez pour changer
@@ -1354,7 +1288,7 @@ function ImportCSVModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {error && <p className="text-[12px] tracking-caption text-[#E11D48]">{error}</p>}
+          {error && <p className="text-[12px] tracking-caption text-[var(--color-danger)]">{error}</p>}
 
           {parsed.length > 0 && (
             <div className="flex flex-col gap-1.5">
@@ -1438,8 +1372,8 @@ const PAGE_TYPES = [
   { value: "other",    label: "Autre" },
 ];
 
-function NewBriefModal({ onClose }: { onClose: () => void }) {
-  const [keyword, setKeyword] = useState("");
+function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () => void; initialKeyword?: string }) {
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [lang, setLang] = useState("fr");
   const [pageType, setPageType] = useState("auto");
 
@@ -1536,7 +1470,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
+      <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
 
         <Stepper steps={3} current={step} onClose={onClose} />
 
@@ -1554,7 +1488,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                     className={`flex flex-col items-center gap-3 rounded-2xl border p-6 text-center transition-all ${
                       active
                         ? "border-2 border-[var(--text-primary)] bg-[var(--bg-secondary)]"
-                        : "border border-[var(--border-subtle)] bg-[var(--bg-primary)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"
+                        : "border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"
                     }`}
                   >
                     <t.icon className={`h-9 w-9 transition-colors ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`} />
@@ -1793,7 +1727,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                   </button>
                   <div className="flex items-center gap-3">
                     <Button size="md" variant="secondary" onClick={onClose}>
-                      Fusionner avec un autre lot
+                      Fusionner avec un autre tag
                     </Button>
                     <Button size="md" onClick={onClose} disabled={selectedPages.size === 0}>
                       Valider l'import ({selectedPages.size} pages) <ChevronRightIcon className="h-3.5 w-3.5" />
@@ -1848,9 +1782,9 @@ function ConnectModal({ tool, onClose, onConnect }: { tool: Tool; onClose: () =>
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
+      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
         <div className="flex items-start justify-between">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-primary)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
             {config.logo}
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
@@ -1892,7 +1826,7 @@ function ConnBadge({ tool, connected, onClick, onImport }: { tool: Tool; connect
         trigger={
           <Tooltip label="Importer et plus" side="bottom">
             <Button size="md" variant="secondary" className="text-[14px]">
-              <CheckCircleSolid className="h-3.5 w-3.5 text-emerald-500" />
+              <CheckCircleSolid className="h-3.5 w-3.5 text-[var(--color-success)]" />
               {label}
               <EllipsisHorizontalIcon className="h-5 w-5 text-[var(--text-muted)]" />
             </Button>
@@ -1910,7 +1844,7 @@ function ConnBadge({ tool, connected, onClick, onImport }: { tool: Tool; connect
   if (connected) {
     return (
       <Button size="md" variant="secondary" className="text-[14px]" onClick={onClick}>
-        <CheckCircleSolid className="h-3.5 w-3.5 text-emerald-500" />
+        <CheckCircleSolid className="h-3.5 w-3.5 text-[var(--color-success)]" />
         {label}
       </Button>
     );
@@ -1931,10 +1865,10 @@ const PROJ_INTEGRATIONS = [
   { id: "anthropic", name: "Anthropic",     desc: "Génération IA · modèles Claude",             initials: "AN", color: "#E36D25", bg: "rgba(227,109,37,0.12)" },
   { id: "babbar",    name: "Babbar",         desc: "Autorité de domaine · BabbarAuthority",      initials: "BB", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" },
   { id: "crazysrp",  name: "CrazySERP",      desc: "Analyse SERP · suivi de positions",           initials: "CS", color: "#2563EB", bg: "rgba(37,99,235,0.12)"  },
-  { id: "cuik",      name: "Cuik",           desc: "Plateforme de création de contenu IA",        initials: "CK", color: "#10B981", bg: "rgba(16,185,129,0.12)" },
-  { id: "haloscan",  name: "Haloscan",       desc: "Scraping SERP · données Google",             initials: "HS", color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
+  { id: "cuik",      name: "Cuik",           desc: "Plateforme de création de contenu IA",        initials: "CK", color: "var(--color-success)", bg: "var(--color-success-soft)" },
+  { id: "haloscan",  name: "Haloscan",       desc: "Scraping SERP · données Google",             initials: "HS", color: "var(--color-warning)", bg: "rgba(245,158,11,0.12)" },
   { id: "openai",    name: "OpenAI",         desc: "Génération IA · modèles GPT",                initials: "OA", color: "#10A37F", bg: "rgba(16,163,127,0.12)" },
-  { id: "seobs",     name: "SEObserver",     desc: "Visibilité SEO · snapshots",                 initials: "SO", color: "#3E50F5", bg: "rgba(62,80,245,0.12)"  },
+  { id: "seobs",     name: "SEObserver",     desc: "Visibilité SEO · snapshots",                 initials: "SO", color: "var(--accent-primary)", bg: "rgba(62,80,245,0.12)"  },
   { id: "serpm",     name: "Serpmantics",    desc: "Analyse sémantique des SERPs",               initials: "SM", color: "#EC4899", bg: "rgba(236,72,153,0.12)" },
   { id: "ytg",       name: "YourText.Guru",  desc: "Score sémantique · optimisation éditoriale", initials: "YG", color: "#14B8A6", bg: "rgba(20,184,166,0.12)" },
 ];
@@ -1952,7 +1886,7 @@ function ProjIntegRow({ name, logo, desc, account, connected, onToggle }: {
   connected: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl bg-[var(--bg-card)] px-4 py-3">
       <div className="flex items-center gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--bg-subtle)]">
           {logo}
@@ -1961,7 +1895,7 @@ function ProjIntegRow({ name, logo, desc, account, connected, onToggle }: {
           <div className="flex items-center gap-2">
             <p className="text-[13px] font-semibold text-[var(--text-primary)]">{name}</p>
             <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium"
-              style={{ color: connected ? "#10B981" : "var(--text-muted)", backgroundColor: connected ? "rgba(16,185,129,0.09)" : "var(--bg-secondary)" }}>
+              style={{ color: connected ? "var(--color-success)" : "var(--text-muted)", backgroundColor: connected ? "var(--color-success-bg)" : "var(--bg-secondary)" }}>
               {connected ? "Connecté" : "Non connecté"}
             </span>
           </div>
@@ -1981,6 +1915,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
 }) {
   const [briefConfigured, setBriefConfigured] = useState(false);
   const [skillConfigured, setSkillConfigured] = useState(false);
+  const [projectStatus, setProjectStatus] = useState<"actif" | "archive">("actif");
   const [cuikDomain, setCuikDomain] = useState("www.example.com");
   const [tags, setTags] = useState<string[]>(["Produit", "Catégorie", "Blog / Article"]);
   const [tagInput, setTagInput] = useState("");
@@ -2096,7 +2031,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true"
-        className="flex w-full max-w-2xl flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]"
+        className="flex w-full max-w-2xl flex-col rounded-3xl bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]"
         style={{ maxHeight: "90vh" }}>
 
         {/* Header */}
@@ -2124,12 +2059,12 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
                 { key: "brief" as const, title: "Brief Métier Client", configured: briefConfigured, fileName: "brief-metier.md", empty: "Aucun brief métier configuré", desc: "Ce brief adapte les recommandations SEO à votre activité.", onRemove: () => setBriefConfigured(false) },
                 { key: "skill" as const, title: "Skill rédactionnel",  configured: skillConfigured, fileName: "skill-redactionnel.md", empty: "Aucun skill rédactionnel configuré", desc: "Définit le style, le ton et les règles de rédaction.", onRemove: () => setSkillConfigured(false) },
               ]).map((card) => (
-                <div key={card.title} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] p-5">
+                <div key={card.title} className="rounded-2xl bg-[var(--bg-card)] p-5">
                   <div className="flex items-start gap-5">
                     {/* Icon */}
                     <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl ${card.configured ? "bg-[rgba(16,185,129,0.1)]" : "bg-[var(--bg-secondary)]"}`}>
                       {card.configured ? (
-                        <CheckCircleSolid className="h-7 w-7 text-[#10B981]" />
+                        <CheckCircleSolid className="h-7 w-7 text-[var(--color-success)]" />
                       ) : (
                         <DocumentTextIcon className="h-7 w-7 text-[var(--text-muted)]" strokeWidth={1.5} />
                       )}
@@ -2140,7 +2075,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[14px] font-semibold text-[var(--text-primary)]">{card.title}</p>
                         {card.configured && (
-                          <button onClick={card.onRemove} className="flex-shrink-0 text-[var(--text-muted)] transition-colors hover:text-[#E11D48]">
+                          <button onClick={card.onRemove} className="flex-shrink-0 text-[var(--text-muted)] transition-colors hover:text-[var(--color-danger)]">
                             <XMarkIcon className="h-4 w-4" />
                           </button>
                         )}
@@ -2148,7 +2083,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
 
                       {card.configured ? (
                         <>
-                          <p className="mt-1 text-[13px] font-medium text-[#10B981]">Configuré</p>
+                          <p className="mt-1 text-[13px] font-medium text-[var(--color-success)]">Configuré</p>
                           <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1.5">
                             <DocumentTextIcon className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)]" />
                             <span className="font-mono text-[12px] text-[var(--text-secondary)]">{card.fileName}</span>
@@ -2208,7 +2143,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
           <div>
             <div className="mb-4 flex items-center gap-3">
               <p className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Configuration Cuik</p>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-3 py-1.5 text-[12px] font-medium text-[#10B981]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.09)] px-3 py-1.5 text-[12px] font-medium text-[var(--color-success)]">
                 <SparklesIcon className="h-3 w-3" />
                 Connecté
               </span>
@@ -2290,6 +2225,40 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
             )}
           </div>
 
+          {/* ── Statut du projet ──────────────────────────────────────── */}
+          <div>
+            <p className="mb-1 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Statut du projet</p>
+            <p className="mb-4 text-[13px] text-[var(--text-muted)]">
+              Un projet archivé conserve ses données mais n'apparaît plus dans les listes actives et ses analyses récurrentes sont mises en pause.
+            </p>
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border-subtle)] px-4 py-3.5">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="h-2 w-2 flex-shrink-0 rounded-full"
+                  style={{ backgroundColor: projectStatus === "actif" ? "var(--color-success)" : "var(--text-muted)" }}
+                />
+                <div>
+                  <p className="text-[13px] font-medium text-[var(--text-primary)]">
+                    {projectStatus === "actif" ? "Projet actif" : "Projet archivé"}
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">
+                    {projectStatus === "actif"
+                      ? "Analyses récurrentes activées, visible dans toutes les vues."
+                      : "Lecture seule, masqué des dashboards par défaut."}
+                  </p>
+                </div>
+              </div>
+              <SegmentedControl
+                options={[
+                  { key: "actif",   label: "Actif" },
+                  { key: "archive", label: "Archivé" },
+                ]}
+                value={projectStatus}
+                onChange={setProjectStatus}
+              />
+            </div>
+          </div>
+
           {/* ── Danger zone ───────────────────────────────────────────── */}
           <div>
             <p className="mb-3 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Zone de danger</p>
@@ -2327,7 +2296,7 @@ function SemrushFileField({
   return (
     <div className="flex flex-col gap-2">
       <label className="text-[13px] font-medium text-[var(--text-secondary)]">
-        {label} {required && <span className="text-[#E11D48]">*</span>}
+        {label} {required && <span className="text-[var(--color-danger)]">*</span>}
       </label>
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -2341,7 +2310,7 @@ function SemrushFileField({
         onClick={() => inputRef.current?.click()}
         className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed px-5 py-4 transition-colors ${
           dragOver
-            ? "border-[#3E50F5] bg-[rgba(62,80,245,0.04)]"
+            ? "border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]"
             : file
             ? "border-[var(--border-medium)] bg-[var(--bg-secondary)]"
             : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-secondary)]"
@@ -2349,7 +2318,7 @@ function SemrushFileField({
       >
         {file ? (
           <>
-            <FileSpreadsheet className="h-6 w-6 flex-shrink-0 text-[#10B981]" />
+            <FileSpreadsheet className="h-6 w-6 flex-shrink-0 text-[var(--color-success)]" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{file.name}</p>
               <p className="text-[11px] tracking-caption text-[var(--text-muted)]">{(file.size / 1024).toFixed(1)} Ko · cliquez pour changer</p>
@@ -2428,14 +2397,238 @@ function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; onLaunc
   );
 }
 
-function RecommandationsView() {
+/* ── Recommandations — données mock de l'étude de mots-clés ────────── */
+
+type StudyIntent = "Commercial" | "Transactionnel" | "Informationnel";
+type StudyPrio = "P0" | "P1" | "P2" | "P3";
+type StudyRow = {
+  keyword: string;
+  cluster: string;
+  volume: number;
+  kd: number | null;
+  kei: number | null;
+  score: number | null;
+  trafic: number | null;
+  position: number | null;
+  intent: StudyIntent;
+  priority: StudyPrio;
+  pageCible: string | null;
+};
+
+const STUDY_ROWS: StudyRow[] = [
+  { keyword: "agence seo paris",         cluster: "SEO",           volume: 5400, kd: 78,   kei: 369114, score: 80, trafic: null, position: 12,   intent: "Commercial",     priority: "P1", pageCible: "/agence-seo-paris/" },
+  { keyword: "audit seo gratuit",        cluster: "SEO",           volume: 4400, kd: 70,   kei: 272676, score: 60, trafic: null, position: 25,   intent: "Transactionnel", priority: "P1", pageCible: "/audit-seo-gratuit/" },
+  { keyword: "agence google ads",        cluster: "SEA / Ads",     volume: 3600, kd: 75,   kei: 170526, score: 80, trafic: null, position: 18,   intent: "Commercial",     priority: "P2", pageCible: "/nouvelle-taxe-google-ads-nos-experts-vous-guident/" },
+  { keyword: "agence sea",               cluster: "SEA / Ads",     volume: 2900, kd: 72,   kei: 115206, score: 80, trafic: 15,   position: 8,    intent: "Commercial",     priority: "P2", pageCible: "/agence-sea/" },
+  { keyword: "agence seo",               cluster: "SEO",           volume: 2100, kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P1", pageCible: null },
+  { keyword: "consultant seo freelance", cluster: "SEO",           volume: 1900, kd: 65,   kei: 54697,  score: 80, trafic: null, position: 15,   intent: "Commercial",     priority: "P1", pageCible: "/consultant-seo-freelance/" },
+  { keyword: "consultant seo paris",     cluster: "SEO",           volume: 1900, kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P1", pageCible: null },
+  { keyword: "consultant google ads",    cluster: "SEA / Ads",     volume: 1300, kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P2", pageCible: null },
+  { keyword: "agence sea paris",         cluster: "SEA / Ads",     volume: 1300, kd: 68,   kei: 24493,  score: 80, trafic: null, position: 14,   intent: "Commercial",     priority: "P2", pageCible: "/agence-sea-paris/" },
+  { keyword: "seo b2b",                  cluster: "SEO",           volume: 1100, kd: 58,   kei: 20509,  score: 80, trafic: null, position: 19,   intent: "Commercial",     priority: "P1", pageCible: "/seo-b2b/" },
+  { keyword: "audit seo technique",      cluster: "SEO Technique", volume: 1000, kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P1", pageCible: null },
+  { keyword: "agence digitale ia",       cluster: "IA / GEO",      volume: 880,  kd: 58,   kei: 13125,  score: 70, trafic: 42,   position: 6,    intent: "Commercial",     priority: "P2", pageCible: "/agence-ia/" },
+  { keyword: "expert google ads",        cluster: "SEA / Ads",     volume: 880,  kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P2", pageCible: null },
+  { keyword: "prix audit seo",           cluster: "SEO",           volume: 720,  kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Transactionnel", priority: "P1", pageCible: null },
+  { keyword: "agence social ads",        cluster: "Social Ads",    volume: 590,  kd: 55,   kei: 6216,   score: 70, trafic: 28,   position: 9,    intent: "Commercial",     priority: "P2", pageCible: "/agence-social-ads/" },
+  { keyword: "agence ia paris",          cluster: "IA / GEO",      volume: 590,  kd: 52,   kei: 6568,   score: 70, trafic: null, position: 13,   intent: "Commercial",     priority: "P2", pageCible: "/agence-ia-paris/" },
+  { keyword: "agence ia marketing",      cluster: "IA / GEO",      volume: 320,  kd: 48,   kei: 2090,   score: 70, trafic: 15,   position: 7,    intent: "Commercial",     priority: "P2", pageCible: "/agence-ia-marketing/" },
+  { keyword: "devis audit seo",          cluster: "SEO",           volume: 210,  kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Transactionnel", priority: "P1", pageCible: null },
+  { keyword: "audit seo complet",        cluster: "SEO",           volume: 200,  kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P1", pageCible: null },
+  { keyword: "prix google ads",          cluster: "SEA / Ads",     volume: 170,  kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Transactionnel", priority: "P2", pageCible: null },
+];
+
+const CLUSTER_COLOR: Record<string, string> = {
+  "SEO":           "var(--accent-primary)",
+  "SEA / Ads":     "var(--color-warning)",
+  "IA / GEO":      "#A855F7",
+  "Social Ads":    "#0891B2",
+  "SEO Technique": "var(--accent-primary)",
+};
+
+const INTENT_CFG: Record<StudyIntent, { label: string; color: string; bg: string }> = {
+  Commercial:     { label: "Comm.",  color: "#0891B2", bg: "rgba(6,182,212,0.12)" },
+  Transactionnel: { label: "Trans.", color: "#9333EA", bg: "rgba(168,85,247,0.10)" },
+  Informationnel: { label: "Info.",  color: "#6B7280", bg: "rgba(107,114,128,0.10)" },
+};
+
+const PRIO_CFG: Record<StudyPrio, { color: string; bg: string }> = {
+  P0: { color: "var(--color-danger)", bg: "var(--color-danger-bg)" },
+  P1: { color: "var(--color-danger)", bg: "var(--color-danger-bg)" },
+  P2: { color: "#B45309", bg: "rgba(245,158,11,0.12)" },
+  P3: { color: "#6B7280", bg: "rgba(107,114,128,0.10)" },
+};
+
+const LOADING_STEPS = [
+  "Lecture du fichier Semrush",
+  "Identification des concurrents",
+  "Détection des clusters sémantiques",
+  "Calcul des opportunités",
+  "Génération du rapport",
+];
+
+/* ── Vue Recommandations ────────────────────────────────────────────── */
+
+function RecommandationsView({
+  title,
+  subtitle,
+  onOpenPageByUrl,
+}: {
+  title?: string;
+  subtitle?: string;
+  onOpenPageByUrl?: (url: string) => void;
+} = {}) {
   const [studyOpen, setStudyOpen] = useState(false);
-  const [studyDone, setStudyDone] = useState(false);
+  const [studyState, setStudyState] = useState<"empty" | "loading" | "done">("done");
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [briefKeyword, setBriefKeyword] = useState<string | null>(null);
+  /* Filters & search on the recommandations table */
+  const [search, setSearch] = useState("");
+  const [filterPriority, setFilterPriority] = useState<"all" | StudyPrio>("all");
+  const [filterCluster, setFilterCluster] = useState<"all" | string>("all");
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function clearTimers() {
+    timersRef.current.forEach((t) => clearTimeout(t));
+    timersRef.current = [];
+  }
+  useEffect(() => clearTimers, []);
+
+  function startStudy() {
+    clearTimers();
+    setStudyState("loading");
+    setLoadingStep(0);
+    const stepDurations = [600, 700, 800, 700, 600];
+    let acc = 0;
+    stepDurations.forEach((ms, i) => {
+      acc += ms;
+      timersRef.current.push(setTimeout(() => setLoadingStep(i + 1), acc));
+    });
+    timersRef.current.push(setTimeout(() => setStudyState("done"), acc + 250));
+  }
+
+  /* KPIs */
+  const totalOpps = STUDY_ROWS.length;
+  const actionnables = STUDY_ROWS.filter((r) => r.priority === "P1" || r.priority === "P2").length;
+  const clusters = new Set(STUDY_ROWS.map((r) => r.cluster)).size;
+
+  /* Filtered rows */
+  const uniqueClusters = Array.from(new Set(STUDY_ROWS.map((r) => r.cluster)));
+  const filteredRows = STUDY_ROWS.filter((r) => {
+    if (search && !r.keyword.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterPriority !== "all" && r.priority !== filterPriority) return false;
+    if (filterCluster !== "all" && r.cluster !== filterCluster) return false;
+    return true;
+  });
+
+  /* Columns */
+  const columns: ColumnDef<StudyRow>[] = [
+    {
+      key: "keyword",
+      header: "Mot-clé",
+      width: 220,
+      flex: true,
+      render: (r) => (
+        <span className="block truncate text-[13px] text-[var(--text-primary)]" title={r.keyword}>{r.keyword}</span>
+      ),
+    },
+    {
+      key: "cluster",
+      header: "Cluster",
+      width: 140,
+      render: (r) => (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-secondary)]">
+          <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: CLUSTER_COLOR[r.cluster] ?? "var(--text-muted)" }} />
+          {r.cluster}
+        </span>
+      ),
+    },
+    { key: "volume", header: "Volume", width: 90, align: "right",
+      sortable: true, sortValue: (r) => r.volume,
+      render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.volume.toLocaleString("fr-FR")}</span> },
+    { key: "kd", header: <ColHeaderInfo label="KD" align="right" tooltip={<KdTip />} />, width: 70, align: "right",
+      sortable: true, sortValue: (r) => r.kd ?? -1,
+      render: (r) => r.kd != null
+        ? <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.kd}</span>
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+    { key: "kei", header: <ColHeaderInfo label="KEI" align="right" tooltip={<KeiTip />} />, width: 100, align: "right",
+      sortable: true, sortValue: (r) => r.kei ?? -1,
+      render: (r) => r.kei != null
+        ? <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.kei.toLocaleString("fr-FR")}</span>
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+    { key: "score", header: "Score", width: 64, align: "right",
+      sortable: true, sortValue: (r) => r.score ?? -1,
+      render: (r) => {
+        if (r.score == null || r.score === 0) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+        const color = r.score >= 75 ? "var(--color-success)" : r.score >= 60 ? "var(--color-warning)" : "var(--color-danger)";
+        return <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>{r.score}</span>;
+      } },
+    { key: "trafic", header: "Trafic est.", width: 88, align: "right",
+      sortable: true, sortValue: (r) => r.trafic ?? -1,
+      render: (r) => r.trafic != null
+        ? <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.trafic}</span>
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+    { key: "position", header: "Position", width: 72, align: "right",
+      sortable: true, sortValue: (r) => r.position ?? 9999,
+      render: (r) => r.position != null
+        ? <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">#{r.position}</span>
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+    { key: "intent", header: "Intent", width: 88,
+      render: (r) => {
+        const cfg = INTENT_CFG[r.intent];
+        return <span className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium" style={{ color: cfg.color, backgroundColor: cfg.bg }}>{cfg.label}</span>;
+      } },
+    { key: "priority", header: "Priorité", width: 80,
+      render: (r) => {
+        const cfg = PRIO_CFG[r.priority];
+        return <span className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium" style={{ color: cfg.color, backgroundColor: cfg.bg }}>{r.priority}</span>;
+      } },
+    { key: "pageCible", header: "Page cible", width: 240,
+      render: (r) => r.pageCible
+        ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenPageByUrl?.(r.pageCible!); }}
+            className="inline-flex max-w-full min-w-0 items-center rounded-md px-1 py-0.5 -mx-1 transition-colors hover:bg-[var(--bg-subtle)]"
+          >
+            <span className="truncate font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)] hover:decoration-[var(--text-primary)]">
+              {r.pageCible}
+            </span>
+          </button>
+        )
+        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+  ];
 
   return (
-    <>
-      {!studyDone ? (
-        <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+    <div className="flex flex-col gap-5">
+
+      {/* Header — title (passed by parent) on the left, CTAs on the right (space-between) */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          {title && (
+            <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h2>
+          )}
+          {subtitle && (
+            <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>
+          )}
+        </div>
+        {studyState === "done" && (
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <Button variant="secondary">
+              <Download className="h-4 w-4" />
+              Exporter
+            </Button>
+            <Button variant="secondary" onClick={() => setStudyOpen(true)}>
+              <RefreshCw className="h-4 w-4" />
+              Relancer
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* ── State : empty ── */}
+      {studyState === "empty" && (
+        <div className="rounded-3xl bg-[var(--bg-card)]">
           <EmptyState
             icon={<LSparkles className="h-7 w-7" />}
             title="Aucune étude de mots-clés"
@@ -2448,33 +2641,245 @@ function RecommandationsView() {
             }
           />
         </div>
-      ) : (
-        <div className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[14px] tracking-body text-[var(--text-secondary)]">
-                Dernière étude lancée à l'instant · résultats en cours d'analyse
-              </p>
+      )}
+
+      {/* ── State : loading ── */}
+      {studyState === "loading" && (
+        <div className="rounded-3xl bg-[var(--bg-card)] p-10">
+          <div className="mx-auto flex max-w-[420px] flex-col items-center">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-primary-soft)]">
+              <Loader2 className="h-7 w-7 animate-spin text-[var(--accent-primary)]" />
             </div>
-            <Button size="sm" variant="secondary" onClick={() => setStudyOpen(true)}>
-              <LSparkles className="h-4 w-4" />
-              Relancer une étude
-            </Button>
-          </div>
-          <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
-            <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Pages manquantes détectées</p>
-            <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">Le rapport apparaîtra ici une fois l'analyse terminée (3–5 min).</p>
+            <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+              Étude en cours…
+            </p>
+            <p className="mt-1 text-[13px] tracking-body text-[var(--text-secondary)]">
+              Import des données Semrush et croisement avec les concurrents.
+            </p>
+
+            {/* Progress bar */}
+            <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)]">
+              <div
+                className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-500 ease-out"
+                style={{ width: `${(loadingStep / LOADING_STEPS.length) * 100}%` }}
+              />
+            </div>
+
+            {/* Steps */}
+            <ul className="mt-5 w-full space-y-2.5">
+              {LOADING_STEPS.map((step, i) => {
+                const done = i < loadingStep;
+                const active = i === loadingStep;
+                return (
+                  <li key={step} className="flex items-center gap-2.5 text-[13px]">
+                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: done ? "var(--accent-primary)" : active ? "var(--accent-primary-soft)" : "var(--bg-subtle)",
+                        color: done ? "white" : "var(--accent-primary)",
+                      }}>
+                      {done ? <CheckIcon className="h-3 w-3" strokeWidth={3} /> : active ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    </span>
+                    <span className={done || active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}>
+                      {step}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
+      )}
+
+      {/* ── State : done ── */}
+      {studyState === "done" && (
+        <>
+          <KpiGroup columns={3}>
+            <KpiCard bare icon={LSparkles} label="Opportunités"           value={totalOpps.toString()} sub="mots-clés identifiés" />
+            <KpiCard bare icon={LTarget}   label="Actionnables (P1 + P2)" value={actionnables.toString()} sub={`sur ${totalOpps} opportunités`} />
+            <KpiCard bare icon={Boxes}     label="Clusters"               value={clusters.toString()} sub="thématiques détectées" />
+          </KpiGroup>
+
+          {/* Toolbar — search + filtres priorité / cluster (button-styled dropdowns) */}
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un mot-clé…" alwaysExpanded />
+
+            <DropdownMenu
+              width={200}
+              trigger={
+                <FilterTabTrigger active={filterPriority !== "all"}>
+                  {filterPriority === "all" ? "Toutes les priorités" : `Priorité ${filterPriority}`}
+                </FilterTabTrigger>
+              }
+            >
+              <DropdownItem selected={filterPriority === "all"} onClick={() => setFilterPriority("all")}>Toutes les priorités</DropdownItem>
+              <DropdownItem selected={filterPriority === "P1"}  onClick={() => setFilterPriority("P1")}>P1</DropdownItem>
+              <DropdownItem selected={filterPriority === "P2"}  onClick={() => setFilterPriority("P2")}>P2</DropdownItem>
+              <DropdownItem selected={filterPriority === "P3"}  onClick={() => setFilterPriority("P3")}>P3</DropdownItem>
+            </DropdownMenu>
+
+            <DropdownMenu
+              width={240}
+              trigger={
+                <FilterTabTrigger active={filterCluster !== "all"}>
+                  {filterCluster === "all" ? "Tous les clusters" : filterCluster}
+                </FilterTabTrigger>
+              }
+            >
+              <DropdownItem selected={filterCluster === "all"} onClick={() => setFilterCluster("all")}>Tous les clusters</DropdownItem>
+              {uniqueClusters.map((c) => (
+                <DropdownItem key={c} selected={filterCluster === c} onClick={() => setFilterCluster(c)}>{c}</DropdownItem>
+              ))}
+            </DropdownMenu>
+
+            {(search || filterPriority !== "all" || filterCluster !== "all") && (
+              <button
+                onClick={() => { setSearch(""); setFilterPriority("all"); setFilterCluster("all"); }}
+                className="flex items-center gap-1 text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+              >
+                <LX className="h-3 w-3" />
+                Réinitialiser
+              </button>
+            )}
+            <span className="ml-auto text-[12px] tabular-nums text-[var(--text-muted)]">
+              {filteredRows.length} / {STUDY_ROWS.length}
+            </span>
+          </div>
+
+          <TableWide<StudyRow>
+            columns={columns}
+            data={filteredRows}
+            rowKey={(r) => r.keyword}
+            emptyState="Aucun mot-clé pour ces filtres."
+            minWidth={1400}
+            pageSize={25}
+            bordered
+            edgePadding="24px"
+            trailingAction={(r) => (
+              <Button size="sm" onClick={(e) => { e.stopPropagation(); setBriefKeyword(r.keyword); }}>
+                <SparklesIcon className="h-3.5 w-3.5" />
+                Brief
+              </Button>
+            )}
+            trailingActionWidth={120}
+          />
+        </>
       )}
 
       {studyOpen && (
         <KeywordStudyModal
           onClose={() => setStudyOpen(false)}
-          onLaunch={() => setStudyDone(true)}
+          onLaunch={startStudy}
         />
       )}
-    </>
+
+      {briefKeyword != null && (
+        <NewBriefModal
+          initialKeyword={briefKeyword}
+          onClose={() => setBriefKeyword(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Helper : trigger button reprenant le style FilterTabs ───────────── */
+
+function FilterTabTrigger({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all"
+      style={active
+        ? { color: "var(--text-primary)", fontWeight: 600, backgroundColor: "var(--bg-secondary)" }
+        : { color: "var(--text-muted)" }}
+      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-secondary)"; }}
+      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
+    >
+      {children}
+      <ChevronDownIcon className="h-3 w-3 flex-shrink-0 opacity-70" />
+    </button>
+  );
+}
+
+/* ── Helpers : tooltips d'info dans les headers de TableWide ─────────── */
+
+function InfoSvg() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M7.5 6.5v4M7.5 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ColHeaderInfo({ label, align, tooltip }: { label: string; align?: "left" | "right"; tooltip: React.ReactNode }) {
+  return (
+    <Tooltip portal rich side="bottom" label={tooltip}>
+      <span className={`inline-flex w-full cursor-help items-center gap-1 text-[12px] font-medium text-[var(--text-muted)] ${align === "right" ? "justify-end" : ""}`}>
+        {label}
+        <InfoSvg />
+      </span>
+    </Tooltip>
+  );
+}
+
+function KdTip() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold">Keyword Difficulty</p>
+      <p className="opacity-75">Indice de difficulté de positionnement (0 – 100). Plus la valeur est élevée, plus la SERP est concurrentielle.</p>
+      <p className="text-[11px] opacity-60">0 – 30 facile · 30 – 60 modéré · 60 – 80 difficile · 80+ très difficile</p>
+    </div>
+  );
+}
+
+function KeiTip() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold">Keyword Efficiency Index</p>
+      <p className="opacity-75">Ratio opportunité / concurrence : <span className="font-mono">Volume² / Concurrence</span>. Plus le KEI est élevé, meilleur est le rapport gain potentiel vs effort.</p>
+      <p className="text-[11px] opacity-60">Permet de prioriser les mots-clés à fort potentiel avec une concurrence accessible.</p>
+    </div>
+  );
+}
+
+function TfTip() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold">Trust Flow (Majestic)</p>
+      <p className="opacity-75">Score de confiance du profil de backlinks (0 – 100). Mesure la qualité et la fiabilité des sites qui pointent vers le domaine.</p>
+      <p className="text-[11px] opacity-60">Plus c'est haut, plus le site est référencé par des sources de confiance.</p>
+    </div>
+  );
+}
+
+function CfTip() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold">Citation Flow (Majestic)</p>
+      <p className="opacity-75">Score d'influence basé sur le volume de backlinks (0 – 100). Mesure la quantité de liens reçus, indépendamment de leur qualité.</p>
+      <p className="text-[11px] opacity-60">Comparé au TF, donne le ratio qualité/quantité du profil.</p>
+    </div>
+  );
+}
+
+function BasTip() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold">Backlinks Authority Score</p>
+      <p className="opacity-75">Score d'autorité globale du profil de liens externes. Combine fraîcheur, diversité des ancres et qualité des domaines référents.</p>
+      <p className="text-[11px] opacity-60">Indicateur synthétique du poids SEO off-site.</p>
+    </div>
+  );
+}
+
+function RefDomTip() {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold">Domaines référents</p>
+      <p className="opacity-75">Nombre de domaines uniques qui pointent au moins un lien vers le site. Métrique clé d'autorité — plus la diversité est large, plus le profil est solide.</p>
+      <p className="text-[11px] opacity-60">À comparer au Trust Flow pour évaluer la qualité moyenne par référent.</p>
+    </div>
   );
 }
 
@@ -2483,16 +2888,21 @@ function RecommandationsView() {
 export default function AnalysePage({ params }: { params: Promise<{ domain: string }> }) {
   const { domain } = use(params);
   const decodedDomain = decodeURIComponent(domain);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { show: showToast } = useToast();
-  const [tab, setTab] = useState<Tab>("general");
+  // Tab state is driven by `?tab=` in the URL so the sidebar can navigate to it directly.
+  const rawTab = (searchParams.get("tab") ?? "general") as Tab;
+  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations"] as Tab[]).includes(rawTab) ? rawTab : "general";
+  const setTab = (next: Tab) => {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (next === "general") sp.delete("tab"); else sp.set("tab", next);
+    router.replace(`${pathname}${sp.toString() ? `?${sp.toString()}` : ""}`, { scroll: false });
+  };
   const [auditTab, setAuditTab] = useState<"technique" | "editorial" | "netlinking">("technique");
+  const [seoTab, setSeoTab] = useState<"analytics" | "top-pages">("analytics");
   const [loading, setLoading] = useState(true);
-  const tabNavRef = useRef<HTMLDivElement>(null);
-  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
-  useLayoutEffect(() => {
-    const btn = tabNavRef.current?.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
-    if (btn) setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
-  }, [tab, loading]);
   const [parametresOpen, setParametresOpen] = useState(false);
   const [urlModal, setUrlModal] = useState<"import-csv" | "add-url" | "new-brief" | null>(null);
   const [gscConnected, setGscConnected] = useState(true);
@@ -2500,13 +2910,58 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   const [connectModal, setConnectModal] = useState<Tool | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [returnToParametres, setReturnToParametres] = useState(false);
+  // URL ouverte depuis une autre vue (ex. UniversSemantique) — ouvre la SidePanel
+  // par-dessus l'onglet courant (BriefsView reste monté en permanence pour ça).
+  const [pendingBriefUrl, setPendingBriefUrl] = useState<string | null>(null);
+  function openPageByUrl(url: string) {
+    setPendingBriefUrl(url);
+  }
 
   useEffect(() => {
     setLoading(true);
-    setTab("general");
     const t = setTimeout(() => setLoading(false), 800);
     return () => clearTimeout(t);
   }, [decodedDomain]);
+
+  /* ── Push project actions (GSC, GA4, ...) into the Topbar's right slot ── */
+  const { setMeta } = usePageMeta();
+  useEffect(() => {
+    setMeta({
+      rightSlot: (
+        <>
+          <ConnBadge
+            tool="gsc"
+            connected={gscConnected}
+            onClick={() => gscConnected ? setGscConnected(false) : setConnectModal("gsc")}
+            onImport={() => setImportModalOpen(true)}
+          />
+          <ConnBadge
+            tool="ga4"
+            connected={ga4Connected}
+            onClick={() => ga4Connected ? setGa4Connected(false) : setConnectModal("ga4")}
+          />
+          <DropdownMenu
+            trigger={
+              <button className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
+                <EllipsisVerticalIcon className="h-5 w-5" />
+              </button>
+            }
+            align="right"
+            width={220}
+          >
+            <DropdownItem icon={Upload}     onClick={() => setUrlModal("import-csv")}>Importer des URLs</DropdownItem>
+            <DropdownItem icon={LLink}      onClick={() => setUrlModal("add-url")}>Ajouter une URL</DropdownItem>
+            <DropdownItem icon={LSparkles}  onClick={() => setUrlModal("new-brief")}>Nouveau brief</DropdownItem>
+            <DropdownSeparator />
+            <DropdownItem icon={Settings}   onClick={() => setParametresOpen(true)}>Paramètres du projet</DropdownItem>
+            <DropdownSeparator />
+            <DropdownItem icon={Trash2} danger>Supprimer le projet</DropdownItem>
+          </DropdownMenu>
+        </>
+      ),
+    });
+    return () => setMeta({ rightSlot: null });
+  }, [gscConnected, ga4Connected, setMeta]);
 
   const DOMAIN_HEALTH: Record<string, { tech: number }> = {
     "leboncoin.fr":   { tech: 84 },
@@ -2523,134 +2978,51 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
   return (
     <>
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      {/* ── Header ── */}
-      <div className="relative z-30 w-full px-[var(--page-px)] pt-8">
-        {loading ? <SkeletonAnalyseHeader /> : null}
+    <div className="flex flex-1 flex-col">
+      {/* Header projet retiré — le nom du projet et la subtitle sont intégrés au bloc
+          titre de l'onglet "Vue d'ensemble" plus bas. */}
+
+      {/* La nav entre onglets de la vue analyse se fait via la Sidebar (?tab=).
+          Pour Audit, la barre Technique/Éditorial/Netlinking est rendue inline dans le main,
+          juste sous le titre (cf. bloc `tab === "audit"` plus bas). */}
+
+      {/* ── Tab content ── */}
+      <div className={`mx-auto w-full max-w-[var(--page-max-w)] py-[var(--page-py)] ${tab !== "briefs" ? "px-[var(--page-px)]" : ""}`}>
+        {loading ? <SkeletonAnalyseGeneral /> : null}
         <div className={loading ? "hidden" : "animate-fade-in"}>
 
-        {/* Header */}
-        <div className="mb-5">
-          <nav className="mb-5 inline-flex items-center gap-1 text-[12px]">
-            <Link
-              href="/"
-              className="rounded-full px-2.5 py-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-            >
-              Projets
-            </Link>
-            <ChevronRightIcon className="h-3 w-3 flex-shrink-0 text-[var(--text-muted)]" />
-            <span className="rounded-full px-2.5 py-1 text-[var(--text-secondary)]">
-              {decodedDomain}
-            </span>
-          </nav>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-5">
-                <FaviconStretch domain={decodedDomain} />
-                <div>
-                  <Tooltip label="Ouvrir dans un nouvel onglet" side="top">
+        {/* Titre de la vue + sous-titre éventuel. Skipped pour briefs / tracking / univers /
+            recommandations qui rendent leur propre header (title + CTAs sur la même ligne).
+            Vue d'ensemble : on accole le nom du projet (lien externe) à droite du titre,
+            et la subtitle reprend l'info de fraîcheur GSC/GA4. */}
+        {!["briefs", "tracking", "univers", "recommandations"].includes(tab) && (
+          <div className="mb-6">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+                {TAB_TITLES[tab]}
+              </h2>
+              {tab === "general" && (
+                <Tooltip label="Ouvrir dans un nouvel onglet" side="top" portal>
                   <a
                     href={`https://${decodedDomain}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group/title inline-flex items-center gap-2 transition-colors"
+                    className="group/proj inline-flex items-center gap-2 transition-colors"
                   >
-                    <h1 className="text-[28px] font-semibold leading-none tracking-tight text-[var(--text-primary)] transition-opacity group-hover/title:opacity-70">
+                    <span className="text-[24px] font-semibold leading-none tracking-heading text-[var(--accent-primary)] transition-opacity group-hover/proj:opacity-70">
                       {decodedDomain}
-                    </h1>
-                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-[var(--text-muted)] opacity-0 transition-opacity group-hover/title:opacity-100" />
+                    </span>
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-[var(--accent-primary)] opacity-0 transition-opacity group-hover/proj:opacity-100" />
                   </a>
-                  </Tooltip>
-                  {(gscConnected || ga4Connected) && (
-                    <div className="mt-0.5 flex items-center gap-2 text-[14px] text-[var(--text-muted)]">
-                      <span>Mis à jour aujourd'hui</span>
-                      <span className="h-3 w-px bg-[var(--border-medium)]" />
-                      <span>133 pages crawlées</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+                </Tooltip>
+              )}
             </div>
-
-            <div className="flex items-center gap-2">
-              <ConnBadge
-                tool="gsc"
-                connected={gscConnected}
-                onClick={() => gscConnected ? setGscConnected(false) : setConnectModal("gsc")}
-                onImport={() => setImportModalOpen(true)}
-              />
-              <ConnBadge
-                tool="ga4"
-                connected={ga4Connected}
-                onClick={() => ga4Connected ? setGa4Connected(false) : setConnectModal("ga4")}
-              />
-              <DropdownMenu
-                trigger={
-                  <button className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
-                    <EllipsisVerticalIcon className="h-5 w-5" />
-                  </button>
-                }
-                align="right"
-                width={220}
-              >
-                <DropdownItem icon={Upload}     onClick={() => setUrlModal("import-csv")}>Importer des URLs</DropdownItem>
-                <DropdownItem icon={LLink}      onClick={() => setUrlModal("add-url")}>Ajouter une URL</DropdownItem>
-                <DropdownItem icon={LSparkles}  onClick={() => setUrlModal("new-brief")}>Nouveau brief</DropdownItem>
-                <DropdownSeparator />
-                <DropdownItem icon={Settings}   onClick={() => setParametresOpen(true)}>Paramètres du projet</DropdownItem>
-                <DropdownSeparator />
-                <DropdownItem icon={Trash2} danger>Supprimer le projet</DropdownItem>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-
-        </div>{/* end header animate-fade-in */}
-      </div>{/* end header max-w-5xl */}
-
-      {/* ── Sticky Tabs ── */}
-      <div className="sticky top-0 z-20 bg-[var(--bg-primary)]/75 backdrop-blur-md">
-        <div className="w-full px-[var(--page-px)]">
-          {loading ? <SkeletonTabs count={4} /> : (
-            <div ref={tabNavRef} className="relative flex h-12 items-center gap-1">
-              <span
-                className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-accent-primary"
-                style={{
-                  left: tabIndicator.left,
-                  width: tabIndicator.width,
-                  transition: "left 0.2s ease-out, width 0.2s ease-out",
-                  willChange: "left, width",
-                }}
-              />
-              {TABS.filter(t => !["sea","forecast","netlinking"].includes(t.key)).map((t) => (
-                <button
-                  key={t.key}
-                  data-tab={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`flex h-full cursor-pointer items-center px-4 text-[14px] font-semibold tracking-tight transition-colors ${tab === t.key ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Tab content ── */}
-      <div className={`w-full py-6 ${tab !== "briefs" ? "px-[var(--page-px)]" : ""}`}>
-        {loading ? <SkeletonAnalyseGeneral /> : null}
-        <div className={loading ? "hidden" : "animate-fade-in"}>
-
-        {/* Unified view title — same size + tight subtitle for every tab. Skipped for briefs (BriefsView renders its own header with inline search). */}
-        {tab !== "briefs" && (
-          <div className="mb-6">
-            <h2 className="text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">
-              {TAB_TITLES[tab]}
-            </h2>
-            {TAB_SUBTITLES[tab] && (
-              <p className="mt-1 text-[16px] tracking-subheading text-[var(--text-secondary)]">
+            {tab === "general" && (gscConnected || ga4Connected) ? (
+              <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
+                Mis à jour aujourd'hui · 133 pages crawlées
+              </p>
+            ) : TAB_SUBTITLES[tab] && (
+              <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
                 {TAB_SUBTITLES[tab]}
               </p>
             )}
@@ -2662,25 +3034,24 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           <div className="flex flex-col gap-8">
 
             {/* Stats globales */}
-            <SoftPanel>
-            <div className="grid grid-cols-4 gap-3">
-              <KpiCard icon={TrendingUp} label="Trafic organique / mois" value="42 800" delta="+8,4 %" sub="vs N−1" />
-              <KpiCard icon={LFolderOpen} label="Lots créés"              value="18"     sub="6 actifs · 12 terminés" />
-              <KpiCard icon={FileText}    label="Briefs générés"          value="147"    sub="63 livrés (43 %)" />
-              <KpiCard icon={LLink}       label="Score maillage global"   value="62 %"   sub="23 orphelines" />
-            </div>
-            </SoftPanel>
+            <KpiGroup columns={3}>
+              <KpiCard bare icon={TrendingUp} label="Trafic organique / mois" value="42 800" delta="+8,4 %" sub="vs N−1" />
+              <KpiCard bare icon={LFolderOpen} label="Tags créés"              value="18"     sub="6 actifs · 12 terminés" />
+              <KpiCard bare icon={FileText}    label="Briefs générés"          value="147"    sub="63 livrés (43 %)" />
+            </KpiGroup>
 
-            {/* 4 blocs stratégiques */}
+            {/* 3 blocs stratégiques (GEO retiré — conservé dans le DS pour usage futur) */}
             <div>
               <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Blocs stratégiques</p>
-              <div className="grid grid-cols-4 gap-3">
-                {[
+              <div className="grid grid-cols-3 gap-3">
+                {([
                   {
                     gradFrom: "#00CCFF", gradTo: "#3265FF", iconBottomColor: "#3265FF",
                     color: "#3265FF", colorBg: "rgba(50,101,255,0.08)",
-                    title: "Optimiser l'existant", metric: "36", metricLabel: "pages",
-                    features: ["Brief EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"], cta: "/briefs",
+                    title: "Optimiser l'existant",
+                    description: "Scoring auto, priorisation, brief d'optimisation",
+                    features: ["Brief EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"],
+                    cta: `/analyse/${encodeURIComponent(decodedDomain)}?tab=briefs`,
                     iconPaths: (fill: string) => (<>
                       <path fillRule="evenodd" fill={fill} d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z" clipRule="evenodd" />
                       <path fill={fill} d="m10.076 8.64-2.201-2.2V4.874a.75.75 0 0 0-.364-.643l-3.75-2.25a.75.75 0 0 0-.916.113l-.75.75a.75.75 0 0 0-.113.916l2.25 3.75a.75.75 0 0 0 .643.364h1.564l2.062 2.062 1.575-1.297Z" />
@@ -2690,117 +3061,93 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   {
                     gradFrom: "#FFB930", gradTo: "#FB5F26", iconBottomColor: "#FFB930",
                     color: "#FB5F26", colorBg: "rgba(251,95,38,0.08)",
-                    title: "Combler les manques", metric: "28", metricLabel: "gaps",
-                    features: ["Analyse concurrentielle","Gaps de mots-clés","Pages intermédiaires","Cocon sémantique","Intentions de recherche"], cta: "/briefs",
+                    title: "Identifier les pages manquantes",
+                    description: "Moteur EMC : détecte thématiques non couvertes",
+                    features: ["Analyse concurrentielle","Gaps de mots-clés","Pages intermédiaires","Cocon sémantique","Intentions de recherche"],
+                    cta: `/analyse/${encodeURIComponent(decodedDomain)}?tab=recommandations`,
                     iconPaths: (fill: string) => (<>
                       <path fill={fill} d="M12 .75a8.25 8.25 0 0 0-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 0 0 .577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.714 6.714 0 0 1-.937-.171.75.75 0 1 1 .374-1.453 5.261 5.261 0 0 0 2.626 0 .75.75 0 1 1 .374 1.452 6.712 6.712 0 0 1-.937.172v4.66c0 .327.277.586.6.545.364-.047.722-.112 1.074-.195a.75.75 0 0 0 .577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0 0 12 .75Z" />
                       <path fillRule="evenodd" fill={fill} d="M9.013 19.9a.75.75 0 0 1 .877-.597 11.319 11.319 0 0 0 4.22 0 .75.75 0 1 1 .28 1.473 12.819 12.819 0 0 1-4.78 0 .75.75 0 0 1-.597-.876ZM9.754 22.344a.75.75 0 0 1 .824-.668 13.682 13.682 0 0 0 2.844 0 .75.75 0 1 1 .156 1.492 15.156 15.156 0 0 1-3.156 0 .75.75 0 0 1-.668-.824Z" clipRule="evenodd" />
                     </>),
                   },
                   {
-                    gradFrom: "#6270F7", gradTo: "#3E50F5", iconBottomColor: "#3E50F5",
-                    color: "#3E50F5", colorBg: "rgba(62,80,245,0.08)",
-                    title: "Créer de zéro", metric: "24", metricLabel: "pages",
-                    features: ["Recherche de mots-clés","Brief IA complet","Structure d'URL","Maillage cible","Calendrier éditorial"], cta: "/production",
+                    gradFrom: "#6270F7", gradTo: "var(--accent-primary)", iconBottomColor: "var(--accent-primary)",
+                    color: "var(--accent-primary)", colorBg: "rgba(62,80,245,0.08)",
+                    title: "Créer page from scratch",
+                    description: "Mot-clé + type de page, filtre SERP automatique",
+                    features: ["Recherche de mots-clés","Brief IA complet","Structure d'URL","Maillage cible","Calendrier éditorial"],
+                    onClick: () => setUrlModal("new-brief"),
                     iconPaths: (fill: string) => (<>
                       <path fillRule="evenodd" fill={fill} d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clipRule="evenodd" />
                       <path fill={fill} d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z" />
                     </>),
                   },
-                  {
-                    gradFrom: "#DA5CF6", gradTo: "#8B5CF6", iconBottomColor: "#8B5CF6",
-                    color: "#8B5CF6", colorBg: "rgba(139,92,246,0.09)",
-                    title: "GEO — IA Générative", metric: "62", metricLabel: "score / 100",
-                    features: ["Optimisation réponses IA","Structured data","Signaux E-E-A-T","Sources & citations","Couverture thématique"], cta: "/briefs",
-                    iconPaths: (fill: string) => (<>
-                      <path fillRule="evenodd" fill={fill} d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5ZM18 1.5a.75.75 0 0 1 .728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 0 1 0 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 0 1-1.456 0l-.258-1.036a2.625 2.625 0 0 0-1.91-1.91l-1.036-.258a.75.75 0 0 1 0-1.456l1.036-.258a2.625 2.625 0 0 0 1.91-1.91l.258-1.036A.75.75 0 0 1 18 1.5ZM16.5 15a.75.75 0 0 1 .712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 0 1 0 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 0 1-1.422 0l-.395-1.183a1.5 1.5 0 0 0-.948-.948l-1.183-.395a.75.75 0 0 1 0-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0 1 16.5 15Z" clipRule="evenodd" />
-                    </>),
-                  },
-                ].map((bloc, index) => (
+                ] satisfies BlocDef[]).map((bloc, index) => (
                   <BlocCard key={bloc.title} bloc={bloc} index={index} />
                 ))}
               </div>
             </div>
 
-            {/* Bilans santé + Core Web Vitals — un seul SoftPanel */}
-            <SoftPanel>
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-                    <HealthCard
-                      title="Santé technique"
-                      score={healthScores.tech}
-                      critiques={3}
-                      visitesRisk="99"
-                      color="#F59E0B"
-                      colorBg="rgba(245,158,11,0.09)"
-                      quote="3 problèmes techniques critiques impactent 99 visites/mois. Priorité : corriger les balises titres et réduire les temps de réponse pour récupérer ce trafic."
-                      actions={[
-                        { label: "Balises titres avec longueur incorrecte", visits: "68" },
-                        { label: "Balises description trop longues", visits: "31" },
-                        { label: "Temps de réponse lent (> 1s)" },
-                      ]}
-                      cta="Voir l'audit technique"
-                      ctaHref={`/analyse/${domain}/audit`}
-                    />
-                  </div>
-                  <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-                    <HealthCard
-                      title="Santé éditoriale"
-                      score={61}
-                      critiques={2}
-                      importants={6}
-                      visitesRisk="4,1k"
-                      color="#E11D48"
-                      colorBg="rgba(225,29,72,0.07)"
-                      quote="Vos 9 pages manquent de signaux E-E-A-T, exposant 1 361 visites/mois. Priorité : renforcer la crédibilité et l'expertise avant le prochain Core Update pour sécuriser ce trafic."
-                      actions={[
-                        { label: "Signaux E-E-A-T insuffisants", visits: "1,4k" },
-                        { label: "Expressions sur-optimisées présentes", visits: "1,3k" },
-                        { label: "SOSEO inférieur à la moyenne top 3", visits: "1,3k" },
-                      ]}
-                      note="3 détecteurs avec données partielles"
-                      cta="Voir l'audit éditorial"
-                      ctaHref={`/analyse/${domain}/audit?tab=editorial`}
-                    />
-                  </div>
-                </div>
-
-                <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-                  <div className="p-7">
-                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
-                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
-                  </div>
-                  <div className="flex px-7 pb-7 gap-4">
-                    {[
-                      { key: "LCP", label: "Largest Contentful Paint", icon: PhotoIcon,            value: "4.52 s", status: "Mauvais", threshold: "≤ 2.5s",  color: "#E11D48", bg: "rgba(225,29,72,0.08)" },
-                      { key: "INP", label: "Interaction to Next Paint", icon: CursorArrowRaysIcon,  value: "4 ms",   status: "Bon",     threshold: "≤ 200ms", color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-                      { key: "CLS", label: "Cumulative Layout Shift",   icon: ArrowsPointingOutIcon, value: "0.05",  status: "Bon",     threshold: "≤ 0.1",   color: "#10B981", bg: "rgba(16,185,129,0.08)" },
-                    ].map((m) => (
-                      <div key={m.key} className="flex flex-1 items-center gap-4 px-4">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-medium)]">
-                          <m.icon className="h-5 w-5 text-[var(--text-primary)]" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-[11px] font-semibold text-[var(--text-muted)]">{m.key}</span>
-                          <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.value}</p>
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
-                            <span className="text-[11px] text-[var(--text-muted)]">{m.threshold}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            {/* Bilans santé — 2 cards cliquables avec hover bg (comme les Blocs stratégiques) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
+                <HealthCard
+                  title="Santé technique"
+                  score={healthScores.tech}
+                  critiques={3}
+                  visitesRisk="99"
+                  quote="3 problèmes techniques critiques impactent 99 visites/mois. Priorité : corriger les balises titres et réduire les temps de réponse pour récupérer ce trafic."
+                  ctaHref={`/analyse/${domain}/audit`}
+                />
               </div>
-            </SoftPanel>
+              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
+                <HealthCard
+                  title="Santé éditoriale"
+                  score={61}
+                  critiques={2}
+                  importants={6}
+                  visitesRisk="4,1k"
+                  quote="Vos 9 pages manquent de signaux E-E-A-T, exposant 1 361 visites/mois. Priorité : renforcer la crédibilité et l'expertise avant le prochain Core Update pour sécuriser ce trafic."
+                  note="3 détecteurs avec données partielles"
+                  ctaHref={`/analyse/${domain}/audit?tab=editorial`}
+                />
+              </div>
+            </div>
+
+            {/* Core Web Vitals — bloc indépendant */}
+            <div className="overflow-hidden rounded-3xl bg-[var(--bg-card)]">
+              <div className="p-7">
+                <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
+                <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
+              </div>
+              <div className="flex px-7 pb-7 gap-4">
+                {[
+                  { key: "LCP", label: "Largest Contentful Paint", icon: PhotoIcon,            value: "4.52 s", status: "Mauvais", threshold: "≤ 2.5s",  color: "var(--color-danger)", bg: "var(--color-danger-bg)" },
+                  { key: "INP", label: "Interaction to Next Paint", icon: CursorArrowRaysIcon,  value: "4 ms",   status: "Bon",     threshold: "≤ 200ms", color: "var(--color-success)", bg: "var(--color-success-bg)" },
+                  { key: "CLS", label: "Cumulative Layout Shift",   icon: ArrowsPointingOutIcon, value: "0.05",  status: "Bon",     threshold: "≤ 0.1",   color: "var(--color-success)", bg: "var(--color-success-bg)" },
+                ].map((m) => (
+                  <div key={m.key} className="flex flex-1 items-center gap-4 px-4">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-medium)]">
+                      <m.icon className="h-5 w-5 text-[var(--text-primary)]" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-semibold text-[var(--text-muted)]">{m.key}</span>
+                      <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.value}</p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
+                        <span className="text-[11px] text-[var(--text-muted)]">{m.threshold}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Distribution des positions + Visibilité — 2 colonnes */}
             <div className="grid grid-cols-2 gap-4">
 
               {/* Distribution des positions — bar chart */}
-              <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+              <div className="flex flex-col rounded-3xl bg-[var(--bg-card)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
@@ -2827,7 +3174,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               </div>
 
               {/* Visibilité et trafic organique */}
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
+              <div className="overflow-hidden rounded-3xl bg-[var(--bg-card)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
@@ -2846,31 +3193,43 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             {/* Concurrents organiques */}
             <OrganicCompetitorsTable />
 
-            {/* Lots actifs */}
+            {/* Tags actifs */}
             <div>
-              <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Lots actifs</p>
-              <LotList onNavigate={() => setTab("briefs")} />
+              <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Tags récents</p>
+              <TagList onNavigate={() => setTab("briefs")} />
             </div>
 
             {/* Activités récentes */}
             <div>
-              <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Activités récentes</p>
-              <div className="flex flex-col gap-3">
+              <div className="mb-4 flex items-baseline justify-between">
+                <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Activités récentes</p>
+                <button className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Voir tout</button>
+              </div>
+              <div className="overflow-hidden rounded-2xl bg-[var(--bg-card)]">
                 {[
-                  { label: "Brief publié", desc: "Guide SEO local complet · optimisé", time: "Il y a 2h",   color: "#10B981" },
-                  { label: "Score mis à jour", desc: "Score sémantique /blog/link-building : 55 → 67", time: "Il y a 5h",   color: "#F59E0B" },
-                  { label: "Lot créé",    desc: "Lot GEO — Structured data · 6 URLs", time: "Hier",        color: "#A855F7" },
-                  { label: "Analyse lancée", desc: "Nouveau crawl GSC · 1 048 pages indexées", time: "28 avr.", color: "#E11D48" },
-                  { label: "Brief livré", desc: "Schema.org et données structurées", time: "27 avr.",      color: "#10B981" },
-                ].map((a, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: a.color }} />
+                  { label: "Brief publié",      desc: "Guide SEO local complet · optimisé",          time: "Il y a 2h",  color: "var(--color-success)", Icon: FileText },
+                  { label: "Score mis à jour",  desc: "Score sémantique /blog/link-building : 55 → 67", time: "Il y a 5h",  color: "var(--color-warning)", Icon: TrendingUp },
+                  { label: "Tag créé",          desc: "Tag GEO — Structured data · 6 URLs",          time: "Hier",       color: "#A855F7", Icon: LTag },
+                  { label: "Analyse lancée",    desc: "Nouveau crawl GSC · 1 048 pages indexées",    time: "28 avr.",    color: "var(--accent-primary)", Icon: LPlay },
+                  { label: "Brief livré",       desc: "Schema.org et données structurées",           time: "27 avr.",    color: "var(--color-success)", Icon: CircleCheck },
+                ].map((a, i, arr) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${i < arr.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
+                  >
+                    <span
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
+                      style={{ backgroundColor: `color-mix(in oklab, ${a.color} 12%, transparent)`, color: a.color }}
+                    >
+                      <a.Icon className="h-4 w-4" />
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <span className="text-[12px] font-semibold text-[var(--text-primary)]">{a.label} </span>
-                      <span className="text-[12px] text-[var(--text-secondary)]">— {a.desc}</span>
+                      <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{a.label}</p>
+                      <p className="truncate text-[12px] text-[var(--text-secondary)]">{a.desc}</p>
                     </div>
-                    <span className="flex-shrink-0 text-[11px] text-[var(--text-muted)]">{a.time}</span>
-                  </div>
+                    <span className="flex-shrink-0 text-[11px] tracking-caption text-[var(--text-muted)]">{a.time}</span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -2878,82 +3237,116 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           </div>
         )}
 
-        {/* Briefs tab */}
-        {tab === "briefs" && <BriefsView />}
+        {/* Briefs tab — toujours monté pour que la SidePanel reste accessible
+            depuis n'importe quel onglet (ex. clic d'URL depuis Univers sémantique).
+            Visuellement masqué quand tab !== "briefs". */}
+        <div className={tab === "briefs" ? "" : "hidden"} aria-hidden={tab !== "briefs"}>
+          <BriefsView
+            initialBriefUrl={pendingBriefUrl}
+            onPendingHandled={() => setPendingBriefUrl(null)}
+          />
+        </div>
 
         {/* SEO tab */}
         {tab === "seo" && (
-          <div className="flex flex-col gap-4">
-            <SoftPanel>
-            <div className="grid grid-cols-3 gap-3">
-              <KpiCard icon={TrendingUp}        label="Trafic organique (30j)" value="14 280"  delta="+12 %" sub="vs mois préc." />
-              <KpiCard icon={LChartBar}          label="Position moyenne"      value="18,4"    delta="−2,1 pts" deltaPositiveIsGood={false} sub="ce mois" />
-              <KpiCard icon={MousePointerClick} label="CTR moyen"             value="3,2 %"   sub="stable" />
-              <KpiCard icon={Trophy}            label="Mots-clés top 10"      value="312"     delta="+8" sub="ce mois" />
-              <KpiCard icon={FileText}          label="Pages indexées"        value="1 048" />
-              <KpiCard icon={Eye}               label="Impressions (30j)"     value="447 000" delta="+8 %" sub="vs mois préc." />
-            </div>
-            </SoftPanel>
-            <div className="grid grid-cols-2 gap-4">
-
-              {/* Distribution des positions */}
-              <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
-                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
-                  </div>
-                  <Tooltip
-                    side="top"
-                    label={<>
-                      <span className="block text-[12px] text-white"><span className="font-semibold">5</span> mots-clés dans le top 100 / <span className="font-semibold">2 081</span> détectés (Haloscan)</span>
-                      <span className="mt-1 block text-[11px] text-white/70">2 076 mots-clés au-delà de la position 100</span>
-                    </>}
+          <div className="flex flex-col gap-6">
+            {/* Sub-tab bar — inline sous le titre, même pattern qu'Audit */}
+            <div className="relative flex h-14 items-center gap-1 border-b border-[var(--border-subtle)]">
+              {(["analytics", "top-pages"] as const).map((t) => {
+                const isActive = seoTab === t;
+                const label = t === "analytics" ? "Analytics" : "Top pages SEO";
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setSeoTab(t)}
+                    className={`relative flex h-full cursor-pointer items-center px-3 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
                   >
-                    <button className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                        <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <path d="M7.5 6.5v4M7.5 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                      </svg>
-                    </button>
-                  </Tooltip>
-                </div>
-                <div className="flex-1">
-                  <PositionBarChart />
-                </div>
-              </div>
-
-              {/* Visibilité et trafic organique */}
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
-                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
-                  </div>
-                </div>
-                <VisibilityLineChart />
-              </div>
-
+                    {label}
+                    {isActive && (
+                      <span className="pointer-events-none absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent-primary" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <TopPages />
-            <InsightList items={[
-              "8 mots-clés ont progressé en top 3 ce mois",
-              "La page /blog/seo-local est la plus performante avec 6,1% de CTR",
-              "3 pages en position 11–15 sont à optimiser en priorité",
-              "Le taux d'indexation est excellent (98,4%)",
-            ]} />
+
+            {seoTab === "analytics" && (
+              <div className="flex flex-col gap-4">
+                {(() => {
+                  const trendLabels = ["8 fév", "15 fév", "22 fév", "1 mar", "8 mar", "15 mar", "22 mar", "1 avr", "15 avr", "1 mai"];
+                  return (
+                    <div className="grid grid-cols-3 gap-3">
+                      <KpiCard icon={TrendingUp}        label="Trafic organique (30j)" value="14 280"  delta="+12 %"        sub="vs mois préc." trendLabels={trendLabels} trendFormatValue={(v) => `${Math.round(v).toLocaleString("fr-FR")} clics`} trend={[10800, 11200, 11400, 11900, 12400, 12800, 13100, 13600, 14000, 14280]} />
+                      <KpiCard icon={LChartBar}         label="Position moyenne"       value="18,4"    delta="−2,1 pts" deltaPositiveIsGood={false} sub="ce mois" trendLabels={trendLabels} trendFormatValue={(v) => `Pos. ${v.toFixed(1).replace(".", ",")}`} trend={[16.3, 16.7, 17.1, 17.4, 17.8, 18.0, 18.2, 18.3, 18.4, 18.4]} />
+                      <KpiCard icon={MousePointerClick} label="CTR moyen"              value="3,2 %"                       sub="stable"        trendLabels={trendLabels} trendFormatValue={(v) => `${v.toFixed(1).replace(".", ",")} %`} trend={[3.1, 3.0, 3.2, 3.1, 3.2, 3.3, 3.2, 3.1, 3.2, 3.2]} />
+                      <KpiCard icon={Trophy}            label="Mots-clés top 10"       value="312"     delta="+8"          sub="ce mois"       trendLabels={trendLabels} trendFormatValue={(v) => `${Math.round(v)} mots-clés`} trend={[280, 286, 289, 293, 298, 302, 305, 308, 310, 312]} />
+                      <KpiCard icon={FileText}          label="Pages indexées"         value="1 048"                                            trendLabels={trendLabels} trendFormatValue={(v) => `${Math.round(v).toLocaleString("fr-FR")} pages`} trend={[1010, 1015, 1022, 1028, 1033, 1038, 1042, 1045, 1047, 1048]} />
+                      <KpiCard icon={Eye}               label="Impressions (30j)"      value="447 000" delta="+8 %"        sub="vs mois préc." trendLabels={trendLabels} trendFormatValue={(v) => `${Math.round(v).toLocaleString("fr-FR")} impr.`} trend={[380000, 395000, 405000, 412000, 420000, 428000, 434000, 440000, 444000, 447000]} />
+                    </div>
+                  );
+                })()}
+                <div className="grid grid-cols-2 gap-4">
+
+                  {/* Distribution des positions */}
+                  <div className="flex flex-col rounded-3xl bg-[var(--bg-card)] p-7">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
+                        <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
+                      </div>
+                      <Tooltip
+                        side="top"
+                        label={<>
+                          <span className="block text-[12px] text-white"><span className="font-semibold">5</span> mots-clés dans le top 100 / <span className="font-semibold">2 081</span> détectés (Haloscan)</span>
+                          <span className="mt-1 block text-[11px] text-white/70">2 076 mots-clés au-delà de la position 100</span>
+                        </>}
+                      >
+                        <button className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                            <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
+                            <path d="M7.5 6.5v4M7.5 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                      </Tooltip>
+                    </div>
+                    <div className="flex-1">
+                      <PositionBarChart />
+                    </div>
+                  </div>
+
+                  {/* Visibilité et trafic organique */}
+                  <div className="overflow-hidden rounded-3xl bg-[var(--bg-card)] p-7">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
+                        <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
+                      </div>
+                    </div>
+                    <VisibilityLineChart />
+                  </div>
+
+                </div>
+                <InsightList items={[
+                  "8 mots-clés ont progressé en top 3 ce mois",
+                  "La page /blog/seo-local est la plus performante avec 6,1% de CTR",
+                  "3 pages en position 11–15 sont à optimiser en priorité",
+                  "Le taux d'indexation est excellent (98,4%)",
+                ]} />
+              </div>
+            )}
+
+            {seoTab === "top-pages" && <TopPages />}
           </div>
         )}
 
         {/* Tracking tab */}
         {tab === "tracking" && (
-          <RankTracker />
+          <RankTracker title={TAB_TITLES.tracking} subtitle={TAB_SUBTITLES.tracking} />
         )}
 
         {/* SEA tab */}
         {tab === "sea" && (
           <div className="flex flex-col gap-4">
-            <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
               <KpiCard icon={Euro}              label="CPC moyen"         value="0,42 €"  sub="stable vs mois préc." />
               <KpiCard icon={MousePointerClick} label="CTR campagnes"     value="5,8 %"   delta="+0,4 pts" />
@@ -2962,9 +3355,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               <KpiCard icon={Euro}              label="CPA moyen"         value="4,92 €"  delta="−0,3 €" deltaPositiveIsGood={false} sub="vs mois préc." />
               <KpiCard icon={Eye}               label="Impressions (30j)" value="210 000" delta="+3 %" sub="vs mois préc." />
             </div>
-            </SoftPanel>
-            <ChartBar label="Évolution du CPC — 12 semaines" color="#6366F1" />
-            <InsightList color="#6366F1" items={[
+            <ChartBar label="Évolution du CPC — 12 semaines" color="var(--accent-primary)" />
+            <InsightList color="var(--accent-primary)" items={[
               "Le budget est pleinement utilisé — aucune fuite détectée",
               "2 groupes d'annonces affichent un CTR < 2% à revoir",
               "Les mots-clés de marque génèrent 38% des conversions",
@@ -2976,19 +3368,17 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* Forecast tab */}
         {tab === "forecast" && (
           <div className="flex flex-col gap-4">
-            <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
-              <KpiCard icon={TrendingUp} label="Trafic estimé M+3"      value="+22 %" valueColor="#10B981" sub="Blocs 01 + 02 exécutés" />
-              <KpiCard icon={TrendingUp} label="Trafic estimé M+6"      value="+38 %" valueColor="#10B981" sub="Plan complet exécuté" />
-              <KpiCard icon={LChartBar}   label="ROI SEO estimé 6 mois"  value="×3,2"  valueColor="#10B981" sub="basé sur 87 opportunités" />
+              <KpiCard icon={TrendingUp} label="Trafic estimé M+3"      value="+22 %" valueColor="var(--color-success)" sub="Blocs 01 + 02 exécutés" />
+              <KpiCard icon={TrendingUp} label="Trafic estimé M+6"      value="+38 %" valueColor="var(--color-success)" sub="Plan complet exécuté" />
+              <KpiCard icon={LChartBar}   label="ROI SEO estimé 6 mois"  value="×3,2"  valueColor="var(--color-success)" sub="basé sur 87 opportunités" />
               <KpiCard icon={LSearch}    label="Mots-clés opportunités" value="87 KW" sub="volume ≥ 100/mois" />
               <KpiCard icon={FilePlus}   label="Pages à créer"          value="24"    sub="Bloc 03 — création" />
               <KpiCard icon={FileText}   label="Pages à optimiser"      value="36"    sub="Bloc 01 — existant" />
             </div>
-            </SoftPanel>
             <ForecastTimeline />
-            <ChartBar label="Courbe de trafic projetée — 6 mois" color="#10B981" />
-            <InsightList color="#10B981" items={[
+            <ChartBar label="Courbe de trafic projetée — 6 mois" color="var(--color-success)" />
+            <InsightList color="var(--color-success)" items={[
               "Cadence minimale recommandée : 4 contenus/mois",
               "Optimisation technique à compléter en M+1 pour activer les gains rapides",
               "Le maillage interne représente 30% du gain estimé",
@@ -3005,72 +3395,19 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         )}
 
         {/* Netlinking tab */}
-        {tab === "netlinking" && (
-          <div className="flex flex-col gap-6">
-
-            {/* 3 key metrics */}
-            <SoftPanel>
-            <div className="grid grid-cols-3 gap-3">
-              <KpiCard icon={TriangleAlert} label="Pages orphelines détectées" value="23" />
-              <KpiCard icon={LLink}         label="Score maillage global"      value="62 %" />
-              <KpiCard icon={LLink}         label="Liens internes à créer"     value="184" />
-            </div>
-            </SoftPanel>
-
-            {/* Sub-sections tabs */}
-            <div className="flex items-center gap-4 border-b border-[var(--border-subtle)] pb-0">
-              {["Audit maillage existant", "Plan de liens total", "Backlinks recommandés"].map((s, i) => (
-                <span
-                  key={s}
-                  className={`pb-3 text-[13px] font-medium ${i === 1 ? "border-b-2 border-accent-primary text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-
-            {/* Description */}
-            <p className="text-[12px] text-[var(--text-muted)]">
-              Cartographie complète · pages, liens entrants/sortants, score de maillage par page · synchronisé avec Forecast N1
-            </p>
-
-            {/* Link plan table */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-              {/* Head */}
-              <div className="grid grid-cols-[1fr_1fr_1fr_auto_auto] items-center gap-6 border-b border-[var(--border-subtle)] px-5 py-3">
-                {["Page source", "Ancre suggérée", "Page cible", "Impact", ""].map((h) => (
-                  <span key={h} className="text-[11px] font-medium text-[var(--text-muted)]">{h}</span>
-                ))}
-              </div>
-
-              {/* Rows */}
-              {LINK_PLAN.map((row, i) => (
-                <div
-                  key={i}
-                  className={`group grid grid-cols-[1fr_1fr_1fr_auto_auto] items-center gap-6 px-5 py-4 transition-colors hover:bg-[var(--bg-secondary)] ${
-                    i < LINK_PLAN.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                  }`}
-                >
-                  <span className="truncate font-mono text-[12px] text-[var(--text-secondary)]">{row.source}</span>
-                  <span className="truncate text-[13px] italic text-[var(--text-primary)]">"{row.anchor}"</span>
-                  <span className="truncate font-mono text-[12px] text-[var(--text-secondary)]">{row.target}</span>
-                  <ImpactBar value={row.impact} />
-                  <button className="flex items-center gap-1 text-[12px] font-medium text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--text-primary)]">
-                    Ajouter
-                    <ChevronRightIcon className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        )}
+        {tab === "netlinking" && <NetlinkingView />}
 
         {tab === "cannibal" && <CannibalView />}
 
-        {tab === "univers" && <UniversSemantiqueView />}
+        {tab === "univers" && <UniversSemantiqueView title={TAB_TITLES.univers} subtitle={TAB_SUBTITLES.univers} onOpenPageByUrl={openPageByUrl} />}
 
-        {tab === "recommandations" && <RecommandationsView />}
+        {tab === "recommandations" && (
+          <RecommandationsView
+            title={TAB_TITLES.recommandations}
+            subtitle={TAB_SUBTITLES.recommandations}
+            onOpenPageByUrl={openPageByUrl}
+          />
+        )}
 
         {tab === "audit" && (() => {
           const TECH_TOC: TocItem[] = [
@@ -3082,7 +3419,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           ];
           const EDI_TOC: TocItem[] = [
             { id: "edi-synthese",        label: "Synthèse" },
-            { id: "edi-lots",            label: "Lots" },
+            { id: "edi-tags",            label: "Tags" },
             { id: "edi-diagnostic",      label: "01 · Diagnostic" },
             { id: "edi-dimensions",      label: "02 · Dimensions" },
             { id: "edi-donnees",         label: "03 · Données brutes" },
@@ -3099,15 +3436,24 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           return (
             <div className="flex gap-10 items-start">
               <div className="min-w-0 flex-1 flex flex-col gap-6">
-                <div className="flex justify-start">
-                  <div className="flex h-9 items-center gap-0.5 rounded-full bg-[var(--bg-secondary)] p-1">
-                    {(["technique", "editorial", "netlinking"] as const).map((t) => (
-                      <button key={t} onClick={() => setAuditTab(t)}
-                        className={`h-7 rounded-full px-3 text-[13px] font-medium transition-all duration-200 ${auditTab === t ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}>
-                        {t === "technique" ? "Technique" : t === "editorial" ? "Éditorial" : "Netlinking"}
+                {/* Switch Technique / Éditorial / Netlinking — inline, juste sous le titre */}
+                <div className="relative flex h-14 items-center gap-1 border-b border-[var(--border-subtle)]">
+                  {(["technique", "editorial", "netlinking"] as const).map((t) => {
+                    const isActive = auditTab === t;
+                    const label = t === "technique" ? "Technique" : t === "editorial" ? "Éditorial" : "Netlinking";
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setAuditTab(t)}
+                        className={`relative flex h-full cursor-pointer items-center px-3 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                      >
+                        {label}
+                        {isActive && (
+                          <span className="pointer-events-none absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent-primary" />
+                        )}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
                 {auditTab === "technique"  && <AuditTechniqueTab domain={decodedDomain} />}
                 {auditTab === "editorial"  && <AuditEditorialTab domain={decodedDomain} />}

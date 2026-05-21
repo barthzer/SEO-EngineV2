@@ -33,10 +33,7 @@
   --text-2xl: 32px;    /* grand chiffres / KPI */
   --text-display: 60px;/* h1 hero / cover */
 
-  /* ──────────────── Statuts (valeurs neutres standard) ──────────────── */
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-  --color-danger: #f87171;
+  /* Statuts définis dans tokens-brand.css (light/dark aware) */
 }
 
 /* ──────────────── Animations partagées ──────────────── */

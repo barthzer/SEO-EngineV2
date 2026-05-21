@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 export interface HorizontalBarChartItem {
   label: string;
   value: number;
@@ -17,15 +19,14 @@ interface HorizontalBarChartProps {
   barHeight?: number;
   /** Hauteur totale du bloc graphique (défaut 238 pour matcher l'AreaChart standard) */
   chartHeight?: number;
+  /** Contenu du tooltip au survol d'une barre — reçoit l'item + son index + total */
+  tooltip?: (item: HorizontalBarChartItem, index: number, total: number) => ReactNode;
   className?: string;
 }
 
-function hexToRgb(hex: string) {
-  const m = hex.replace("#", "");
-  const r = parseInt(m.slice(0, 2), 16);
-  const g = parseInt(m.slice(2, 4), 16);
-  const b = parseInt(m.slice(4, 6), 16);
-  return `${r}, ${g}, ${b}`;
+/** Renvoie une couleur avec opacité, compatible hex et CSS vars via color-mix */
+function withAlpha(color: string, alpha: number) {
+  return `color-mix(in oklab, ${color} ${Math.round(alpha * 100)}%, transparent)`;
 }
 
 /**
@@ -35,15 +36,16 @@ function hexToRgb(hex: string) {
  */
 export function HorizontalBarChart({
   data,
-  color = "#3E50F5",
+  color = "var(--accent-primary)",
   formatValue = (v) => v.toLocaleString("fr-FR"),
   labelWidth = 100,
   barHeight = 28,
   chartHeight = 238,
+  tooltip,
   className = "",
 }: HorizontalBarChartProps) {
   const maxValue = Math.max(...data.map((d) => d.value), 1);
-  const rgb = hexToRgb(color);
+  const total = data.reduce((acc, d) => acc + d.value, 0);
 
   return (
     <div className={`flex h-full flex-col justify-end ${className}`}>
@@ -86,11 +88,11 @@ export function HorizontalBarChart({
               <div className="flex flex-1 items-center">
                 {ratio > 0 ? (
                   <div
-                    className="relative flex items-center rounded-full transition-colors"
+                    className={`group relative flex items-center rounded-full transition-all ${tooltip ? "cursor-default hover:brightness-110" : ""}`}
                     style={{
                       width: `${Math.max(ratio * 100, 8)}%`,
                       height: barHeight,
-                      backgroundColor: `rgba(${rgb}, ${alpha})`,
+                      backgroundColor: withAlpha(color, alpha),
                     }}
                   >
                     <span
@@ -98,10 +100,20 @@ export function HorizontalBarChart({
                     >
                       {formatValue(d.value)}
                     </span>
+                    {tooltip && (
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl bg-[rgba(20,20,20,0.92)] px-3.5 py-2.5 opacity-0 shadow-[var(--shadow-floating)] backdrop-blur-md transition-opacity duration-150 group-hover:opacity-100 dark:border dark:border-[var(--border-subtle)] dark:bg-[rgba(40,40,42,0.92)]">
+                        {tooltip(d, i, total)}
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <span className="relative pl-1 text-[12px] tabular-nums text-[var(--text-muted)]">
+                  <span className={`relative pl-1 text-[12px] tabular-nums text-[var(--text-muted)] ${tooltip ? "group cursor-default" : ""}`}>
                     {formatValue(d.value)}
+                    {tooltip && (
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl bg-[rgba(20,20,20,0.92)] px-3.5 py-2.5 opacity-0 shadow-[var(--shadow-floating)] backdrop-blur-md transition-opacity duration-150 group-hover:opacity-100 dark:border dark:border-[var(--border-subtle)] dark:bg-[rgba(40,40,42,0.92)]">
+                        {tooltip(d, i, total)}
+                      </div>
+                    )}
                   </span>
                 )}
               </div>

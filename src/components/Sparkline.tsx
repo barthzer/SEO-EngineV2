@@ -1,5 +1,8 @@
 "use client";
 
+import { useId, useRef, useState, type ReactNode } from "react";
+import { ChartTooltip } from "@/components/Tooltip";
+
 interface SparklineProps {
   data: number[];
   color?: string;
@@ -7,22 +10,37 @@ interface SparklineProps {
   height?: number;
   inverted?: boolean;
   strokeWidth?: number;
-  /** Render a filled area under the line with a vertical gradient fade */
+  /** Render a filled area under the line (flat semi-transparent fill — Semrush-style) */
   area?: boolean;
   /** Show data point dots on parent hover (uses Tailwind `group-hover`) */
   showDotsOnHover?: boolean;
+  /** Interactive mode — tracks cursor, shows dot + ChartTooltip at nearest point */
+  interactive?: boolean;
+  /** Labels per data point (typically dates) — shown in tooltip when interactive */
+  labels?: string[];
+  /** Custom tooltip body — overrides default `label · value` rendering */
+  formatTooltip?: (value: number, label?: string, index?: number) => ReactNode;
+  /** Value formatter for the default tooltip body */
+  formatValue?: (value: number) => string;
 }
 
 export function Sparkline({
   data,
-  color = "#3E50F5",
+  color = "var(--accent-primary)",
   width = 56,
   height = 22,
   inverted = false,
   strokeWidth = 1.5,
   area = false,
   showDotsOnHover = false,
+  interactive = false,
+  labels,
+  formatTooltip,
+  formatValue = (v) => v.toLocaleString("fr-FR"),
 }: SparklineProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
   if (data.length < 2) {
     return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
   }
@@ -41,23 +59,25 @@ export function Sparkline({
   const lineD = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
   const areaD = `${lineD} L ${pts[pts.length - 1].x.toFixed(1)} ${height} L ${pts[0].x.toFixed(1)} ${height} Z`;
 
-  const gradId = `sparkline-grad-${color.replace("#", "")}`;
-
-  return (
+  const reactId = useId().replace(/:/g, "");
+  const gradId = `sparkline-grad-${reactId}`;
+  const svg = (
     <svg width={width} height={height} className="overflow-visible">
       {area && (
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.28} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
+        <>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.28 }} />
+              <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
+            </linearGradient>
+          </defs>
+          <path d={areaD} fill={`url(#${gradId})`} />
+        </>
       )}
-      {area && <path d={areaD} fill={`url(#${gradId})`} />}
       <path
         d={lineD}
         fill="none"
-        stroke={color}
+        style={{ stroke: color }}
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -68,12 +88,72 @@ export function Sparkline({
           cx={p.x}
           cy={p.y}
           r={2.5}
-          fill={color}
+          style={{ fill: color }}
           stroke="#FFFFFF"
           strokeWidth={1.5}
           className="opacity-0 transition-opacity group-hover:opacity-100"
         />
       ))}
     </svg>
+  );
+
+  if (!interactive) return svg;
+
+  function handleMove(e: React.MouseEvent) {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const xViewBox = ((e.clientX - rect.left) / rect.width) * width;
+    let best = 0;
+    let bestDist = Infinity;
+    pts.forEach((p, i) => {
+      const d = Math.abs(p.x - xViewBox);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    setHoverIdx(best);
+  }
+
+  const hov = hoverIdx !== null ? pts[hoverIdx] : null;
+  const hovValue = hoverIdx !== null ? data[hoverIdx] : null;
+  const hovLabel = hoverIdx !== null ? labels?.[hoverIdx] : undefined;
+  let tipX = 0, tipY = 0;
+  if (hov && containerRef.current) {
+    const rect = containerRef.current.getBoundingClientRect();
+    tipX = (hov.x / width) * rect.width;
+    tipY = (hov.y / height) * rect.height;
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative cursor-crosshair"
+      style={{ width, height }}
+      onMouseMove={handleMove}
+      onMouseLeave={() => setHoverIdx(null)}
+    >
+      {svg}
+      {hov && (
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          className="pointer-events-none absolute inset-0 overflow-visible"
+        >
+          <circle cx={hov.x} cy={hov.y} r={3} style={{ fill: color }} stroke="#FFFFFF" strokeWidth={1.5} />
+        </svg>
+      )}
+      {hov && hovValue !== null && (
+        <ChartTooltip x={tipX} y={tipY - 4}>
+          {formatTooltip ? (
+            formatTooltip(hovValue, hovLabel, hoverIdx ?? 0)
+          ) : (
+            <div className="flex flex-col gap-0.5">
+              {hovLabel && <span className="text-[11px] text-white/60">{hovLabel}</span>}
+              <span className="text-[13px] font-semibold text-white">{formatValue(hovValue)}</span>
+            </div>
+          )}
+        </ChartTooltip>
+      )}
+    </div>
   );
 }

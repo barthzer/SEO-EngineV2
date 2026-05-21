@@ -7,14 +7,23 @@ interface ChartTooltipProps {
   x: number;
   y: number;
   children: ReactNode;
+  /** Rend le tooltip dans un portail (position fixed) — utile quand le chart est dans un
+   *  conteneur clippé (overflow-x-auto, etc.). x/y deviennent des coordonnées viewport. */
+  portal?: boolean;
 }
 
-export function ChartTooltip({ x, y, children }: ChartTooltipProps) {
+export function ChartTooltip({ x, y, children, portal = false }: ChartTooltipProps) {
+  const className = "pointer-events-none -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[rgba(20,20,20,0.82)] px-3 py-2 shadow-[var(--shadow-floating)] backdrop-blur-md transition-[left,top] duration-150 ease-out";
+  if (portal && typeof window !== "undefined") {
+    return createPortal(
+      <div className={`${className} fixed z-[1000]`} style={{ left: x, top: y - 8 }}>
+        {children}
+      </div>,
+      document.body,
+    );
+  }
   return (
-    <div
-      className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[rgba(20,20,20,0.82)] px-3 py-2 shadow-[var(--shadow-floating)] backdrop-blur-md transition-[left,top] duration-150 ease-out"
-      style={{ left: x, top: y - 8 }}
-    >
+    <div className={`${className} absolute z-50`} style={{ left: x, top: y - 8 }}>
       {children}
     </div>
   );

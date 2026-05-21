@@ -12,8 +12,8 @@ const counts = {
 
 export default function BriefsPage() {
   return (
-    <div className="flex flex-1 min-h-0 flex-col py-8">
-      <div className="flex w-full flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 min-h-0 flex-col py-[var(--page-py)]">
+      <div className="mx-auto flex w-full max-w-[var(--page-max-w)] flex-1 min-h-0 flex-col">
 
         {/* Header */}
         <div className="mb-8 flex-shrink-0 px-[var(--page-px)]">

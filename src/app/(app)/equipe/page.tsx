@@ -91,8 +91,8 @@ const globalStats = {
 /* ── Stage badge ─────────────────────────────────────────────────────── */
 
 const STAGE_CONFIG = {
-  actif:     { color: "#10B981", bg: "rgba(16,185,129,0.09)" },
-  "en pause":{ color: "#F59E0B", bg: "rgba(245,158,11,0.09)" },
+  actif:     { color: "var(--color-success)", bg: "var(--color-success-bg)" },
+  "en pause":{ color: "var(--color-warning)", bg: "rgba(245,158,11,0.09)" },
   terminé:   { color: "var(--text-muted)", bg: "var(--bg-secondary)" },
 };
 
@@ -108,7 +108,7 @@ function StageBadge({ stage }: { stage: Project["stage"] }) {
 /* ── Score ring (mini) ───────────────────────────────────────────────── */
 
 function ScoreRing({ score, size = 44 }: { score: number; size?: number }) {
-  const color = score >= 80 ? "#10B981" : score >= 60 ? "#F59E0B" : "#E11D48";
+  const color = score >= 80 ? "var(--color-success)" : score >= 60 ? "var(--color-warning)" : "var(--color-danger)";
   const r = size / 2 - 3;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - score / 100);
@@ -135,7 +135,7 @@ function Favicon({ domain }: { domain: string }) {
 
 /* ── Avatar ──────────────────────────────────────────────────────────── */
 
-const AVATAR_COLORS = ["#E11D48", "#F59E0B", "#10B981", "#6366F1"];
+const AVATAR_COLORS = ["var(--color-danger)", "var(--color-warning)", "var(--color-success)", "var(--accent-primary)"];
 
 function Avatar({ initials, index }: { initials: string; index: number }) {
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
@@ -164,18 +164,15 @@ export default function EquipePage() {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto py-8">
-      <div className="w-full px-[var(--page-px)]">
+    <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
+      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
 
         {/* Header */}
         <div className="mb-8">
-          <span className="text-[11px] font-medium text-accent-primary">
-            Vue équipe
-          </span>
-          <h1 className="mt-1.5 text-[28px] font-semibold tracking-tight text-[var(--text-primary)]">
-            Tableau de bord équipe
+          <h1 className="mb-1 text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+            Équipe
           </h1>
-          <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+          <p className="text-[14px] tracking-body text-[var(--text-secondary)]">
             {globalStats.consultants} consultants · {globalStats.projects} projets actifs
           </p>
         </div>
@@ -246,7 +243,7 @@ export default function EquipePage() {
                         <StageBadge stage={project.stage} />
 
                         <div className="flex items-center gap-1 text-[12px]" style={{
-                          color: project.traficDir === "up" ? "#10B981" : project.traficDir === "down" ? "#E11D48" : "var(--text-muted)"
+                          color: project.traficDir === "up" ? "var(--color-success)" : project.traficDir === "down" ? "var(--color-danger)" : "var(--text-muted)"
                         }}>
                           {project.traficDir === "up" ? <ArrowUpIcon className="h-3 w-3" /> : project.traficDir === "down" ? <ArrowDownIcon className="h-3 w-3" /> : null}
                           {project.trafic}
