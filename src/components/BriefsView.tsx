@@ -2094,15 +2094,17 @@ function ActionRing({ done, total }: { done: number; total: number }) {
 
 function SparklineEmpty() {
   return (
-    <EmptyState
-      icon={
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <div className="flex h-full w-full flex-col items-center justify-center px-4 text-center">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] text-[var(--text-muted)]">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5l4.5-4.5 3 3 4-5L19 10M3 20h18M3 4h18" />
         </svg>
-      }
-      title="Pas encore de données"
-      description="L'historique apparaîtra après la première analyse."
-    />
+      </div>
+      <p className="text-[13px] font-semibold text-[var(--text-primary)]">Pas encore de données</p>
+      <p className="mt-1 max-w-[24ch] text-[11px] text-[var(--text-muted)]">
+        L'historique apparaîtra après la première analyse.
+      </p>
+    </div>
   );
 }
 

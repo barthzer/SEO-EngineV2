@@ -2987,7 +2987,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           juste sous le titre (cf. bloc `tab === "audit"` plus bas). */}
 
       {/* ── Tab content ── */}
-      <div className={`mx-auto w-full max-w-[var(--page-max-w)] py-[var(--page-py)] ${tab !== "briefs" ? "px-[var(--page-px)]" : ""}`}>
+      <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
         {loading ? <SkeletonAnalyseGeneral /> : null}
         <div className={loading ? "hidden" : "animate-fade-in"}>
 

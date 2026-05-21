@@ -220,7 +220,19 @@ h3 { letter-spacing: var(--tracking-subheading); }
 :root {
   --page-px: 40px;        /* horizontal padding intérieur de chaque vue */
   --page-py: 40px;        /* vertical padding intérieur de chaque vue */
-  --page-max-w: none;     /* largeur max du contenu — none = pleine largeur du main */
+  --page-max-w: 1120px;   /* largeur max du contenu — main centré au-delà */
+}
+
+/* XL — plus d'air vertical sur grands écrans */
+@media (min-width: 1280px) {
+  :root {
+    --page-py: 72px;
+  }
+}
+@media (min-width: 1536px) {
+  :root {
+    --page-py: 96px;
+  }
 }
 
 

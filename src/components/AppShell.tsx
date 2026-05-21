@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Suspense fallback={<SidebarFallback />}>
               <Sidebar />
             </Suspense>
-            <main className="relative flex flex-1 flex-col overflow-hidden bg-[var(--bg-primary)]">
+            <main className="relative flex flex-1 flex-col overflow-hidden border-l border-[var(--border-subtle)] bg-[var(--bg-primary)]">
               <Topbar />
               <div className="flex-1 overflow-y-auto">{children}</div>
             </main>
