@@ -106,6 +106,23 @@ export function RadarChart({
     return { ...s, pts, polyPts };
   });
 
+  /* ── Hover : détection du vertex le plus proche du curseur (pas besoin d'être pile dessus) ── */
+  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * size;
+    const my = ((e.clientY - rect.top) / rect.height) * size;
+    let best = { s: 0, i: 0 };
+    let bestDist = Infinity;
+    for (let s = 0; s < seriesData.length; s++) {
+      for (let i = 0; i < n; i++) {
+        const [vx, vy] = seriesData[s].pts[i];
+        const d = Math.hypot(mx - vx, my - vy);
+        if (d < bestDist) { bestDist = d; best = { s, i }; }
+      }
+    }
+    setHover(best);
+  }
+
   return (
     <div className={`relative inline-block ${className}`} style={{ width: size, height: size }}>
       <svg
@@ -113,6 +130,7 @@ export function RadarChart({
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         style={{ shapeRendering: "geometricPrecision" }}
+        onMouseMove={handleMouseMove}
         onMouseLeave={() => setHover(null)}
       >
         {/* Grid concentrique */}
@@ -157,9 +175,29 @@ export function RadarChart({
           );
         })}
 
-        {/* Séries — rendu inverse pour mettre la 1ère par-dessus */}
-        {seriesData.slice().reverse().map((s, idx) => {
-          const realIdx = seriesData.length - 1 - idx;
+        {/* Connecteur entre les vertices au survol — relie visuellement les deux points
+            sur l'axe survolé (Concurrents ↔ Vous) pour matérialiser le différentiel. */}
+        {hover && seriesData.length >= 2 && (() => {
+          const [x1, y1] = seriesData[0].pts[hover.i];
+          const [x2, y2] = seriesData[seriesData.length - 1].pts[hover.i];
+          return (
+            <line
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke="var(--text-primary)"
+              strokeWidth={1.2}
+              strokeDasharray="3 3"
+              opacity={0.45}
+              style={{ pointerEvents: "none" }}
+            />
+          );
+        })()}
+
+        {/* Séries — rendu en ordre direct : la DERNIÈRE série passée est rendue par-dessus.
+            Convention NetlinkingView : [Concurrents, Vous] → Vous au-dessus. */}
+        {seriesData.map((s, realIdx) => {
           return (
             <g key={`s-${realIdx}-${reactId}`}>
               {/* Fill */}
@@ -182,10 +220,9 @@ export function RadarChart({
                     cx={x}
                     cy={y}
                     r={isHover ? 5 : 3.5}
-                    style={{ fill: s.color }}
+                    style={{ fill: s.color, pointerEvents: "none" }}
                     stroke="var(--bg-card)"
                     strokeWidth={2}
-                    onMouseEnter={() => setHover({ s: realIdx, i })}
                   />
                 );
               })}
@@ -217,31 +254,45 @@ export function RadarChart({
         })}
       </svg>
 
-      {/* Tooltip */}
+      {/* Tooltip — toutes les séries sur cet axe + delta */}
       {hover && (() => {
-        const s = seriesData[hover.s];
-        const [hx, hy] = s.pts[hover.i];
-        const value = s.values[hover.i];
-        const label = axes[hover.i];
+        const axisIdx = hover.i;
+        const [hx, hy] = seriesData[hover.s].pts[axisIdx];
+        const label = axes[axisIdx];
+        // Référence (1ère série) vs Vous (dernière série) pour calculer le différentiel
+        const ref = seriesData[0]?.values[axisIdx] ?? 0;
+        const you = seriesData[seriesData.length - 1]?.values[axisIdx] ?? 0;
+        const delta = you - ref;
+        const deltaPct = ref !== 0 ? Math.round((delta / ref) * 100) : null;
         return (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-[rgba(20,20,20,0.92)] px-3 py-2 shadow-[var(--shadow-floating)] backdrop-blur-md"
-            style={{ left: hx, top: hy - 8 }}
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-[rgba(20,20,20,0.92)] px-3.5 py-2.5 shadow-[var(--shadow-floating)] backdrop-blur-md min-w-[180px] transition-[left,top] duration-200 ease-out"
+            style={{ left: hx, top: hy - 10 }}
           >
-            <div className="flex items-center gap-2">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: s.color }}
-                aria-hidden="true"
-              />
-              <span className="text-[11px] font-medium text-white/70">{s.label}</span>
-            </div>
-            <div className="mt-0.5 flex items-baseline gap-2 whitespace-nowrap">
-              <span className="text-[12px] text-white/55">{label}</span>
-              <span className="text-[13px] font-semibold tabular-nums text-white">
-                {value.toLocaleString("fr-FR")}
-              </span>
-            </div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/55">{label}</p>
+            {seriesData.map((s, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-3 py-0.5">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} aria-hidden="true" />
+                  <span className="text-[12px] text-white/75">{s.label}</span>
+                </span>
+                <span className="text-[12.5px] font-semibold tabular-nums text-white">
+                  {s.values[axisIdx].toLocaleString("fr-FR")}
+                </span>
+              </div>
+            ))}
+            {seriesData.length >= 2 && (
+              <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/10 pt-1.5">
+                <span className="text-[11px] text-white/55">Δ vs concurrents</span>
+                <span
+                  className="text-[12px] font-semibold tabular-nums"
+                  style={{ color: delta >= 0 ? "#34D399" : "#FB7185" }}
+                >
+                  {delta >= 0 ? "+" : ""}{delta.toLocaleString("fr-FR")}
+                  {deltaPct != null && <span className="ml-1 opacity-70">({delta >= 0 ? "+" : ""}{deltaPct}%)</span>}
+                </span>
+              </div>
+            )}
           </div>
         );
       })()}

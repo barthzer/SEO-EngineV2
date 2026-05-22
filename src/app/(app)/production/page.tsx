@@ -182,7 +182,7 @@ function ArticleDrawer({ article: a }: { article: Article }) {
         <p className="mb-3 text-[11px] text-[var(--text-muted)]">Checklist</p>
         <div className="space-y-2">
           {[
-            { label: "Brief validé", done: a.progress >= 15 },
+            { label: "Analyse validée", done: a.progress >= 15 },
             { label: "Rédaction complète", done: a.progress >= 65 },
             { label: "Relecture & corrections", done: a.progress >= 90 },
             { label: "Publication", done: a.progress === 100 },
@@ -239,7 +239,7 @@ export default function ProductionPage() {
               <span className="text-[11px] font-medium text-accent-primary">
                 Niveau 4 — Production
               </span>
-              <h1 className="mt-1.5 text-[28px] font-semibold tracking-tight text-[var(--text-primary)]">
+              <h1 className="mt-1.5 font-semibold tracking-tight text-[var(--text-primary)]">
                 Pipeline de production
               </h1>
               <p className="mt-1 text-[13px] text-[var(--text-muted)]">

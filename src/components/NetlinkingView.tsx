@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShieldCheck, Globe, Trophy, Scale, TrendingUp, TrendingDown } from "lucide-react";
+import { ShieldCheck, Globe, Trophy, Scale, TrendingUp, TrendingDown, MapPin, Languages, Network, ChevronDown } from "lucide-react";
 import { ShieldExclamationIcon } from "@heroicons/react/24/outline";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
@@ -339,13 +339,41 @@ function CompareBar({
   );
 }
 
-/** Ligne pour distribution géographique (drapeau / code + label + barre + % + delta) */
-function GeoRowItem({ row, max }: { row: GeoRow; max: number }) {
+/** Convertit un code pays ISO-2 en emoji drapeau (regional indicator symbols) */
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return "";
+  return code
+    .toUpperCase()
+    .split("")
+    .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
+    .join("");
+}
+
+/** Map d'une langue ISO vers code pays pour récupérer un drapeau associé */
+const LANGUAGE_TO_COUNTRY: Record<string, string> = {
+  fr: "FR", en: "GB", de: "DE", es: "ES", it: "IT", pt: "PT", nl: "NL",
+  pl: "PL", sv: "SE", da: "DK", no: "NO", fi: "FI", ja: "JP", zh: "CN",
+  ru: "RU", ar: "SA", ko: "KR",
+};
+
+/** Ligne pour distribution géographique (drapeau + code + label + barre + % + delta) */
+function GeoRowItem({ row, max, kind }: { row: GeoRow; max: number; kind: "country" | "language" }) {
   const positive = row.delta >= 0;
   const deltaColor = positive ? "var(--color-success)" : "var(--color-danger)";
+  const flag = (() => {
+    if (!row.code || row.code === "–") return null;
+    if (kind === "country") return countryFlag(row.code);
+    const c = LANGUAGE_TO_COUNTRY[row.code.toLowerCase()];
+    return c ? countryFlag(c) : null;
+  })();
   return (
-    <div className="grid grid-cols-[80px_1fr_60px_70px] items-center gap-3 py-2.5">
+    <div className="grid grid-cols-[100px_1fr_60px_70px] items-center gap-3 py-2.5">
       <div className="flex items-center gap-2">
+        {flag ? (
+          <span className="text-[16px] leading-none" aria-hidden="true">{flag}</span>
+        ) : (
+          <span className="inline-block h-4 w-5 rounded-sm bg-[var(--bg-subtle)]" aria-hidden="true" />
+        )}
         <span className="font-mono text-[11px] font-semibold text-[var(--text-muted)]">{row.code}</span>
         <span className="text-[12px] text-[var(--text-secondary)] truncate">{row.label}</span>
       </div>
@@ -398,14 +426,40 @@ function AnchorStack({ marque, generique, autre }: { marque: number; generique: 
    MAIN VIEW
    ══════════════════════════════════════════════════════════════════════ */
 
+/** Métriques disponibles dans le graphique d'évolution historique */
+type EvoMetric = "tf" | "cf" | "refdom" | "backlinks";
+type EvoRange = "3m" | "6m" | "12m";
+
+const EVO_METRIC_CONFIG: Record<EvoMetric, { label: string; yMax: number; transform: (tfVal: number) => number; format: (v: number) => string }> = {
+  tf:        { label: "Trust Flow",       yMax: 20,   transform: (v) => v,                       format: (v) => v.toString() },
+  cf:        { label: "Citation Flow",    yMax: 50,   transform: (v) => Math.round(v * 2.8 + 5), format: (v) => v.toString() },
+  refdom:    { label: "Domaines référents", yMax: 600, transform: (v) => Math.round(v * 32 + 80), format: (v) => v.toString() },
+  backlinks: { label: "Backlinks",        yMax: 3000, transform: (v) => Math.round(v * 145 + 200), format: (v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toString() },
+};
+
+const EVO_RANGE_CONFIG: Record<EvoRange, { label: string; pointCount: number }> = {
+  "3m":  { label: "3 mois",  pointCount: 12 },
+  "6m":  { label: "6 mois",  pointCount: 20 },
+  "12m": { label: "12 mois", pointCount: 28 },
+};
+
 export function NetlinkingView() {
-  /* ── Trust Flow stats dérivées ── */
-  const tfMin = Math.min(...TF_HISTORY.map((d) => d.val));
-  const tfMax = Math.max(...TF_HISTORY.map((d) => d.val));
-  const tfFirst = TF_HISTORY[0].val;
-  const tfLast = TF_HISTORY[TF_HISTORY.length - 1].val;
-  const tfDelta = tfLast - tfFirst;
-  const tfDeltaPct = Math.round((tfDelta / tfFirst) * 100);
+  /* ── Evolution chart state ── */
+  const [evoMetric, setEvoMetric] = useState<EvoMetric>("tf");
+  const [evoRange, setEvoRange]   = useState<EvoRange>("12m");
+
+  const evoCfg = EVO_METRIC_CONFIG[evoMetric];
+  const evoRangeCfg = EVO_RANGE_CONFIG[evoRange];
+
+  /** Données filtrées + transformées selon métrique + range */
+  const evoData = TF_HISTORY
+    .slice(-evoRangeCfg.pointCount)
+    .map((d) => ({ date: d.date, val: evoCfg.transform(d.val) }));
+
+  const evoFirst = evoData[0]?.val ?? 0;
+  const evoLast = evoData[evoData.length - 1]?.val ?? 0;
+  const evoDelta = evoLast - evoFirst;
+  const evoDeltaPct = evoFirst !== 0 ? Math.round((evoDelta / evoFirst) * 100) : 0;
 
   /* ── Backlinks filters ── */
   const [blQuery, setBlQuery] = useState("");
@@ -463,7 +517,7 @@ export function NetlinkingView() {
       {/* ════════════════ 02. Benchmark concurrents (Majestic / SEObserver) ════════════════ */}
       <div className="flex flex-col gap-3">
         <div>
-          <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
             Benchmark concurrents
           </h2>
           <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
@@ -482,62 +536,140 @@ export function NetlinkingView() {
         />
       </div>
 
-      {/* ════════════════ 03. Benchmark Radar ════════════════ */}
-      <section className="rounded-3xl bg-[var(--bg-card)] p-7">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
-              Benchmark Radar
-            </h2>
-            <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
-              Comparaison multi-métriques vs concurrents
-            </p>
+      {/* ════════════════ 03. Benchmark Radar + Évolution Trust Flow (côte à côte) ════════════════ */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+        {/* Left — Benchmark Radar */}
+        <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
+                Benchmark Radar
+              </h2>
+              <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
+                Comparaison multi-métriques vs concurrents
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Pill bg="var(--color-danger-bg)" color="var(--color-danger)">
+                <ShieldExclamationIcon className="h-3.5 w-3.5" />
+                Risque spam
+              </Pill>
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums"
+                style={{ backgroundColor: "var(--color-danger)", color: "white" }}
+              >
+                {SPAM_RISK_DELTA}%
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Pill bg="var(--color-danger-bg)" color="var(--color-danger)">
-              <ShieldExclamationIcon className="h-3.5 w-3.5" />
-              Risque spam
-            </Pill>
-            <span
-              className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums"
-              style={{ backgroundColor: "var(--color-danger)", color: "white" }}
-            >
-              {SPAM_RISK_DELTA}%
+
+          <div className="flex items-center justify-center">
+            <RadarChart
+              axes={RADAR_AXES}
+              series={[
+                { label: "Concurrents", values: RADAR_COMPETITORS, color: "var(--color-danger)", dashed: true },
+                { label: "Vous",        values: RADAR_YOU,         color: "var(--accent-primary)" },
+              ]}
+              size={280}
+            />
+          </div>
+
+          <div className="mt-2 flex items-center justify-center gap-6">
+            <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+              <span className="h-2 w-4 rounded-full" style={{ background: "var(--color-danger)" }} />
+              Concurrents
+            </span>
+            <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+              <span className="h-2 w-4 rounded-full" style={{ background: "var(--accent-primary)" }} />
+              Vous
             </span>
           </div>
-        </div>
 
-        <div className="flex items-center justify-center">
-          <RadarChart
-            axes={RADAR_AXES}
-            series={[
-              { label: "Concurrents", values: RADAR_COMPETITORS, color: "var(--color-danger)", dashed: true },
-              { label: "Vous",        values: RADAR_YOU,         color: "var(--accent-primary)" },
-            ]}
-            size={420}
-          />
-        </div>
+          <div className="mt-6 flex items-center justify-between border-t border-[var(--border-subtle)] pt-4">
+            <span className="text-[12px] text-[var(--text-muted)]">
+              Score global : <span className="font-semibold text-[var(--text-primary)]">48%</span>
+            </span>
+            <span className="text-[12px] text-[var(--text-muted)]">
+              Moyenne concurrents : <span className="font-semibold text-[var(--text-primary)]">94%</span>
+            </span>
+          </div>
+        </section>
 
-        <div className="mt-2 flex items-center justify-center gap-6">
-          <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-            <span className="h-2 w-4 rounded-full" style={{ background: "var(--color-danger)" }} />
-            Concurrents
-          </span>
-          <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-            <span className="h-2 w-4 rounded-full" style={{ background: "var(--accent-primary)" }} />
-            Vous
-          </span>
-        </div>
+        {/* Right — Évolution historique (métrique + range configurables) */}
+        <section className="rounded-3xl bg-[var(--bg-card)] p-7 flex flex-col">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            {/* Left — Title + valeur courante immédiatement dessous */}
+            <div>
+              <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
+                Évolution historique
+              </h2>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-[24px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">{evoCfg.format(evoLast)}</span>
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+                  style={{
+                    color: evoDelta >= 0 ? "var(--color-success)" : "var(--color-danger)",
+                    backgroundColor: evoDelta >= 0 ? "var(--color-success-bg)" : "var(--color-danger-bg)",
+                  }}
+                >
+                  {evoDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {evoDelta >= 0 ? "+" : ""}{evoCfg.format(Math.abs(evoDelta))} ({evoDelta >= 0 ? "+" : ""}{evoDeltaPct}%)
+                </span>
+              </div>
+            </div>
 
-        <div className="mt-6 flex items-center justify-between border-t border-[var(--border-subtle)] pt-4">
-          <span className="text-[12px] text-[var(--text-muted)]">
-            Score global : <span className="font-semibold text-[var(--text-primary)]">48%</span>
-          </span>
-          <span className="text-[12px] text-[var(--text-muted)]">
-            Moyenne concurrents : <span className="font-semibold text-[var(--text-primary)]">94%</span>
-          </span>
-        </div>
-      </section>
+            {/* Right — dropdowns alignés top */}
+            <div className="flex items-center gap-2">
+              {/* Dropdown métrique */}
+              <DropdownMenu
+                width={200}
+                trigger={
+                  <button className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
+                    {evoCfg.label}
+                    <ChevronDown className="h-3 w-3 text-[var(--text-muted)]" />
+                  </button>
+                }
+              >
+                {(Object.entries(EVO_METRIC_CONFIG) as [EvoMetric, typeof EVO_METRIC_CONFIG[EvoMetric]][]).map(([k, c]) => (
+                  <DropdownItem key={k} onClick={() => setEvoMetric(k)}>
+                    <span className={evoMetric === k ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+              {/* Dropdown range */}
+              <DropdownMenu
+                width={140}
+                trigger={
+                  <button className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
+                    {evoRangeCfg.label}
+                    <ChevronDown className="h-3 w-3 text-[var(--text-muted)]" />
+                  </button>
+                }
+              >
+                {(Object.entries(EVO_RANGE_CONFIG) as [EvoRange, typeof EVO_RANGE_CONFIG[EvoRange]][]).map(([k, c]) => (
+                  <DropdownItem key={k} onClick={() => setEvoRange(k)}>
+                    <span className={evoRange === k ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-[220px]">
+            <LineDotChart
+              key={`${evoMetric}-${evoRange}`}
+              data={evoData}
+              fillHeight
+              yTicks={5}
+              yMin={0}
+              yMax={evoCfg.yMax}
+              formatValue={evoCfg.format}
+            />
+          </div>
+        </section>
+
+      </div>
 
       {/* ════════════════ 03. Profil des liens (Follow + Texte) ════════════════ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -607,25 +739,25 @@ export function NetlinkingView() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="rounded-3xl bg-[var(--bg-card)] p-7">
           <div className="mb-5 flex items-baseline justify-between">
-            <h3 className="text-[15px] font-semibold tracking-subheading text-[var(--text-primary)]">
+            <h3 className="font-semibold tracking-subheading text-[var(--text-primary)]">
               Distribution par pays
             </h3>
             <span className="text-[11px] text-[var(--text-muted)]">vs 5 concurrents</span>
           </div>
           <div className="divide-y divide-[var(--border-subtle)]">
             {COUNTRIES.map((c) => (
-              <GeoRowItem key={c.code + c.label} row={c} max={100} />
+              <GeoRowItem key={c.code + c.label} row={c} max={100} kind="country" />
             ))}
           </div>
         </section>
 
         <section className="rounded-3xl bg-[var(--bg-card)] p-7">
-          <h3 className="mb-5 text-[15px] font-semibold tracking-subheading text-[var(--text-primary)]">
+          <h3 className="mb-5 font-semibold tracking-subheading text-[var(--text-primary)]">
             Distribution par langue
           </h3>
           <div className="divide-y divide-[var(--border-subtle)]">
             {LANGUAGES.map((l) => (
-              <GeoRowItem key={l.code + l.label} row={l} max={100} />
+              <GeoRowItem key={l.code + l.label} row={l} max={100} kind="language" />
             ))}
           </div>
         </section>
@@ -633,66 +765,61 @@ export function NetlinkingView() {
 
       {/* ════════════════ 06. Insights géographiques ════════════════ */}
       <section className="rounded-3xl bg-[var(--bg-card)] p-7">
-        <h3 className="mb-4 text-[15px] font-semibold tracking-subheading text-[var(--text-primary)]">
+        <h3 className="mb-5 font-semibold tracking-subheading text-[var(--text-primary)]">
           Insights géographiques
         </h3>
-        <div className="flex flex-col gap-2">
-          <AIInsight>
-            Principal pays source : <strong>États-Unis</strong> (83 % des backlinks).
-          </AIInsight>
-          <AIInsight>
-            Langue dominante : <strong>Français</strong> (57 %).
-          </AIInsight>
-          <AIInsight>
-            Diversité : <strong>3 pays</strong> sources de backlinks.
-          </AIInsight>
-        </div>
-      </section>
-
-      {/* ════════════════ 07. Évolution Trust Flow ════════════════ */}
-      <section className="rounded-3xl bg-[var(--bg-card)] p-7">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
-              Évolution historique
-            </h2>
-            <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
-              Trust Flow · 12 derniers mois · {TF_HISTORY.length} points
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {/* Card 1 — Principal pays */}
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <span className="text-[26px] leading-none" aria-hidden="true">🇺🇸</span>
+            </div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Pays source #1</p>
+            <p className="mt-1 text-[20px] font-semibold leading-tight text-[var(--text-primary)]">États-Unis</p>
+            <p className="mt-1 text-[12px] text-[var(--text-secondary)]">
+              <span className="font-semibold tabular-nums text-[var(--text-primary)]">83 %</span> des backlinks
             </p>
           </div>
-          <div className="flex items-center gap-4 text-right">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Trust Flow</p>
-              <p className="mt-0.5 text-[22px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">{tfLast}</p>
+
+          {/* Card 2 — Langue dominante */}
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">
+                <Languages className="h-4 w-4" />
+              </div>
+              <span className="text-[26px] leading-none" aria-hidden="true">🇫🇷</span>
             </div>
-            <span
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold tabular-nums"
-              style={{
-                color: tfDelta >= 0 ? "var(--color-success)" : "var(--color-danger)",
-                backgroundColor: tfDelta >= 0 ? "var(--color-success-bg)" : "var(--color-danger-bg)",
-              }}
-            >
-              {tfDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {tfDelta >= 0 ? "+" : ""}{tfDelta} ({tfDelta >= 0 ? "+" : ""}{tfDeltaPct}%)
-            </span>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Langue dominante</p>
+            <p className="mt-1 text-[20px] font-semibold leading-tight text-[var(--text-primary)]">Français</p>
+            <p className="mt-1 text-[12px] text-[var(--text-secondary)]">
+              <span className="font-semibold tabular-nums text-[var(--text-primary)]">57 %</span> du profil
+            </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 mb-3 text-[11px] text-[var(--text-muted)]">
-          <span>Min : <span className="font-semibold text-[var(--text-primary)] tabular-nums">{tfMin}</span></span>
-          <span>·</span>
-          <span>Max : <span className="font-semibold text-[var(--text-primary)] tabular-nums">{tfMax}</span></span>
-        </div>
-
-        <div className="h-[220px]">
-          <LineDotChart data={TF_HISTORY} fillHeight yTicks={5} formatValue={(v) => v.toString()} />
+          {/* Card 3 — Diversité */}
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">
+                <Network className="h-4 w-4" />
+              </div>
+              <span className="rounded-full bg-[var(--color-warning-bg)] px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--color-warning)]">faible</span>
+            </div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Diversité géo</p>
+            <p className="mt-1 text-[20px] font-semibold leading-tight tabular-nums text-[var(--text-primary)]">3 pays</p>
+            <p className="mt-1 text-[12px] text-[var(--text-secondary)]">
+              sources de backlinks
+            </p>
+          </div>
         </div>
       </section>
 
       {/* ════════════════ 08. Topical Trust Flow ════════════════ */}
       <section className="rounded-3xl bg-[var(--bg-card)] p-7">
         <div className="mb-6">
-          <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
             Topical Trust Flow
           </h2>
           <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
@@ -704,7 +831,7 @@ export function NetlinkingView() {
           {/* Vos thématiques */}
           <div>
             <div className="mb-4 flex items-baseline gap-2">
-              <h3 className="text-[14px] font-semibold text-[var(--text-primary)]">Vos thématiques</h3>
+              <h3 className="font-semibold text-[var(--text-primary)]">Vos thématiques</h3>
               <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-[var(--text-secondary)]">
                 {YOUR_TOPICS.length}
               </span>
@@ -721,7 +848,7 @@ export function NetlinkingView() {
           {/* Thématiques concurrents */}
           <div>
             <div className="mb-4">
-              <h3 className="text-[14px] font-semibold text-[var(--text-primary)]">Thématiques concurrents</h3>
+              <h3 className="font-semibold text-[var(--text-primary)]">Thématiques concurrents</h3>
             </div>
             <div className="flex flex-col gap-2.5">
               {COMP_TOPICS.map((t) => {
@@ -759,7 +886,7 @@ export function NetlinkingView() {
       <section className="rounded-3xl bg-[var(--bg-card)] p-7">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+            <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
               Distribution des ancres
             </h2>
             <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
@@ -776,7 +903,7 @@ export function NetlinkingView() {
 
         <div className="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
           <div>
-            <h3 className="mb-3 text-[14px] font-semibold text-[var(--text-primary)]">Top ancres</h3>
+            <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Top ancres</h3>
             <ul className="divide-y divide-[var(--border-subtle)]">
               {TOP_ANCHORS.map((a, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-2.5">
@@ -811,7 +938,7 @@ export function NetlinkingView() {
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+            <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
               Backlinks
             </h2>
             <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
@@ -940,7 +1067,7 @@ export function NetlinkingView() {
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+            <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
               Benchmark SEO — Visibilité
             </h2>
             <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">

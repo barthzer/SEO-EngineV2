@@ -15,10 +15,37 @@ interface Props {
   upward?: boolean;
 }
 
+/** Lecture des durées CSS pour synchroniser les setTimeout avec --dropdown-close-dur */
+function readMs(name: string, fallback: number): number {
+  if (typeof window === "undefined") return fallback;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export function DropdownMenu({ trigger, children, align = "left", width = 240, matchTrigger = false, upward = false }: Props) {
+  // 3 states : closed (mounted=false) / open / closing
+  // closing : on garde le DOM monté pendant la close transition, puis on retire
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top?: number; bottom?: number; left: number; width: number | "auto" }>({ left: 0, width });
   const triggerRef = useRef<HTMLDivElement>(null);
+
+  function openDropdown() {
+    setMounted(true);
+    // tick suivant pour que la transition .is-open joue depuis l'état pré-open
+    requestAnimationFrame(() => setOpen(true));
+  }
+  function closeDropdown() {
+    if (!mounted) return;
+    setOpen(false); // déclenche .is-closing
+    const closeMs = readMs("--dropdown-close-dur", 150);
+    setTimeout(() => setMounted(false), closeMs);
+  }
+  function toggle() {
+    if (mounted && open) closeDropdown();
+    else openDropdown();
+  }
 
   useEffect(() => {
     if (!open || !triggerRef.current) return;
@@ -32,17 +59,25 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
     });
   }, [open, align, width, matchTrigger, upward]);
 
+  /** Origin-aware : map align + upward → data-origin du skill */
+  const origin = (() => {
+    const v = upward ? "bottom" : "top";
+    const h = align === "right" ? "right" : "left";
+    return `${v}-${h}` as const;
+  })();
+
   return (
-    <DropdownCtx.Provider value={{ close: () => setOpen(false) }}>
-      <div ref={triggerRef} onClick={() => setOpen((o) => !o)}>
-        {typeof trigger === "function" ? trigger(open) : trigger}
+    <DropdownCtx.Provider value={{ close: closeDropdown }}>
+      <div ref={triggerRef} onClick={toggle}>
+        {typeof trigger === "function" ? trigger(mounted && open) : trigger}
       </div>
 
-      {open && typeof window !== "undefined" && createPortal(
+      {mounted && typeof window !== "undefined" && createPortal(
         <>
-          <div className="fixed inset-0 z-[1100]" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-[1100]" onClick={closeDropdown} />
           <div
-            className={`fixed z-[1101] rounded-2xl p-2 shadow-[var(--shadow-floating)] ${upward ? "animate-dropdown-up" : "animate-dropdown-down"}`}
+            data-origin={origin}
+            className={`t-dropdown ${open ? "is-open" : "is-closing"} fixed z-[1101] rounded-2xl p-2 shadow-[var(--shadow-floating)]`}
             style={{
               top: coords.top,
               bottom: coords.bottom,
@@ -52,7 +87,6 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
               backgroundColor: "var(--dropdown-bg)",
               backdropFilter: "saturate(180%) blur(24px)",
               WebkitBackdropFilter: "saturate(180%) blur(24px)",
-              transformOrigin: upward ? "bottom center" : "top center",
             }}
           >
             {children}

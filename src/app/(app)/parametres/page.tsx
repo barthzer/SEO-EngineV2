@@ -274,7 +274,7 @@ export default function ParametresPage() {
 
       {/* Header */}
       <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)] pt-[var(--page-py)] pb-4">
-        <h1 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+        <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
           Paramètres
         </h1>
       </div>

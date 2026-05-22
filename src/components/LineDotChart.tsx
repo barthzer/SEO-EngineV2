@@ -21,6 +21,10 @@ interface LineDotChartProps {
   yTicks?: number;
   /** Width reserved for Y axis labels on the left */
   yAxisWidth?: number;
+  /** Force min on Y axis (sinon = min des données). Utile pour aplatir les variations en partant de 0. */
+  yMin?: number;
+  /** Force max on Y axis (sinon = max des données) */
+  yMax?: number;
 }
 
 export function LineDotChart({
@@ -40,6 +44,8 @@ export function LineDotChart({
   },
   yTicks = 4,
   yAxisWidth = 36,
+  yMin: yMinProp,
+  yMax: yMaxProp,
 }: LineDotChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -70,8 +76,8 @@ export function LineDotChart({
   const chartH = height - PAD_TOP - PAD_BOTTOM;
 
   const vals = data.map((d) => d.val);
-  const minV = Math.min(...vals);
-  const maxV = Math.max(...vals);
+  const minV = yMinProp ?? Math.min(...vals);
+  const maxV = yMaxProp ?? Math.max(...vals);
   const range = maxV - minV || 1;
 
   const yFor = (v: number) => {
@@ -182,19 +188,27 @@ export function LineDotChart({
           strokeLinejoin="round"
         />
 
-        {/* Date labels under each point — short month-only by default */}
-        {pts.map((p, i) => (
-          <text
-            key={i}
-            x={p.x}
-            y={height - 4}
-            textAnchor="middle"
-            fontSize={12}
-            fill="var(--text-muted)"
-          >
-            {formatXLabel(p.date)}
-          </text>
-        ))}
+        {/* Date labels — thinned out pour éviter overlap (max ~7 labels affichés) */}
+        {(() => {
+          const targetLabels = 7;
+          const step = Math.max(1, Math.ceil(pts.length / targetLabels));
+          return pts.map((p, i) => {
+            const show = i % step === 0 || i === pts.length - 1;
+            if (!show) return null;
+            return (
+              <text
+                key={i}
+                x={p.x}
+                y={height - 4}
+                textAnchor="middle"
+                fontSize={12}
+                fill="var(--text-muted)"
+              >
+                {formatXLabel(p.date)}
+              </text>
+            );
+          });
+        })()}
 
         {/* Dots */}
         {pts.map((p, i) => (

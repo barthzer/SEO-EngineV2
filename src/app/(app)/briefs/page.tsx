@@ -20,10 +20,10 @@ export default function BriefsPage() {
           Projets
         </Link>
         <span className="text-[11px] font-medium text-accent-primary">
-          Niveau 3 — Briefs
+          Niveau 3 — Analyses
         </span>
-        <h1 className="mt-1.5 text-[28px] font-semibold tracking-tight text-[var(--text-primary)]">
-          Briefs SEO
+        <h1 className="mt-1.5 font-semibold tracking-tight text-[var(--text-primary)]">
+          Analyses SEO
         </h1>
         <p className="mt-1 text-[13px] text-[var(--text-muted)]">
           {counts.optimiser} à optimiser · {counts.combler} gaps · {counts.creer} à créer

@@ -188,7 +188,7 @@ const durations = [
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="border-t border-[var(--border-subtle)] py-12">
-      <h2 className="mb-6 text-[22px] font-semibold text-[var(--text-primary)]">{title}</h2>
+      <h2 className="mb-6 font-semibold text-[var(--text-primary)]">{title}</h2>
       {children}
     </section>
   );
@@ -234,7 +234,7 @@ function ViewFondations() {
         <div className="flex flex-col gap-10">
           {colorGroups.map((group) => (
             <div key={group.title}>
-              <h3 className="mb-1 text-[15px] font-semibold text-[var(--text-primary)]">{group.title}</h3>
+              <h3 className="mb-1 font-semibold text-[var(--text-primary)]">{group.title}</h3>
               <p className="mb-4 text-[13px] text-[var(--text-secondary)]">{group.description}</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {group.tokens.map((t) => (
@@ -249,7 +249,7 @@ function ViewFondations() {
       <Section id="typography" title="Typographie">
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
-            <h3 className="mb-3 text-[15px] font-semibold text-[var(--text-primary)]">Échelle</h3>
+            <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Échelle</h3>
             <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
               {fontSizes.map((s) => (
                 <div key={s.size} className="flex items-baseline gap-4 border-b border-[var(--border-subtle)] py-2 last:border-0">
@@ -261,7 +261,7 @@ function ViewFondations() {
             </div>
           </div>
           <div>
-            <h3 className="mb-3 text-[15px] font-semibold text-[var(--text-primary)]">Graisses</h3>
+            <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Graisses</h3>
             <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
               {fontWeights.map((w) => (
                 <div key={w.label} className="flex items-baseline justify-between border-b border-[var(--border-subtle)] py-2 last:border-0">
@@ -274,7 +274,7 @@ function ViewFondations() {
         </div>
 
         <div className="mt-10">
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--text-primary)]">Kerning (letter-spacing)</h3>
+          <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Kerning (letter-spacing)</h3>
           <p className="mb-4 text-[13px] tracking-body text-[var(--text-secondary)]">
             Règle : <strong>plus le texte est grand, plus le kerning est resserré (négatif)</strong>.
             Les titres et chiffres clés respirent en se compactant ; les petits textes restent lisibles avec un kerning quasi neutre.
@@ -294,7 +294,7 @@ function ViewFondations() {
                 <span className="font-mono text-[11px] text-[var(--text-muted)]">{row.value}</span>
                 <span className="font-mono text-[11px] text-[var(--text-muted)]">{row.size}</span>
                 <span className="text-[12px] text-[var(--text-secondary)]">{row.usage}</span>
-                <span className={`text-[18px] font-semibold text-[var(--text-primary)] ${row.cls}`}>Briefs SEO</span>
+                <span className={`text-[18px] font-semibold text-[var(--text-primary)] ${row.cls}`}>Analyses SEO</span>
               </div>
             ))}
           </div>
@@ -339,7 +339,7 @@ function ViewFondations() {
       </Section>
 
       <Section id="motion" title="Mouvement">
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--text-primary)]">Easings</h3>
+        <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Easings</h3>
         <div className="mb-8 grid gap-3 md:grid-cols-3">
           {easings.map((e) => (
             <div key={e.token} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
@@ -349,7 +349,7 @@ function ViewFondations() {
             </div>
           ))}
         </div>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--text-primary)]">Durées</h3>
+        <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Durées</h3>
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
           {durations.map((d) => (
             <div key={d.token} className="flex items-center gap-4 border-b border-[var(--border-subtle)] py-2 last:border-0">
@@ -523,7 +523,7 @@ function ViewAtomes() {
                 { key: "all", label: "Tous" },
                 { key: "a", label: "Tag SEO", color: "var(--accent-primary)", count: 8 },
                 { key: "b", label: "Tag Blog", color: "var(--color-success)", count: 5 },
-                { key: "c", label: "Sans tag" },
+                { key: "c", label: "Sans lot" },
               ]}
               value={filterTab}
               onChange={setFilterTab}
@@ -683,7 +683,7 @@ function ViewAtomes() {
                 color: "#3265FF", colorBg: "rgba(50,101,255,0.08)",
                 title: "Optimiser l'existant",
                 description: "Scoring auto, priorisation, brief d'optimisation",
-                features: ["Brief EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"],
+                features: ["Analyse EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"],
                 cta: "#",
                 iconPaths: (fill: string) => (<>
                   <path fillRule="evenodd" fill={fill} d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75Z" clipRule="evenodd" />
@@ -705,7 +705,7 @@ function ViewAtomes() {
                 color: "var(--accent-primary)", colorBg: "rgba(62,80,245,0.08)",
                 title: "Créer page from scratch",
                 description: "Mot-clé + type de page, filtre SERP automatique",
-                features: ["Recherche de mots-clés","Brief IA complet","Structure d'URL","Maillage cible","Calendrier éditorial"],
+                features: ["Recherche de mots-clés","Analyse IA complète","Structure d'URL","Maillage cible","Calendrier éditorial"],
                 cta: "#",
                 iconPaths: (fill: string) => (<>
                   <path fillRule="evenodd" fill={fill} d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clipRule="evenodd" />
@@ -1373,7 +1373,7 @@ export default function StyleGuidePage() {
       <header className="sticky top-0 z-10 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/90 px-8 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div>
-            <h1 className="text-[19px] font-semibold text-[var(--text-primary)]">Design System</h1>
+            <h1 className="font-semibold text-[var(--text-primary)]">Design System</h1>
             <p className="text-[12px] text-[var(--text-secondary)]">
               Tokens · Atomes · Molécules ·{" "}
               <span className="font-mono text-[var(--text-muted)]">tokens-brand.css</span>

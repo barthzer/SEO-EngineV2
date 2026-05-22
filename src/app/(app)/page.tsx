@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useModalTransition } from "@/hooks/useModalTransition";
 import { SkeletonAnalysisCard } from "@/components/Skeleton";
 import Link from "next/link";
 import { useDrawer } from "@/context/DrawerContext";
@@ -272,7 +273,7 @@ function AnalysisCard({
           <p className="text-[10px] text-[var(--text-muted)]">vs N−1</p>
         </div>
         <div className="flex flex-col gap-1.5 px-1 py-1">
-          <p className="text-[10px] text-[var(--text-muted)]">Tags actifs</p>
+          <p className="text-[10px] text-[var(--text-muted)]">Lots actifs</p>
           <p className="text-[18px] font-semibold leading-none text-[var(--text-primary)]">{a.tagsActifs}</p>
         </div>
         <div className="flex flex-col gap-1.5 px-1 py-1">
@@ -315,13 +316,11 @@ function AnalyseModal({
   const [domain, setDomain]   = useState("");
   const [freq, setFreq]       = useState("mensuelle");
   const dialogRef             = useRef<HTMLDivElement>(null);
+  const { phase, requestClose } = useModalTransition(onClose);
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement;
-    document.body.style.overflow = "hidden";
-
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") { onClose(); return; }
       if (e.key === "Tab" && dialogRef.current) {
         const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
           'button, input, select, a[href], [tabindex]:not([tabindex="-1"])',
@@ -332,40 +331,41 @@ function AnalyseModal({
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     }
-
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+  }, []);
 
   function handleCreate() {
-    if (domain.trim()) { onAnalyse(domain.trim()); onClose(); }
+    if (domain.trim()) { onAnalyse(domain.trim()); requestClose(); }
   }
+
+  const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
+  const modalClass   = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
 
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className={`t-modal-overlay ${overlayClass} fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+      onClick={(e) => e.target === e.currentTarget && requestClose()}
     >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="w-full max-w-lg rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]"
+        className={`t-modal ${modalClass} w-full max-w-lg rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
       >
-        <Stepper steps={2} current={step} onClose={onClose} />
+        <Stepper steps={2} current={step} onClose={requestClose} />
 
         {/* Logo + title */}
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-5 flex h-11 w-11 items-center justify-center bg-accent-primary" style={{ borderRadius: "30%" }}>
             <SeoEngineLogo className="h-6 w-6 text-white" />
           </div>
-          <h2 id="modal-title" className="text-[26px] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h2 id="modal-title" className="font-semibold tracking-tight text-[var(--text-primary)]">
             {step === 1 ? "Nouveau projet" : "Fréquence d'analyse"}
           </h2>
           <p className="mt-1.5 text-[13px] text-[var(--text-muted)]">
@@ -476,7 +476,7 @@ export default function DashboardPage() {
 
         {/* Header */}
         <div className="mb-5">
-          <h1 className="mb-1 text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+          <h1 className="mb-1 font-semibold leading-none tracking-heading text-[var(--text-primary)]">
             Vos projets
           </h1>
           <p className="mb-5 text-[14px] tracking-body text-[var(--text-secondary)]">

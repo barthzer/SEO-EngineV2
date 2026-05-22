@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useModalTransition } from "@/hooks/useModalTransition";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { use } from "react";
@@ -47,6 +48,7 @@ import {
   ArrowsPointingOutIcon,
   PlusIcon,
   ArrowUpTrayIcon,
+  ExclamationCircleIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -860,7 +862,7 @@ function TopPages() {
 function ForecastTimeline() {
   const steps = [
     { month: "M+1", action: "Optimisation technique", gain: "+5 %", color: "var(--color-danger)", done: false },
-    { month: "M+2", action: "Briefs Bloc 01 publiés", gain: "+12 %", color: "var(--color-warning)", done: false },
+    { month: "M+2", action: "Analyses Bloc 01 publiées", gain: "+12 %", color: "var(--color-warning)", done: false },
     { month: "M+3", action: "Maillage interne déployé", gain: "+22 %", color: "var(--color-success)", done: false },
     { month: "M+6", action: "Plan complet exécuté", gain: "+38 %", color: "var(--accent-primary)", done: false },
   ];
@@ -926,7 +928,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "netlinking",       label: "Netlinking" },
   { key: "cannibal",         label: "Cannibalisation" },
   { key: "univers",          label: "Univers sémantique" },
-  { key: "recommandations",  label: "Recommandations" },
+  { key: "recommandations",  label: "Études de mots-clés" },
   { key: "audit",            label: "Audit" },
 ];
 
@@ -940,7 +942,7 @@ const TAB_TITLES: Record<Tab, string> = {
   netlinking: "Netlinking",
   cannibal:   "Cannibalisation",
   univers:        "Univers sémantique",
-  recommandations: "Recommandations",
+  recommandations: "Études de mots-clés",
   audit:          "Audit",
 };
 
@@ -948,7 +950,7 @@ const TAB_SUBTITLES: Partial<Record<Tab, string>> = {
   cannibal: "Pages en conflit de positionnement — dilution du trafic et des signaux de pertinence.",
   univers:  "Identifiez les opportunités de contenu et résolvez les cannibalisations pour améliorer votre SEO.",
   tracking: "8 mots-clés · Dernier check : 04 mai, 14:00",
-  recommandations: "Étude de mots-clés croisée avec vos concurrents — pages à créer et briefs priorisés.",
+  recommandations: "Étude de mots-clés croisée avec vos concurrents — pages à créer et analyses priorisées.",
 };
 
 /* ── GSC Import ──────────────────────────────────────────────────────── */
@@ -1159,17 +1161,22 @@ function TreeNodeItem({ node, depth = 0, selected, expanded, onSelect, onToggle 
 /* ── Shared modal shell ──────────────────────────────────────────────── */
 
 function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  }, [onClose]);
+  const { phase, requestClose } = useModalTransition(onClose);
   if (typeof document === "undefined") return null;
+  const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
+  const modalClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
   return createPortal(
-    <div role="presentation" className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" className="relative w-full max-w-[480px] rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
-        <button onClick={onClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
+    <div
+      role="presentation"
+      className={`t-modal-overlay ${overlayClass} fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+      onClick={(e) => e.target === e.currentTarget && requestClose()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`t-modal ${modalClass} relative w-full max-w-[480px] rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
+      >
+        <button onClick={requestClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
           <XMarkIcon className="h-5 w-5" />
         </button>
         {children}
@@ -1243,7 +1250,7 @@ function ImportCSVModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 text-[22px] font-semibold tracking-heading text-[var(--text-primary)]">Importer des URLs</h2>
+      <h2 className="pr-10 font-semibold tracking-heading text-[var(--text-primary)]">Importer des URLs</h2>
       <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">Choisissez votre méthode d'importation</p>
 
       <div className="mt-5 flex items-center gap-1 rounded-2xl bg-[var(--bg-secondary)] p-1">
@@ -1336,7 +1343,7 @@ function AddUrlModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">Ajouter une URL manuellement</h2>
+      <h2 className="pr-10 font-semibold tracking-tight text-[var(--text-primary)]">Ajouter une URL manuellement</h2>
       <p className="mt-1 text-[13px] text-[var(--text-muted)]">Pour les pages hors GSC (nouvelle page, concurrent, etc.)</p>
       <div className="mt-6 flex flex-col gap-4">
         <FormField label="URL" required>
@@ -1379,8 +1386,8 @@ function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () => void; 
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">Créer un Brief SEO</h2>
-      <p className="mt-1 text-[13px] text-[var(--text-muted)]">Générez un brief complet pour un nouveau contenu (mot-clé sans page existante)</p>
+      <h2 className="pr-10 font-semibold tracking-tight text-[var(--text-primary)]">Créer une analyse SEO</h2>
+      <p className="mt-1 text-[13px] text-[var(--text-muted)]">Générez une analyse complète pour un nouveau contenu (mot-clé sans page existante)</p>
       <div className="mt-6 flex flex-col gap-4">
         <FormField label="Mot-clé cible" required>
           <input type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="ex : meilleur aspirateur sans fil" autoFocus className={fieldCls} />
@@ -1411,7 +1418,7 @@ function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () => void; 
             <rect x="7.25" y="4" width="1.5" height="1.5" rx="0.75" fill="var(--text-muted)" />
           </svg>
           <p className="text-[12px] leading-relaxed text-[var(--text-muted)]">
-            Le brief analysera la SERP et générera : intention de recherche, structure recommandée, thématiques à couvrir, Top 3 concurrents.
+            L'analyse couvrira la SERP et générera : intention de recherche, structure recommandée, thématiques à couvrir, Top 3 concurrents.
           </p>
         </div>
       </div>
@@ -1419,7 +1426,7 @@ function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () => void; 
         <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
         <Button disabled={!keyword.trim()} onClick={onClose}>
           <SparklesIcon className="h-4 w-4" />
-          Générer le Brief
+          Générer l'analyse
         </Button>
       </div>
     </ModalShell>
@@ -1477,7 +1484,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
         {/* ── Step 1 — Méthode ── */}
         {step === 1 && (
           <div>
-            <h2 className="mb-6 text-center text-[26px] font-semibold tracking-tight text-[var(--text-primary)]">Comment voulez-vous importer vos pages ?</h2>
+            <h2 className="mb-6 text-center font-semibold tracking-tight text-[var(--text-primary)]">Comment voulez-vous importer vos pages ?</h2>
             <div className="grid grid-cols-2 gap-3">
               {IMPORT_TYPES.map((t) => {
                 const active = importType === t.key;
@@ -1574,7 +1581,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
         {/* ── Step 2 — Filtres ── */}
         {step === 2 && (
           <div>
-            <h2 className="mb-6 text-center text-[26px] font-semibold tracking-tight text-[var(--text-primary)]">Filtrez votre import</h2>
+            <h2 className="mb-6 text-center font-semibold tracking-tight text-[var(--text-primary)]">Filtrez votre import</h2>
             <div className="space-y-5">
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -1681,7 +1688,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
             ) : (
               <>
                 <div className="mb-5 animate-slide-down text-center">
-                  <h2 className="text-[26px] font-semibold tracking-tight text-[var(--text-primary)]">{MOCK_PAGES.length} pages correspondent aux filtres !</h2>
+                  <h2 className="font-semibold tracking-tight text-[var(--text-primary)]">{MOCK_PAGES.length} pages correspondent aux filtres !</h2>
                   <p className="mt-1 text-[12px] text-[var(--text-muted)]">Données du 29/04/2026</p>
                 </div>
                 <div className="animate-slide-up overflow-hidden rounded-2xl border border-[var(--border-subtle)]" style={{ animationDelay: "60ms" }}>
@@ -1792,7 +1799,7 @@ function ConnectModal({ tool, onClose, onConnect }: { tool: Tool; onClose: () =>
           </button>
         </div>
 
-        <h2 className="mt-5 text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">
+        <h2 className="mt-5 font-semibold tracking-tight text-[var(--text-primary)]">
           Connecter {config.name}
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-muted)]">{config.description}</p>
@@ -1926,7 +1933,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
   const [templateText, setTemplateText] = useState("");
 
   const TEMPLATE_BRIEF = `# BRIEF MÉTIER CLIENT — [NOM DU CLIENT / SITE]
-# À remplir par le consultant SEO. Ce brief est injecté dans les prompts LLM
+# À remplir par le consultant SEO. Cette analyse est injectée dans les prompts LLM
 # pour contextualiser les recommandations au secteur et aux objectifs du client.
 
 ---
@@ -2056,7 +2063,7 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
             <p className="mb-4 text-[13px] text-[var(--text-muted)]">Ces documents adaptent les recommandations SEO à votre activité et vos standards rédactionnels.</p>
             <div className="flex flex-col gap-3">
               {([
-                { key: "brief" as const, title: "Brief Métier Client", configured: briefConfigured, fileName: "brief-metier.md", empty: "Aucun brief métier configuré", desc: "Ce brief adapte les recommandations SEO à votre activité.", onRemove: () => setBriefConfigured(false) },
+                { key: "brief" as const, title: "Analyse métier client", configured: briefConfigured, fileName: "brief-metier.md", empty: "Aucune analyse métier configurée", desc: "Cette analyse adapte les recommandations SEO à votre activité.", onRemove: () => setBriefConfigured(false) },
                 { key: "skill" as const, title: "Skill rédactionnel",  configured: skillConfigured, fileName: "skill-redactionnel.md", empty: "Aucun skill rédactionnel configuré", desc: "Définit le style, le ton et les règles de rédaction.", onRemove: () => setSkillConfigured(false) },
               ]).map((card) => (
                 <div key={card.title} className="rounded-2xl bg-[var(--bg-card)] p-5">
@@ -2193,8 +2200,8 @@ function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGsc, onTo
 
           {/* ── Tags du projet ────────────────────────────────────────── */}
           <div>
-            <p className="mb-1 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Tags du projet</p>
-            <p className="mb-4 text-[13px] text-[var(--text-muted)]">Catégorisez vos pages pour filtrer les recommandations et organiser vos briefs.</p>
+            <p className="mb-1 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Lots du projet</p>
+            <p className="mb-4 text-[13px] text-[var(--text-muted)]">Catégorisez vos pages pour filtrer les recommandations et organiser vos analyses.</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -2353,47 +2360,182 @@ function SemrushFileField({
   );
 }
 
+/** Stratégie de dédup pour les mots-clés déjà couverts par une URL existante.
+ *  Une étude = listing → l'utilisateur décide ensuite quoi créer.
+ *  - "skip"    : exclure les doublons du listing (recommandé)
+ *  - "include" : les inclure quand même, l'user verra le conflit dans la liste */
+type DedupeStrategy = "skip" | "include";
+
+/** Mock : mots-clés du projet déjà couverts par une URL/analyse existante */
+const EXISTING_KEYWORDS = [
+  "seo local", "audit seo", "core web vitals 2024", "maillage interne seo",
+  "brief seo template", "optimiser balise title", "schema markup",
+];
+
+/** Mock : aperçu des doublons détectés dans le CSV uploadé */
+const DETECTED_DUPLICATES = [
+  { keyword: "seo local",            existingUrl: "/blog/seo-local",                 lastAnalysis: "Il y a 8 jours" },
+  { keyword: "audit seo",            existingUrl: "/services/audit-seo",             lastAnalysis: "Il y a 3 jours" },
+  { keyword: "core web vitals 2024", existingUrl: "/blog/core-web-vitals",           lastAnalysis: "Il y a 12 jours" },
+  { keyword: "maillage interne seo", existingUrl: "/blog/maillage-interne",          lastAnalysis: "Il y a 5 jours" },
+  { keyword: "optimiser balise title", existingUrl: "/blog/balises-title-meta",      lastAnalysis: "Il y a 1 mois" },
+];
+
 function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; onLaunch: () => void }) {
   const [clientFile, setClientFile] = useState<File | null>(null);
   const [compFile,   setCompFile]   = useState<File | null>(null);
+  const [dedupeStrategy, setDedupeStrategy] = useState<DedupeStrategy>("skip");
+  const [showDupesList, setShowDupesList] = useState(false);
 
   const canLaunch = clientFile !== null;
+  const showDedupe = clientFile !== null;
+  const { phase, requestClose } = useModalTransition(onClose);
 
   function handleLaunch() {
     if (!canLaunch) return;
     onLaunch();
-    onClose();
+    requestClose();
   }
 
-  return (
-    <ModalShell onClose={onClose}>
-      <h2 className="pr-10 text-[22px] font-semibold tracking-heading text-[var(--text-primary)]">Identifier les pages manquantes</h2>
-      <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">
-        Détectez les mots-clés que vos concurrents ont et que vous n'avez pas.
-      </p>
+  const STRATEGY_OPTIONS: { key: DedupeStrategy; label: string; desc: string }[] = [
+    { key: "skip",    label: "Exclure du listing (recommandé)", desc: "Les mots-clés déjà exploités sur vos URLs n'apparaîtront pas dans le résultat de l'étude." },
+    { key: "include", label: "Inclure dans le listing",         desc: "Les doublons restent visibles, marqués comme déjà couverts. Utile pour détecter des conflits ou décider d'un refresh manuel." },
+  ];
 
-      <div className="mt-6 flex flex-col gap-4">
-        <SemrushFileField
-          label="Export Semrush — positions organiques du client"
-          required
-          file={clientFile}
-          onFile={setClientFile}
-        />
-        <SemrushFileField
-          label="Export Semrush — concurrent (optionnel)"
-          file={compFile}
-          onFile={setCompFile}
-        />
-      </div>
+  if (typeof document === "undefined") return null;
+  const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
+  const modalClass   = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
 
-      <div className="mt-6 flex items-center justify-end gap-3">
-        <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
-        <Button disabled={!canLaunch} onClick={handleLaunch}>
-          <LSparkles className="h-4 w-4" />
-          Lancer l'étude de mots-clés
-        </Button>
+  return createPortal(
+    <div
+      role="presentation"
+      className={`t-modal-overlay ${overlayClass} fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+      onClick={(e) => e.target === e.currentTarget && requestClose()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="t-modal ${modalClass} relative flex w-full max-w-[520px] max-h-[85vh] flex-col overflow-hidden rounded-3xl bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]"
+      >
+        <button
+          onClick={requestClose}
+          className="absolute right-6 top-6 z-10 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+        >
+          <XMarkIcon className="h-5 w-5" />
+        </button>
+
+        {/* Header */}
+        <div className="flex-shrink-0 px-8 pt-8 pb-4">
+          <h2 className="pr-10 font-semibold tracking-heading text-[var(--text-primary)]">Identifier les pages manquantes</h2>
+          <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">
+            Détectez les mots-clés que vos concurrents ont et que vous n'avez pas. Vous validerez chaque création d'URL et d'analyse ensuite.
+          </p>
+        </div>
+
+        {/* Body scrollable */}
+        <div className="flex-1 overflow-y-auto px-8 pb-2">
+          <div className="flex flex-col gap-4">
+            <SemrushFileField
+              label="Export Semrush — positions organiques du client"
+              required
+              file={clientFile}
+              onFile={setClientFile}
+            />
+            <SemrushFileField
+              label="Export Semrush — concurrent (optionnel)"
+              file={compFile}
+              onFile={setCompFile}
+            />
+          </div>
+
+          {showDedupe && (
+            <div className="mt-6 rounded-2xl bg-[var(--bg-subtle)] p-4">
+              <div className="flex items-start gap-3">
+                <ExclamationCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-warning)]" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-[var(--text-primary)]">
+                    <span className="tabular-nums">{DETECTED_DUPLICATES.length}</span> mots-clés déjà exploités détectés
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-[var(--text-secondary)]">
+                    Sur les {EXISTING_KEYWORDS.length}+ mots-clés actuellement couverts par vos URLs existantes. Comment les traiter dans le listing ?
+                  </p>
+
+                  <div className="mt-3 flex flex-col gap-2">
+                    {STRATEGY_OPTIONS.map((opt) => {
+                      const active = dedupeStrategy === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setDedupeStrategy(opt.key)}
+                          className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
+                            active
+                              ? "border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]"
+                              : "border-[var(--border-subtle)] bg-[var(--bg-card)] hover:border-[var(--border-medium)]"
+                          }`}
+                        >
+                          <span
+                            className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                              active ? "border-[var(--accent-primary)]" : "border-[var(--border-medium)]"
+                            }`}
+                          >
+                            {active && <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={`block text-[13px] font-medium ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+                              {opt.label}
+                            </span>
+                            <span className="mt-0.5 block text-[12px] tracking-caption text-[var(--text-muted)]">
+                              {opt.desc}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowDupesList((v) => !v)}
+                    className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--accent-primary)] transition-opacity hover:opacity-80"
+                  >
+                    {showDupesList ? "Masquer" : "Voir"} la liste des doublons détectés
+                    <ChevronDownIcon className={`h-3 w-3 transition-transform ${showDupesList ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {showDupesList && (
+                    <div className="mt-2 overflow-hidden rounded-xl bg-[var(--bg-card)]">
+                      {DETECTED_DUPLICATES.map((d, i) => (
+                        <div
+                          key={d.keyword}
+                          className={`grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 ${i < DETECTED_DUPLICATES.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-[12.5px] font-medium text-[var(--text-primary)]">{d.keyword}</p>
+                            <p className="truncate font-mono text-[10.5px] text-[var(--text-muted)]">{d.existingUrl}</p>
+                          </div>
+                          <span className="text-[10.5px] tracking-caption text-[var(--text-muted)]">{d.lastAnalysis}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer sticky avec separator */}
+        <div className="flex-shrink-0 flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] bg-[var(--modal-bg)] px-8 py-4">
+          <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
+          <Button disabled={!canLaunch} onClick={handleLaunch}>
+            <LSparkles className="h-4 w-4" />
+            Lancer l'étude de mots-clés
+          </Button>
+        </div>
       </div>
-    </ModalShell>
+    </div>,
+    document.body
   );
 }
 
@@ -2606,7 +2748,7 @@ function RecommandationsView({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           {title && (
-            <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h2>
+            <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h1>
           )}
           {subtitle && (
             <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>
@@ -2757,7 +2899,7 @@ function RecommandationsView({
             trailingAction={(r) => (
               <Button size="sm" onClick={(e) => { e.stopPropagation(); setBriefKeyword(r.keyword); }}>
                 <SparklesIcon className="h-3.5 w-3.5" />
-                Brief
+                Analyser
               </Button>
             )}
             trailingActionWidth={120}
@@ -2951,7 +3093,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           >
             <DropdownItem icon={Upload}     onClick={() => setUrlModal("import-csv")}>Importer des URLs</DropdownItem>
             <DropdownItem icon={LLink}      onClick={() => setUrlModal("add-url")}>Ajouter une URL</DropdownItem>
-            <DropdownItem icon={LSparkles}  onClick={() => setUrlModal("new-brief")}>Nouveau brief</DropdownItem>
+            <DropdownItem icon={LSparkles}  onClick={() => setUrlModal("new-brief")}>Nouvelle analyse</DropdownItem>
             <DropdownSeparator />
             <DropdownItem icon={Settings}   onClick={() => setParametresOpen(true)}>Paramètres du projet</DropdownItem>
             <DropdownSeparator />
@@ -2989,7 +3131,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
       {/* ── Tab content ── */}
       <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
         {loading ? <SkeletonAnalyseGeneral /> : null}
-        <div className={loading ? "hidden" : "animate-fade-in"}>
+        {/* key={tab} : force le remount du contenu actif → l'animation `t-tab-enter` rejoue
+            à chaque changement d'onglet (fade + slide + blur, ~200ms). */}
+        <div key={tab} className={loading ? "hidden" : "t-tab-enter"}>
 
         {/* Titre de la vue + sous-titre éventuel. Skipped pour briefs / tracking / univers /
             recommandations qui rendent leur propre header (title + CTAs sur la même ligne).
@@ -2998,9 +3142,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {!["briefs", "tracking", "univers", "recommandations"].includes(tab) && (
           <div className="mb-6">
             <div className="flex items-baseline gap-2">
-              <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+              <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
                 {TAB_TITLES[tab]}
-              </h2>
+              </h1>
               {tab === "general" && (
                 <Tooltip label="Ouvrir dans un nouvel onglet" side="top" portal>
                   <a
@@ -3009,17 +3153,17 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                     rel="noopener noreferrer"
                     className="group/proj inline-flex items-center gap-2 transition-colors"
                   >
-                    <span className="text-[24px] font-semibold leading-none tracking-heading text-[var(--accent-primary)] transition-opacity group-hover/proj:opacity-70">
+                    <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)] transition-opacity group-hover/proj:opacity-70">
                       {decodedDomain}
-                    </span>
-                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-[var(--accent-primary)] opacity-0 transition-opacity group-hover/proj:opacity-100" />
+                    </h1>
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-[var(--text-muted)] opacity-0 transition-opacity group-hover/proj:opacity-100" />
                   </a>
                 </Tooltip>
               )}
             </div>
             {tab === "general" && (gscConnected || ga4Connected) ? (
               <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
-                Mis à jour aujourd'hui · 133 pages crawlées
+                Mis à jour aujourd'hui · 133 pages crawlées · 12 pages non indexées
               </p>
             ) : TAB_SUBTITLES[tab] && (
               <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
@@ -3036,8 +3180,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             {/* Stats globales */}
             <KpiGroup columns={3}>
               <KpiCard bare icon={TrendingUp} label="Trafic organique / mois" value="42 800" delta="+8,4 %" sub="vs N−1" />
-              <KpiCard bare icon={LFolderOpen} label="Tags créés"              value="18"     sub="6 actifs · 12 terminés" />
-              <KpiCard bare icon={FileText}    label="Briefs générés"          value="147"    sub="63 livrés (43 %)" />
+              <KpiCard bare icon={LFolderOpen} label="Lots créés"              value="18"     sub="6 actifs · 12 terminés" />
+              <KpiCard bare icon={FileText}    label="Analyses générées"          value="147"    sub="63 livrés (43 %)" />
             </KpiGroup>
 
             {/* 3 blocs stratégiques (GEO retiré — conservé dans le DS pour usage futur) */}
@@ -3048,9 +3192,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   {
                     gradFrom: "#00CCFF", gradTo: "#3265FF", iconBottomColor: "#3265FF",
                     color: "#3265FF", colorBg: "rgba(50,101,255,0.08)",
-                    title: "Optimiser l'existant",
-                    description: "Scoring auto, priorisation, brief d'optimisation",
-                    features: ["Brief EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"],
+                    title: "Optimiser les pages existantes",
+                    description: "Scoring auto, priorisation, analyse d'optimisation",
+                    features: ["Analyse EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"],
                     cta: `/analyse/${encodeURIComponent(decodedDomain)}?tab=briefs`,
                     iconPaths: (fill: string) => (<>
                       <path fillRule="evenodd" fill={fill} d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z" clipRule="evenodd" />
@@ -3075,7 +3219,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                     color: "var(--accent-primary)", colorBg: "rgba(62,80,245,0.08)",
                     title: "Créer page from scratch",
                     description: "Mot-clé + type de page, filtre SERP automatique",
-                    features: ["Recherche de mots-clés","Brief IA complet","Structure d'URL","Maillage cible","Calendrier éditorial"],
+                    features: ["Recherche de mots-clés","Analyse IA complète","Structure d'URL","Maillage cible","Calendrier éditorial"],
                     onClick: () => setUrlModal("new-brief"),
                     iconPaths: (fill: string) => (<>
                       <path fillRule="evenodd" fill={fill} d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clipRule="evenodd" />
@@ -3088,8 +3232,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               </div>
             </div>
 
-            {/* Bilans santé — 2 cards cliquables avec hover bg (comme les Blocs stratégiques) */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Bilans santé — 3 cards cliquables avec hover bg (comme les Blocs stratégiques) */}
+            <div className="grid grid-cols-3 gap-3">
               <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
                 <HealthCard
                   title="Santé technique"
@@ -3110,6 +3254,18 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   quote="Vos 9 pages manquent de signaux E-E-A-T, exposant 1 361 visites/mois. Priorité : renforcer la crédibilité et l'expertise avant le prochain Core Update pour sécuriser ce trafic."
                   note="3 détecteurs avec données partielles"
                   ctaHref={`/analyse/${domain}/audit?tab=editorial`}
+                />
+              </div>
+              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
+                <HealthCard
+                  title="Santé Netlinking"
+                  score={48}
+                  critiques={1}
+                  importants={4}
+                  visitesRisk="2,3k"
+                  quote="Profil de backlinks sous-dimensionné face aux concurrents (TF 15 vs moyenne 32). Priorité : campagne d'outreach ciblée pour combler le gap d'autorité avant la prochaine vague de Core Update."
+                  note="Risque spam : −46% vs concurrents"
+                  ctaHref={`/analyse/${domain}?tab=netlinking`}
                 />
               </div>
             </div>
@@ -3195,7 +3351,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
             {/* Tags actifs */}
             <div>
-              <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Tags récents</p>
+              <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Lots récents</p>
               <TagList onNavigate={() => setTab("briefs")} />
             </div>
 
@@ -3207,11 +3363,11 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               </div>
               <div className="overflow-hidden rounded-2xl bg-[var(--bg-card)]">
                 {[
-                  { label: "Brief publié",      desc: "Guide SEO local complet · optimisé",          time: "Il y a 2h",  color: "var(--color-success)", Icon: FileText },
+                  { label: "Analyse publiée",      desc: "Guide SEO local complet · optimisé",          time: "Il y a 2h",  color: "var(--color-success)", Icon: FileText },
                   { label: "Score mis à jour",  desc: "Score sémantique /blog/link-building : 55 → 67", time: "Il y a 5h",  color: "var(--color-warning)", Icon: TrendingUp },
-                  { label: "Tag créé",          desc: "Tag GEO — Structured data · 6 URLs",          time: "Hier",       color: "#A855F7", Icon: LTag },
+                  { label: "Lot créé",          desc: "Lot GEO — Structured data · 6 URLs",          time: "Hier",       color: "#A855F7", Icon: LTag },
                   { label: "Analyse lancée",    desc: "Nouveau crawl GSC · 1 048 pages indexées",    time: "28 avr.",    color: "var(--accent-primary)", Icon: LPlay },
-                  { label: "Brief livré",       desc: "Schema.org et données structurées",           time: "27 avr.",    color: "var(--color-success)", Icon: CircleCheck },
+                  { label: "Analyse livrée",       desc: "Schema.org et données structurées",           time: "27 avr.",    color: "var(--color-success)", Icon: CircleCheck },
                 ].map((a, i, arr) => (
                   <button
                     key={i}

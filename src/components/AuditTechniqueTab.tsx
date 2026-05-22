@@ -315,7 +315,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
               <span className="text-[13px] text-[var(--text-muted)]">·</span>
               <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
             </div>
-            <h1 className="text-[32px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+            <h1 className="font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
               Site sain mais{" "}
               <span style={{ color: "var(--color-danger)" }}>~99 visites/mois</span>
               <br />menacées par 5 urgences techniques.
@@ -424,7 +424,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         {/* GSC × Crawl */}
         <div className="mb-4 overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
           <div className="mb-5 flex items-baseline justify-between">
-            <h3 className="text-[19px] font-semibold tracking-tight text-[var(--text-primary)]">
+            <h3 className="font-semibold tracking-tight text-[var(--text-primary)]">
               Croisement <span className="text-[var(--accent-primary)]">Crawl × GSC</span>
             </h3>
             <span className="text-[12px] text-[var(--text-muted)]">Snapshot · 27 avril 2026</span>

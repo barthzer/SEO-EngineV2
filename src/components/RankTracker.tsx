@@ -285,7 +285,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
         {/* Header — sticky */}
         <div className="flex flex-shrink-0 items-start justify-between gap-4 px-6 py-5">
           <div className="min-w-0">
-            <h2 className="truncate text-[24px] font-semibold tracking-heading text-[var(--text-primary)]">
+            <h2 className="truncate font-semibold tracking-heading text-[var(--text-primary)]">
               {kw.keyword}
             </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -438,7 +438,7 @@ function AddKwModal({ onClose, onAdd }: {
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
 
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
-          <h2 className="text-[17px] font-semibold text-[var(--text-primary)]">Ajouter des mots-clés</h2>
+          <h2 className="font-semibold text-[var(--text-primary)]">Ajouter des mots-clés</h2>
           <button onClick={onClose}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-secondary)]">
             <XMarkIcon className="h-4 w-4 text-[var(--text-muted)]" />
@@ -565,7 +565,7 @@ function ImportCsvModal({ onClose, onImport }: {
       <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
 
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
-          <h2 className="text-[17px] font-semibold tracking-subheading text-[var(--text-primary)]">Importer des mots-clés depuis un CSV</h2>
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Importer des mots-clés depuis un CSV</h2>
           <button onClick={onClose}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-secondary)]">
             <XMarkIcon className="h-4 w-4 text-[var(--text-muted)]" />
@@ -843,7 +843,7 @@ export function RankTracker({ title, subtitle }: { title?: string; subtitle?: st
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           {title && (
-            <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h2>
+            <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h1>
           )}
           {subtitle && (
             <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>

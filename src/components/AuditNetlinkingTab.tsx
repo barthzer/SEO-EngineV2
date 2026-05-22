@@ -331,7 +331,7 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                 <span className="text-[13px] text-[var(--text-muted)]">·</span>
                 <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
               </div>
-              <h1 className="text-[32px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+              <h1 className="font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
                 Profil de liens <span style={{ color: color48 }}>fragile</span>
                 <br />face aux concurrents
               </h1>

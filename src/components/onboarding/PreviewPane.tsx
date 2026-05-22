@@ -1,0 +1,161 @@
+"use client";
+
+import { LayoutDashboard, TrendingUp, ChevronRight, Search, Sparkles, Bot, FilePlus, Target, Network } from "lucide-react";
+import type { OnboardingData, OnboardingGoal } from "@/types/onboarding";
+
+const GOAL_META: Record<OnboardingGoal, { label: string; icon: React.ElementType; score: number; delta: number }> = {
+  audit:      { label: "Audit technique",   icon: Search,   score: 84, delta: +6 },
+  optimize:   { label: "Optimisation",      icon: Sparkles, score: 67, delta: +12 },
+  geo:        { label: "Visibilité IA",     icon: Bot,      score: 48, delta: -3 },
+  missing:    { label: "Pages manquantes",  icon: FilePlus, score: 23, delta: +18 },
+  tracking:   { label: "Tracking SERP",     icon: Target,   score: 91, delta: +2 },
+  netlinking: { label: "Netlinking",        icon: Network,  score: 56, delta: +8 },
+};
+
+/**
+ * Dashboard preview — pas une modale centrée, mais un vrai dashboard qui occupe
+ * la colonne droite, avec cards qui débordent légèrement à droite (effet "cropped product").
+ * Le gradient parent reste visible entre les cards.
+ */
+export function PreviewPane({ data, signedInName }: { data: OnboardingData; step: number; signedInName: string }) {
+  const workspaceTitle = data.workspaceName || `Espace ${signedInName}`;
+  const projectsCount = data.firstProjectDomain ? 1 : 0;
+  const moduleCount = data.goals.length;
+  const isProjectValid = data.firstProjectDomain && /^[a-z0-9-]+(\.[a-z]{2,})+$/i.test(data.firstProjectDomain);
+
+  return (
+    <div
+      className="ml-20 mt-24 h-full rounded-tl-[36px] p-3 pb-0 pr-0 backdrop-blur-md"
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.1) 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)",
+      }}
+    >
+    <div className="flex h-full flex-col gap-4 overflow-hidden rounded-tl-[28px] bg-[var(--bg-primary)] p-8 pb-0">
+      {/* ─── Header workspace minimal ─── */}
+      <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--accent-primary)] text-[13px] font-semibold text-white">
+          {(workspaceTitle.charAt(0) || "G").toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{workspaceTitle}</p>
+          <p className="text-[11px] text-[var(--text-muted)]">
+            {data.workspaceSlug ? `gse.app/${data.workspaceSlug}` : "Vue d'ensemble · Live"}
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-hidden="true"
+          className="pointer-events-none flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1 text-[11px] font-medium text-[var(--text-secondary)]"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+          Live
+        </button>
+      </div>
+
+      {/* ─── Title gros — comme un H1 de dashboard ─── */}
+      <h2 className="mt-8 text-[28px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
+        Vue d'ensemble
+      </h2>
+
+      {/* ─── KPI cards qui débordent à droite (effet dashboard cropped) ─── */}
+      <div className="mt-2 flex gap-3 overflow-hidden">
+        <KpiCard label="Projets surveillés" value={projectsCount.toString()} delta="+1" up />
+        <KpiCard label="Modules activés" value={moduleCount.toString()} delta={moduleCount > 0 ? `+${moduleCount}` : "—"} up={moduleCount > 0} />
+        <KpiCard label="Score moyen" value="72" delta="+8%" up />
+      </div>
+
+      {/* ─── Card principale : performance par module ─── */}
+      <div className="mt-4 rounded-2xl bg-white p-6 border border-[var(--border-subtle)]">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-[15px] font-semibold text-[#0C0C0C]">Performance par module</h3>
+          <ChevronRight className="h-4 w-4 text-[#A1A1AA]" />
+        </div>
+
+        {data.goals.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            {data.goals.map((g) => {
+              const { label, icon: Icon, score, delta } = GOAL_META[g];
+              const positive = delta >= 0;
+              return (
+                <div key={g} className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5] text-[#0C0C0C]">
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium text-[#0C0C0C]">{label}</p>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F4F4F5]">
+                      <div
+                        className="h-full rounded-full transition-all duration-700 ease-out"
+                        style={{
+                          width: `${score}%`,
+                          background:
+                            "linear-gradient(to right, color-mix(in oklab, var(--accent-primary) 50%, white), var(--accent-primary))",
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[14px] font-semibold tabular-nums text-[#0C0C0C]">{score}</span>
+                    <span className={`text-[10.5px] font-semibold tabular-nums ${positive ? "text-[#059669]" : "text-[#DC2626]"}`}>
+                      {positive ? "+" : ""}{delta}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[#E4E4E7] py-8 text-center">
+            <LayoutDashboard className="h-5 w-5 text-[#A1A1AA]" />
+            <p className="text-[12px] text-[#71717a]">Sélectionnez vos objectifs pour voir vos modules</p>
+          </div>
+        )}
+      </div>
+
+      {/* ─── Card secondaire : projet (dès domain valide) ─── */}
+      {isProjectValid && (
+        <div className="mt-2 rounded-2xl bg-white p-5 border border-[var(--border-subtle)]">
+          <div className="flex items-center gap-3">
+            <img
+              src={`https://www.google.com/s2/favicons?domain=${data.firstProjectDomain}&sz=64`}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 flex-shrink-0 rounded-lg border border-[#E4E4E7]"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-semibold text-[#0C0C0C]">{data.firstProjectDomain}</p>
+              <p className="text-[11px] text-[#71717a]">Analyse {data.analysisFrequency}</p>
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-semibold tabular-nums text-[#059669]">
+              <TrendingUp className="h-3 w-3" />
+              +12%
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1" />
+    </div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, delta, up }: { label: string; value: string; delta: string; up: boolean }) {
+  return (
+    <div className="flex-shrink-0 rounded-2xl bg-white p-4 border border-[var(--border-subtle)]" style={{ minWidth: 180 }}>
+      <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#71717a]">{label}</p>
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <span className="text-[26px] font-semibold tabular-nums leading-none text-[#0C0C0C]">{value}</span>
+        <span
+          className="text-[11px] font-semibold tabular-nums"
+          style={{ color: delta === "—" ? "#A1A1AA" : up ? "#059669" : "#DC2626" }}
+        >
+          {delta}
+        </span>
+      </div>
+    </div>
+  );
+}

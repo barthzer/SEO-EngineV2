@@ -52,20 +52,20 @@
   --text-input:        #8e8e93;
 
   /* Statuts — calibrés pour fond warm light */
-  --color-success:      #059669;
-  --color-success-bg:   rgba(5, 150, 105, 0.09);
-  --color-success-soft: rgba(5, 150, 105, 0.18);
-  --color-danger:       #BE123C;
-  --color-danger-bg:    rgba(190, 18, 60, 0.09);
-  --color-danger-soft:  rgba(190, 18, 60, 0.18);
-  --color-warning:      #C2410C;
-  --color-warning-bg:   rgba(194, 65, 12, 0.09);
-  --color-warning-soft: rgba(194, 65, 12, 0.18);
+  --color-success:      #10B981;
+  --color-success-bg:   rgba(16, 185, 129, 0.12);
+  --color-success-soft: rgba(16, 185, 129, 0.22);
+  --color-danger:       #F43F5E;
+  --color-danger-bg:    rgba(244, 63, 94, 0.12);
+  --color-danger-soft:  rgba(244, 63, 94, 0.22);
+  --color-warning:      #F59E0B;
+  --color-warning-bg:   rgba(245, 158, 11, 0.14);
+  --color-warning-soft: rgba(245, 158, 11, 0.24);
   --color-info:         #3D4FFF;
-  --color-info-bg:      rgba(61, 79, 255, 0.09);
-  --color-info-soft:    rgba(61, 79, 255, 0.18);
-  --color-neutral:      #6e6e73;
-  --color-neutral-bg:   rgba(110, 110, 115, 0.09);
+  --color-info-bg:      rgba(61, 79, 255, 0.12);
+  --color-info-soft:    rgba(61, 79, 255, 0.22);
+  --color-neutral:      #6E6E73;
+  --color-neutral-bg:   rgba(110, 110, 115, 0.12);
 
   /* Composants spécifiques */
   --arc-bg:            #efedea;
@@ -128,15 +128,15 @@
   --text-input:        #636366;
 
   /* Statuts — saturés pour dark */
-  --color-success:      #34d399;
-  --color-success-bg:   rgba(52, 211, 153, 0.12);
-  --color-success-soft: rgba(52, 211, 153, 0.22);
-  --color-danger:       #f87171;
-  --color-danger-bg:    rgba(248, 113, 113, 0.12);
-  --color-danger-soft:  rgba(248, 113, 113, 0.22);
-  --color-warning:      #fbbf24;
-  --color-warning-bg:   rgba(251, 191, 36, 0.12);
-  --color-warning-soft: rgba(251, 191, 36, 0.22);
+  --color-success:      #34D399;
+  --color-success-bg:   rgba(52, 211, 153, 0.18);
+  --color-success-soft: rgba(52, 211, 153, 0.30);
+  --color-danger:       #FB7185;
+  --color-danger-bg:    rgba(251, 113, 133, 0.18);
+  --color-danger-soft:  rgba(251, 113, 133, 0.30);
+  --color-warning:      #FBBF24;
+  --color-warning-bg:   rgba(251, 191, 36, 0.18);
+  --color-warning-soft: rgba(251, 191, 36, 0.30);
   --color-info:         #3D4FFF;
   --color-info-bg:      rgba(61, 79, 255, 0.14);
   --color-info-soft:    rgba(61, 79, 255, 0.24);

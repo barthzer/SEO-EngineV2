@@ -13,7 +13,7 @@ export function SectionHead({ num, title, em, meta, children }: SectionHeadProps
     <div className="flex items-start justify-between gap-4">
       <div className="flex items-baseline gap-2.5">
         <span className="font-mono text-[11px] text-[var(--text-muted)]">{num}</span>
-        <h2 className="text-[19px] font-semibold text-[var(--text-primary)]">
+        <h2 className="font-semibold text-[var(--text-primary)]">
           {title}
           {em && <em className="ml-2 not-italic text-[var(--text-muted)]">{em}</em>}
         </h2>

@@ -29,10 +29,11 @@ import {
   Moon as MoonLucide,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { IconSwap } from "@/components/IconSwap";
 
 const NOTIFS = [
   { id: 1, text: "Analyse de leboncoin.fr terminée", time: "il y a 2 min", unread: true },
-  { id: 2, text: "3 nouveaux briefs disponibles dans Tag SEO", time: "il y a 1 h", unread: true },
+  { id: 2, text: "3 nouvelles analyses disponibles dans Tag SEO", time: "il y a 1 h", unread: true },
   { id: 3, text: "Score GEO mis à jour : +7 pts", time: "hier", unread: false },
 ];
 import {
@@ -60,13 +61,14 @@ const projectNav: ProjectNavItem[] = [
   { icon: CopyIcon,         label: "Cannibalisation",    tab: "cannibal" },
   { icon: Network,          label: "Netlinking",         tab: "netlinking" },
   { icon: Tags,             label: "Univers sémantique", tab: "univers" },
-  { icon: Lightbulb,        label: "Recommandations",    tab: "recommandations" },
+  { icon: Lightbulb,        label: "Études de mots-clés", tab: "recommandations" },
 ];
 
 /* ── NavRow primitive ──────────────────────────────────────────────── */
 
 function NavRow({
   icon: Icon,
+  iconActive: IconActive,
   label,
   href,
   isActive,
@@ -75,6 +77,8 @@ function NavRow({
   badge,
 }: {
   icon: React.ElementType;
+  /** Variante solid affichée quand `isActive`. Si fournie → cross-fade via IconSwap (transitions-dev #9) */
+  iconActive?: React.ElementType;
   label: string;
   href: string;
   isActive: boolean;
@@ -103,7 +107,15 @@ function NavRow({
         <span
           className={`flex h-9 flex-shrink-0 items-center ${isExpanded ? "w-6 justify-end" : "w-9 justify-center"}`}
         >
-          <Icon className="h-[14px] w-[14px]" />
+          {IconActive ? (
+            <IconSwap
+              state={isActive ? "b" : "a"}
+              a={<Icon className="h-[14px] w-[14px]" />}
+              b={<IconActive className="h-[14px] w-[14px]" />}
+            />
+          ) : (
+            <Icon className="h-[14px] w-[14px]" />
+          )}
         </span>
       </Tooltip>
       <span
@@ -142,7 +154,7 @@ const USER = {
 /* ── Sidebar root ──────────────────────────────────────────────────── */
 
 export function Sidebar() {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -188,7 +200,8 @@ export function Sidebar() {
       >
         {/* Projets (= Accueil) — toujours présent. Le switch entre projets est dans le Topbar. */}
         <NavRow
-          icon={isHome ? HomeSolid : HomeOutline}
+          icon={HomeOutline}
+          iconActive={HomeSolid}
           label="Projets"
           href="/"
           isActive={isHome}
@@ -241,14 +254,16 @@ export function Sidebar() {
         {!isExpanded && <div className="my-2 h-px w-6 bg-[var(--border-subtle)]" />}
 
         <NavRow
-          icon={pathname === "/equipe" ? UserGroupSolid : UserGroupOutline}
+          icon={UserGroupOutline}
+          iconActive={UserGroupSolid}
           label="Équipe"
           href="/equipe"
           isActive={pathname === "/equipe"}
           isExpanded={isExpanded}
         />
         <NavRow
-          icon={pathname === "/parametres" ? Cog6ToothSolid : Cog6ToothOutline}
+          icon={Cog6ToothOutline}
+          iconActive={Cog6ToothSolid}
           label="Paramètres"
           href="/parametres"
           isActive={pathname === "/parametres"}
@@ -346,7 +361,7 @@ export function Sidebar() {
           </Tooltip>
 
           {/* Divider Notifs/Mode ↔ Compte */}
-          <div className={`my-1 border-t border-[var(--border-subtle)] ${isExpanded ? "mx-1" : "w-9"}`} />
+          <div className={`my-1 border-t border-[var(--border-subtle)] ${isExpanded ? "-mx-2" : "w-9"}`} />
 
           {/* Compte — bouton avec nom utilisateur, ouvre dropdown Profil/Déconnexion */}
           <DropdownMenu
@@ -399,7 +414,7 @@ export function Sidebar() {
           </DropdownMenu>
 
           {/* Divider Compte ↔ Réduire */}
-          <div className={`my-1 border-t border-[var(--border-subtle)] ${isExpanded ? "mx-1" : "w-9"}`} />
+          <div className={`my-1 border-t border-[var(--border-subtle)] ${isExpanded ? "-mx-2" : "w-9"}`} />
 
           {/* Expand / collapse toggle */}
           <Tooltip label={isExpanded ? "Réduire" : "Développer"} side="right" portal disabled={isExpanded}>

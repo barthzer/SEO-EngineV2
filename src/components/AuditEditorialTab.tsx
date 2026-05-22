@@ -373,7 +373,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
               </span>
               <span className="text-[13px] text-[var(--text-muted)]">27 avril 2026</span>
             </div>
-            <h1 className="text-[32px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+            <h1 className="font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
               <span style={{ color: "var(--color-danger)" }}>{tag.headlineEm}</span>
               {" "}{tag.headlineTail.split("\n")[0]}
               <br />{tag.headlineTail.split("\n")[1]}

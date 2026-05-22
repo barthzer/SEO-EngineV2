@@ -366,7 +366,7 @@ export function UniversSemantiqueView({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           {title && (
-            <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h2>
+            <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h1>
           )}
           {subtitle && (
             <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>

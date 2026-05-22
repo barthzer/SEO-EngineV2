@@ -169,7 +169,7 @@ export default function EquipePage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="mb-1 text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+          <h1 className="mb-1 font-semibold leading-none tracking-heading text-[var(--text-primary)]">
             Équipe
           </h1>
           <p className="text-[14px] tracking-body text-[var(--text-secondary)]">

@@ -75,6 +75,247 @@
   --animate-dropdown-up:    dropdown-up 160ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both;
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   transitions-dev — :root block + .t-* classes (skill universal install)
+   Source: .claude/skills/transitions-dev/SKILL.md
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Card resize */
+  --resize-dur: 300ms;
+  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Number pop-in */
+  --digit-dur: 500ms;
+  --digit-distance: 8px;
+  --digit-stagger: 70ms;
+  --digit-blur: 2px;
+  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+  /* Notification badge */
+  --badge-slide-dur: 260ms;
+  --badge-pop-dur: 500ms;
+  --badge-pop-close-dur: 180ms;
+  --badge-fade-dur: 400ms;
+  --badge-fade-close-dur: 180ms;
+  --badge-blur: 2px;
+  --badge-offset-x: -8.2px;
+  --badge-offset-y: 12.4px;
+  --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Text states swap */
+  --text-swap-dur: 150ms;
+  --text-swap-translate-y: 4px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: ease-in-out;
+  /* Menu dropdown */
+  --dropdown-open-dur: 250ms;
+  --dropdown-close-dur: 150ms;
+  --dropdown-pre-scale: 0.97;
+  --dropdown-closing-scale: 0.99;
+  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Modal open / close */
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Panel reveal */
+  --panel-open-dur: 400ms;
+  --panel-close-dur: 350ms;
+  --panel-translate-y: 100px;
+  --panel-blur: 2px;
+  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Page side-by-side */
+  --page-slide-dur: 200ms;
+  --page-fade-dur: 200ms;
+  --page-slide-distance: 8px;
+  --page-blur: 3px;
+  --page-stagger: 0ms;
+  --page-exit-enabled: 1;
+  --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Icon swap */
+  --icon-swap-dur: 200ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+  /* Success check */
+  --check-opacity-dur: 550ms;
+  --check-rotate-dur: 550ms;
+  --check-rotate-from: 80deg;
+  --check-bob-dur: 450ms;
+  --check-y-amount: 40px;
+  --check-blur-dur: 500ms;
+  --check-blur-from: 10px;
+  --check-path-dur: 550ms;
+  --check-path-delay: 80ms;
+  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── 05 · Menu dropdown ── */
+.t-dropdown {
+  transform-origin: top left;
+  transform: scale(var(--dropdown-pre-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-open-dur) var(--dropdown-ease),
+    opacity   var(--dropdown-open-dur) var(--dropdown-ease);
+  will-change: transform, opacity;
+}
+.t-dropdown[data-origin="top-right"]     { transform-origin: top right; }
+.t-dropdown[data-origin="top-center"]    { transform-origin: top center; }
+.t-dropdown[data-origin="bottom-left"]   { transform-origin: bottom left; }
+.t-dropdown[data-origin="bottom-center"] { transform-origin: bottom center; }
+.t-dropdown[data-origin="bottom-right"]  { transform-origin: bottom right; }
+.t-dropdown.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-dropdown.is-closing {
+  transform: scale(var(--dropdown-closing-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-close-dur) var(--dropdown-ease),
+    opacity   var(--dropdown-close-dur) var(--dropdown-ease);
+}
+
+/* ── 06 · Modal open / close ── */
+.t-modal {
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity   var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-modal.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-modal.is-closing {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity   var(--modal-close-dur) var(--modal-ease);
+}
+.t-modal-overlay {
+  opacity: 0;
+  transition: opacity var(--modal-open-dur) var(--modal-ease);
+}
+.t-modal-overlay.is-open    { opacity: 1; }
+.t-modal-overlay.is-closing { opacity: 0; transition-duration: var(--modal-close-dur); }
+
+/* ── 08 · Page side-by-side (adapté tabs : enter-only sur changement de tab) ── */
+@keyframes t-tab-enter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--page-slide-distance));
+    filter: blur(var(--page-blur));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+.t-tab-enter {
+  animation: t-tab-enter var(--page-slide-dur) var(--page-slide-ease) both;
+  will-change: opacity, transform, filter;
+}
+.t-page {
+  opacity: 1;
+  transform: translateX(0);
+  filter: blur(0);
+  transition:
+    opacity   var(--page-fade-dur) var(--page-fade-ease),
+    transform var(--page-slide-dur) var(--page-slide-ease),
+    filter    var(--page-fade-dur) var(--page-fade-ease);
+}
+.t-page.is-enter-start {
+  opacity: 0;
+  transform: translateX(var(--page-slide-distance));
+  filter: blur(var(--page-blur));
+}
+.t-page.is-enter-start[data-direction="back"] {
+  transform: translateX(calc(-1 * var(--page-slide-distance)));
+}
+
+/* ── 09 · Icon swap (skill 09-icon-swap.md verbatim) ── */
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+}
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity   var(--icon-swap-dur) var(--icon-swap-ease),
+    filter    var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  will-change: opacity, filter, transform;
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="b"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="a"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+
+/* ── 10 · Success check (skill 10-success-check.md verbatim) ── */
+.t-success-check {
+  display: inline-block;
+  transform-origin: center;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+.t-success-check svg { display: block; overflow: visible; }
+.t-success-check svg path {
+  stroke-dasharray: var(--check-path-len, 20);
+  stroke-dashoffset: var(--check-path-len, 20);
+}
+.t-success-check[data-state="in"] {
+  animation:
+    t-check-fade   var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+    t-check-rotate var(--check-rotate-dur)  var(--check-ease-rotate)  forwards,
+    t-check-blur   var(--check-blur-dur)    var(--check-ease-out)     forwards,
+    t-check-bob    var(--check-bob-dur)     var(--check-ease-bob)     forwards;
+}
+.t-success-check[data-state="in"] svg path {
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms) forwards;
+}
+@keyframes t-check-fade   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes t-check-rotate { from { transform: rotate(var(--check-rotate-from)); } to { transform: rotate(0deg); } }
+@keyframes t-check-blur   { from { filter: blur(var(--check-blur-from)); } to { filter: blur(0); } }
+@keyframes t-check-bob    { from { translate: 0 var(--check-y-amount); } to { translate: 0 0; } }
+@keyframes t-check-draw   { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .t-dropdown, .t-modal, .t-modal-overlay, .t-page, .t-icon-swap .t-icon,
+  .t-success-check, .t-success-check path,
+  .t-tab-enter {
+    transition: none !important;
+    animation: none !important;
+  }
+  .t-success-check { opacity: 1 !important; }
+}
+
 /* ──────────────── Skeleton shimmer ──────────────── */
 @keyframes shimmer {
   from { background-position: 200% 0; }
@@ -170,14 +411,30 @@ svg[stroke="currentColor"][fill="none"] {
 }
 
 /* Auto-apply by tag — peut être surchargé par les classes ci-dessus */
-/* Titres : Space Grotesk (geometric, futuristic) → différenciation visuelle */
+/* Titres : Space Grotesk (geometric, futuristic) → différenciation visuelle.
+   Tailles fluides via clamp() — scale entre mobile et XL screens. */
 h1, h2, h3 {
   font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
 }
-h1 { letter-spacing: var(--tracking-display); }
-h2 { letter-spacing: var(--tracking-heading); }
-h3 { letter-spacing: var(--tracking-subheading); }
+h1 {
+  letter-spacing: var(--tracking-display);
+  /* 20px (mobile) → 30px (XL) — palier desktop ≈ 26px */
+  font-size: clamp(20px, 1rem + 0.7vw, 30px);
+  line-height: 1.2;
+}
+h2 {
+  letter-spacing: var(--tracking-heading);
+  /* 16px → 22px */
+  font-size: clamp(16px, 0.9rem + 0.4vw, 22px);
+  line-height: 1.3;
+}
+h3 {
+  letter-spacing: var(--tracking-subheading);
+  /* 14px → 18px */
+  font-size: clamp(14px, 0.8rem + 0.25vw, 18px);
+  line-height: 1.4;
+}
 .tracking-tight { letter-spacing: var(--tracking-heading); }
 
 .font-display { font-family: var(--font-display), var(--font-sans), system-ui, sans-serif; }
@@ -233,6 +490,53 @@ h3 { letter-spacing: var(--tracking-subheading); }
   :root {
     --page-py: 96px;
   }
+}
+
+
+/* ──────────────── Glassmorphism ────────────────
+   Pour les surfaces translucides sur fond coloré/visuel (ex: onboarding preview).
+   `.glass-edge` = bordure double (highlight + ombre intérieure) pour un effet
+   verre épais sans bg opaque — laisse passer ce qu'il y a derrière. */
+:root {
+  --glass-edge-highlight: rgba(255, 255, 255, 0.65);
+  --glass-edge-shadow:    rgba(255, 255, 255, 0.15);
+  --glass-edge-width:     1.5px;
+}
+
+.glass-edge {
+  position: relative;
+  isolation: isolate;
+}
+/* Anneau extérieur — l'élément est strictement à l'extérieur du conteneur
+   via inset négatif. Border-radius hérité s'applique à la box élargie, ce
+   qui produit un anneau concentrique légèrement plus large que le parent. */
+.glass-edge::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--glass-edge-width) * -1);
+  border-radius: inherit;
+  padding: var(--glass-edge-width);
+  background: linear-gradient(
+    135deg,
+    var(--glass-edge-highlight) 0%,
+    var(--glass-edge-shadow) 50%,
+    var(--glass-edge-highlight) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Variante "thick" — bordure plus épaisse + inner highlight pour les
+   conteneurs proéminents (panneau preview, modale dashboard cropped). */
+.glass-edge-thick {
+  --glass-edge-width: 4px;
+  --glass-edge-highlight: rgba(255, 255, 255, 0.95);
+  --glass-edge-shadow:    rgba(255, 255, 255, 0.35);
 }
 
 

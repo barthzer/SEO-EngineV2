@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useModalTransition } from "@/hooks/useModalTransition";
+import { SuccessCheck } from "@/components/SuccessCheck";
 import { Button } from "@/components/Button";
 import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
@@ -61,6 +63,9 @@ import {
   Plus,
   Tag as TagIcon,
   Globe as GlobeIcon,
+  Clock,
+  Monitor,
+  Smartphone,
 } from "lucide-react";
 import { LineDotChart } from "@/components/LineDotChart";
 import { Sparkline } from "@/components/Sparkline";
@@ -160,45 +165,45 @@ export type Brief = {
 
 export const BRIEFS: Brief[] = [
   // Tag SEO — Optimisation Q2 (14 URLs)
-  { id: 1,  title: "Guide SEO local complet",              url: "/blog/seo-local",              type: "optimiser", priority: "haute",   keyword: "seo local",                 volume: 4400, position: 8,  tag: "Tag SEO — Optimisation Q2",    semanticScore: 42, wordCount: 1800, h2s: ["Qu'est-ce que le SEO local ?", "Optimiser sa fiche Google Business", "Les signaux de proximité"], internalLinks: ["/blog/google-business", "/blog/citations-locales"] },
-  { id: 2,  title: "Audit SEO technique",                  url: "/services/audit-seo",          type: "optimiser", priority: "haute",   keyword: "audit seo",                 volume: 3600, position: 14, tag: "Tag SEO — Optimisation Q2",    semanticScore: 38, wordCount: 1400, h2s: ["Pourquoi réaliser un audit SEO ?", "Les 5 axes d'un audit technique", "Core Web Vitals"], internalLinks: ["/services/seo", "/blog/core-web-vitals"] },
-  { id: 10, title: "Balises title et meta description",    url: "/blog/balises-title-meta",     type: "optimiser", priority: "haute",   keyword: "optimiser balise title",    volume: 2800, position: 19, tag: "Tag SEO — Optimisation Q2",    semanticScore: 31, wordCount: 1200, h2s: ["Rôle de la balise title", "Longueur optimale", "Exemples concrets"], internalLinks: ["/blog/seo-on-page"] },
-  { id: 11, title: "Maillage interne : guide complet",     url: "/blog/maillage-interne",       type: "optimiser", priority: "haute",   keyword: "maillage interne seo",      volume: 2200, position: 23, tag: "Tag SEO — Optimisation Q2",    semanticScore: 29, wordCount: 1600, h2s: ["Pourquoi le maillage interne ?", "Stratégies avancées", "Outils d'audit"], internalLinks: ["/blog/cocon-semantique"] },
-  { id: 12, title: "Vitesse de chargement et Core Web Vitals", url: "/blog/core-web-vitals",   type: "optimiser", priority: "haute",   keyword: "core web vitals 2024",      volume: 1900, position: 27, tag: "Tag SEO — Optimisation Q2",    semanticScore: 44, wordCount: 1500, h2s: ["LCP, CLS, INP expliqués", "Optimiser son score", "Outils de mesure"], internalLinks: ["/blog/performance-web"] },
-  { id: 13, title: "SEO on-page : checklist complète",     url: "/blog/seo-on-page",            type: "optimiser", priority: "moyenne", keyword: "seo on page checklist",     volume: 1700, position: 31, tag: "Tag SEO — Optimisation Q2",    semanticScore: 52, wordCount: 2000, h2s: ["Structure de page", "Optimisation sémantique", "Accessibilité"], internalLinks: ["/blog/balises-title-meta"] },
-  { id: 14, title: "Données structurées pour e-commerce", url: "/blog/schema-ecommerce",       type: "optimiser", priority: "moyenne", keyword: "schema org ecommerce",      volume: 1400, position: 38, tag: "Tag SEO — Optimisation Q2",    semanticScore: 26, wordCount: 1300, h2s: ["Product schema", "Review schema", "BreadcrumbList"], internalLinks: ["/blog/schema-org"] },
-  { id: 15, title: "Canonicalisation et duplicate content", url: "/blog/canonical-tag",        type: "optimiser", priority: "moyenne", keyword: "balise canonical seo",      volume: 1300, position: 42, tag: "Tag SEO — Optimisation Q2",    semanticScore: 18, wordCount: 1100, h2s: ["Qu'est-ce que le duplicate content ?", "La balise canonical", "Bonnes pratiques"], internalLinks: ["/blog/audit-seo"] },
-  { id: 16, title: "Redirection 301 : quand et comment",  url: "/blog/redirection-301",        type: "optimiser", priority: "moyenne", keyword: "redirection 301 seo",       volume: 1100, position: 47, tag: "Tag SEO — Optimisation Q2",    semanticScore: 21, wordCount: 900,  h2s: ["Les types de redirections", "Impact SEO", "Migration de site"], internalLinks: ["/blog/audit-seo-technique"] },
-  { id: 17, title: "Sitemap XML : optimisation",          url: "/blog/sitemap-xml",             type: "optimiser", priority: "basse",   keyword: "sitemap xml seo",           volume: 960,  position: 55, tag: "Tag SEO — Optimisation Q2",    semanticScore: 35, wordCount: 800,  h2s: ["Créer un sitemap", "Soumettre à Google Search Console", "Erreurs à éviter"], internalLinks: ["/blog/robots-txt"] },
-  { id: 18, title: "Robots.txt : guide pratique",         url: "/blog/robots-txt",              type: "optimiser", priority: "basse",   keyword: "robots txt seo",            volume: 880,  position: 61, tag: "Tag SEO — Optimisation Q2",    semanticScore: 29, wordCount: 700,  h2s: ["Syntaxe du fichier robots.txt", "Directives Disallow et Allow", "Erreurs fréquentes"], internalLinks: ["/blog/sitemap-xml"] },
-  { id: 19, title: "Pagination et SEO",                   url: "/blog/pagination-seo",          type: "optimiser", priority: "basse",   keyword: "pagination seo",            volume: 740,  position: 68, tag: "Tag SEO — Optimisation Q2",    semanticScore: 14, wordCount: 800,  h2s: ["Problèmes de pagination", "Solutions recommandées", "Infinite scroll"], internalLinks: ["/blog/canonical-tag"] },
-  { id: 20, title: "Hreflang : SEO international",       url: "/blog/hreflang",                 type: "optimiser", priority: "basse",   keyword: "hreflang balise seo",       volume: 680,  position: 74, tag: "Tag SEO — Optimisation Q2",    semanticScore: 11, wordCount: 1000, h2s: ["Qu'est-ce que l'hreflang ?", "Implémentation", "Erreurs courantes"], internalLinks: ["/blog/seo-international"] },
-  { id: 21, title: "Crawl budget : optimisation",        url: "/blog/crawl-budget",              type: "optimiser", priority: "basse",   keyword: "crawl budget googlebot",    volume: 590,  position: 81, tag: "Tag SEO — Optimisation Q2",    semanticScore: 8,  wordCount: 900,  h2s: ["Qu'est-ce que le crawl budget ?", "Facteurs d'influence", "Optimiser son crawl"], internalLinks: ["/blog/robots-txt", "/blog/sitemap-xml"] },
+  { id: 1,  title: "Guide SEO local complet",              url: "/blog/seo-local",              type: "optimiser", priority: "haute",   keyword: "seo local",                 volume: 4400, position: 8,  tag: "Lot SEO — Optimisation Q2",    semanticScore: 42, wordCount: 1800, h2s: ["Qu'est-ce que le SEO local ?", "Optimiser sa fiche Google Business", "Les signaux de proximité"], internalLinks: ["/blog/google-business", "/blog/citations-locales"] },
+  { id: 2,  title: "Audit SEO technique",                  url: "/services/audit-seo",          type: "optimiser", priority: "haute",   keyword: "audit seo",                 volume: 3600, position: 14, tag: "Lot SEO — Optimisation Q2",    semanticScore: 38, wordCount: 1400, h2s: ["Pourquoi réaliser un audit SEO ?", "Les 5 axes d'un audit technique", "Core Web Vitals"], internalLinks: ["/services/seo", "/blog/core-web-vitals"] },
+  { id: 10, title: "Balises title et meta description",    url: "/blog/balises-title-meta",     type: "optimiser", priority: "haute",   keyword: "optimiser balise title",    volume: 2800, position: 19, tag: "Lot SEO — Optimisation Q2",    semanticScore: 31, wordCount: 1200, h2s: ["Rôle de la balise title", "Longueur optimale", "Exemples concrets"], internalLinks: ["/blog/seo-on-page"] },
+  { id: 11, title: "Maillage interne : guide complet",     url: "/blog/maillage-interne",       type: "optimiser", priority: "haute",   keyword: "maillage interne seo",      volume: 2200, position: 23, tag: "Lot SEO — Optimisation Q2",    semanticScore: 29, wordCount: 1600, h2s: ["Pourquoi le maillage interne ?", "Stratégies avancées", "Outils d'audit"], internalLinks: ["/blog/cocon-semantique"] },
+  { id: 12, title: "Vitesse de chargement et Core Web Vitals", url: "/blog/core-web-vitals",   type: "optimiser", priority: "haute",   keyword: "core web vitals 2024",      volume: 1900, position: 27, tag: "Lot SEO — Optimisation Q2",    semanticScore: 44, wordCount: 1500, h2s: ["LCP, CLS, INP expliqués", "Optimiser son score", "Outils de mesure"], internalLinks: ["/blog/performance-web"] },
+  { id: 13, title: "SEO on-page : checklist complète",     url: "/blog/seo-on-page",            type: "optimiser", priority: "moyenne", keyword: "seo on page checklist",     volume: 1700, position: 31, tag: "Lot SEO — Optimisation Q2",    semanticScore: 52, wordCount: 2000, h2s: ["Structure de page", "Optimisation sémantique", "Accessibilité"], internalLinks: ["/blog/balises-title-meta"] },
+  { id: 14, title: "Données structurées pour e-commerce", url: "/blog/schema-ecommerce",       type: "optimiser", priority: "moyenne", keyword: "schema org ecommerce",      volume: 1400, position: 38, tag: "Lot SEO — Optimisation Q2",    semanticScore: 26, wordCount: 1300, h2s: ["Product schema", "Review schema", "BreadcrumbList"], internalLinks: ["/blog/schema-org"] },
+  { id: 15, title: "Canonicalisation et duplicate content", url: "/blog/canonical-tag",        type: "optimiser", priority: "moyenne", keyword: "balise canonical seo",      volume: 1300, position: 42, tag: "Lot SEO — Optimisation Q2",    semanticScore: 18, wordCount: 1100, h2s: ["Qu'est-ce que le duplicate content ?", "La balise canonical", "Bonnes pratiques"], internalLinks: ["/blog/audit-seo"] },
+  { id: 16, title: "Redirection 301 : quand et comment",  url: "/blog/redirection-301",        type: "optimiser", priority: "moyenne", keyword: "redirection 301 seo",       volume: 1100, position: 47, tag: "Lot SEO — Optimisation Q2",    semanticScore: 21, wordCount: 900,  h2s: ["Les types de redirections", "Impact SEO", "Migration de site"], internalLinks: ["/blog/audit-seo-technique"] },
+  { id: 17, title: "Sitemap XML : optimisation",          url: "/blog/sitemap-xml",             type: "optimiser", priority: "basse",   keyword: "sitemap xml seo",           volume: 960,  position: 55, tag: "Lot SEO — Optimisation Q2",    semanticScore: 35, wordCount: 800,  h2s: ["Créer un sitemap", "Soumettre à Google Search Console", "Erreurs à éviter"], internalLinks: ["/blog/robots-txt"] },
+  { id: 18, title: "Robots.txt : guide pratique",         url: "/blog/robots-txt",              type: "optimiser", priority: "basse",   keyword: "robots txt seo",            volume: 880,  position: 61, tag: "Lot SEO — Optimisation Q2",    semanticScore: 29, wordCount: 700,  h2s: ["Syntaxe du fichier robots.txt", "Directives Disallow et Allow", "Erreurs fréquentes"], internalLinks: ["/blog/sitemap-xml"] },
+  { id: 19, title: "Pagination et SEO",                   url: "/blog/pagination-seo",          type: "optimiser", priority: "basse",   keyword: "pagination seo",            volume: 740,  position: 68, tag: "Lot SEO — Optimisation Q2",    semanticScore: 14, wordCount: 800,  h2s: ["Problèmes de pagination", "Solutions recommandées", "Infinite scroll"], internalLinks: ["/blog/canonical-tag"] },
+  { id: 20, title: "Hreflang : SEO international",       url: "/blog/hreflang",                 type: "optimiser", priority: "basse",   keyword: "hreflang balise seo",       volume: 680,  position: 74, tag: "Lot SEO — Optimisation Q2",    semanticScore: 11, wordCount: 1000, h2s: ["Qu'est-ce que l'hreflang ?", "Implémentation", "Erreurs courantes"], internalLinks: ["/blog/seo-international"] },
+  { id: 21, title: "Crawl budget : optimisation",        url: "/blog/crawl-budget",              type: "optimiser", priority: "basse",   keyword: "crawl budget googlebot",    volume: 590,  position: 81, tag: "Lot SEO — Optimisation Q2",    semanticScore: 8,  wordCount: 900,  h2s: ["Qu'est-ce que le crawl budget ?", "Facteurs d'influence", "Optimiser son crawl"], internalLinks: ["/blog/robots-txt", "/blog/sitemap-xml"] },
 
   // Tag Création — Blog expert (11 URLs)
-  { id: 4,  title: "SEO vs SEA : quelle stratégie ?",    url: "/blog/seo-vs-sea",               type: "combler",   priority: "haute",   keyword: "seo vs sea",                volume: 2400, position: 31, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1600, h2s: ["Différences fondamentales", "Quand choisir le SEO ?", "Stratégie combinée"], internalLinks: ["/services/sea", "/services/seo"] },
-  { id: 5,  title: "Optimisation du taux de clic (CTR)", url: "/blog/optimiser-ctr",            type: "combler",   priority: "haute",   keyword: "améliorer ctr google",      volume: 1900, position: 38, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1400, h2s: ["Comprendre le CTR en SEO", "Optimiser ses balises title", "Rich snippets"], internalLinks: ["/blog/meta-tags", "/blog/schema-org"] },
-  { id: 22, title: "Cocon sémantique : la méthode",      url: "/blog/cocon-semantique",          type: "combler",   priority: "haute",   keyword: "cocon sémantique seo",      volume: 1800, position: 34, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1900, h2s: ["Définition du cocon sémantique", "Construire sa structure", "Exemples concrets"], internalLinks: ["/blog/maillage-interne"] },
-  { id: 23, title: "Intention de recherche et SEO",      url: "/blog/intention-recherche",       type: "combler",   priority: "haute",   keyword: "search intent seo",         volume: 1600, position: 40, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1500, h2s: ["Les 4 types d'intention", "Aligner contenu et intention", "Outils"], internalLinks: ["/blog/redaction-seo"] },
-  { id: 24, title: "Longue traîne : stratégie complète", url: "/blog/longue-traine",             type: "combler",   priority: "haute",   keyword: "longue traîne seo",         volume: 1400, position: 45, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1700, h2s: ["Qu'est-ce que la longue traîne ?", "Trouver ses mots-clés", "Créer le contenu"], internalLinks: ["/blog/recherche-mots-cles"] },
-  { id: 25, title: "Content marketing B2B",              url: "/blog/content-marketing-b2b",     type: "combler",   priority: "moyenne", keyword: "content marketing b2b",     volume: 1200, position: 52, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 2000, h2s: ["Spécificités du B2B", "Formats qui convertissent", "Mesurer le ROI"], internalLinks: ["/blog/strategie-contenu"] },
-  { id: 26, title: "Brief SEO : template et méthode",   url: "/blog/brief-seo",                  type: "combler",   priority: "moyenne", keyword: "brief seo template",        volume: 1100, position: 58, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1300, h2s: ["À quoi sert un brief SEO ?", "Les éléments clés", "Template téléchargeable"], internalLinks: ["/blog/redaction-seo"] },
-  { id: 27, title: "Recherche de mots-clés avancée",    url: "/blog/recherche-mots-cles",         type: "combler",   priority: "moyenne", keyword: "keyword research avancé",   volume: 980,  position: 63, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1800, h2s: ["Outils de recherche", "Analyse de la concurrence", "Clustering"], internalLinks: ["/blog/longue-traine"] },
-  { id: 28, title: "SERP : comprendre les résultats",   url: "/blog/serp-google",                 type: "combler",   priority: "basse",   keyword: "serp google features",      volume: 860,  position: 70, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1100, h2s: ["Anatomie d'une SERP", "Featured snippets", "Position zéro"], internalLinks: ["/blog/seo-local"] },
-  { id: 29, title: "Taux de rebond et SEO",             url: "/blog/taux-rebond",                 type: "combler",   priority: "basse",   keyword: "taux de rebond seo",        volume: 720,  position: 77, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 900,  h2s: ["Définition du taux de rebond", "Impact sur le SEO", "Comment le réduire"], internalLinks: ["/blog/ux-seo"] },
-  { id: 30, title: "Google E-E-A-T : mise à jour 2024", url: "/blog/google-eeat-2024",            type: "combler",   priority: "basse",   keyword: "google eeat 2024",          volume: 640,  position: 84, tag: "Tag Création — Blog expert",   semanticScore: 0,  wordCount: 1200, h2s: ["Nouveautés E-E-A-T", "Signaux de confiance", "Stratégie d'auteur"], internalLinks: ["/blog/eeat-google"] },
+  { id: 4,  title: "SEO vs SEA : quelle stratégie ?",    url: "/blog/seo-vs-sea",               type: "combler",   priority: "haute",   keyword: "seo vs sea",                volume: 2400, position: 31, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1600, h2s: ["Différences fondamentales", "Quand choisir le SEO ?", "Stratégie combinée"], internalLinks: ["/services/sea", "/services/seo"] },
+  { id: 5,  title: "Optimisation du taux de clic (CTR)", url: "/blog/optimiser-ctr",            type: "combler",   priority: "haute",   keyword: "améliorer ctr google",      volume: 1900, position: 38, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1400, h2s: ["Comprendre le CTR en SEO", "Optimiser ses balises title", "Rich snippets"], internalLinks: ["/blog/meta-tags", "/blog/schema-org"] },
+  { id: 22, title: "Cocon sémantique : la méthode",      url: "/blog/cocon-semantique",          type: "combler",   priority: "haute",   keyword: "cocon sémantique seo",      volume: 1800, position: 34, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1900, h2s: ["Définition du cocon sémantique", "Construire sa structure", "Exemples concrets"], internalLinks: ["/blog/maillage-interne"] },
+  { id: 23, title: "Intention de recherche et SEO",      url: "/blog/intention-recherche",       type: "combler",   priority: "haute",   keyword: "search intent seo",         volume: 1600, position: 40, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1500, h2s: ["Les 4 types d'intention", "Aligner contenu et intention", "Outils"], internalLinks: ["/blog/redaction-seo"] },
+  { id: 24, title: "Longue traîne : stratégie complète", url: "/blog/longue-traine",             type: "combler",   priority: "haute",   keyword: "longue traîne seo",         volume: 1400, position: 45, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1700, h2s: ["Qu'est-ce que la longue traîne ?", "Trouver ses mots-clés", "Créer le contenu"], internalLinks: ["/blog/recherche-mots-cles"] },
+  { id: 25, title: "Content marketing B2B",              url: "/blog/content-marketing-b2b",     type: "combler",   priority: "moyenne", keyword: "content marketing b2b",     volume: 1200, position: 52, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 2000, h2s: ["Spécificités du B2B", "Formats qui convertissent", "Mesurer le ROI"], internalLinks: ["/blog/strategie-contenu"] },
+  { id: 26, title: "Analyse SEO : template et méthode",   url: "/blog/brief-seo",                  type: "combler",   priority: "moyenne", keyword: "brief seo template",        volume: 1100, position: 58, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1300, h2s: ["À quoi sert un brief SEO ?", "Les éléments clés", "Template téléchargeable"], internalLinks: ["/blog/redaction-seo"] },
+  { id: 27, title: "Recherche de mots-clés avancée",    url: "/blog/recherche-mots-cles",         type: "combler",   priority: "moyenne", keyword: "keyword research avancé",   volume: 980,  position: 63, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1800, h2s: ["Outils de recherche", "Analyse de la concurrence", "Clustering"], internalLinks: ["/blog/longue-traine"] },
+  { id: 28, title: "SERP : comprendre les résultats",   url: "/blog/serp-google",                 type: "combler",   priority: "basse",   keyword: "serp google features",      volume: 860,  position: 70, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1100, h2s: ["Anatomie d'une SERP", "Featured snippets", "Position zéro"], internalLinks: ["/blog/seo-local"] },
+  { id: 29, title: "Taux de rebond et SEO",             url: "/blog/taux-rebond",                 type: "combler",   priority: "basse",   keyword: "taux de rebond seo",        volume: 720,  position: 77, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 900,  h2s: ["Définition du taux de rebond", "Impact sur le SEO", "Comment le réduire"], internalLinks: ["/blog/ux-seo"] },
+  { id: 30, title: "Google E-E-A-T : mise à jour 2024", url: "/blog/google-eeat-2024",            type: "combler",   priority: "basse",   keyword: "google eeat 2024",          volume: 640,  position: 84, tag: "Lot Création — Blog expert",   semanticScore: 0,  wordCount: 1200, h2s: ["Nouveautés E-E-A-T", "Signaux de confiance", "Stratégie d'auteur"], internalLinks: ["/blog/eeat-google"] },
 
-  // Tag GEO — Structured data (10 URLs)
-  { id: 7,  title: "E-E-A-T : Expérience, Expertise, Autorité", url: "/blog/eeat-google", type: "creer", priority: "haute",   keyword: "eeat google",               volume: 1300,             tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 2400, h2s: ["Qu'est-ce que l'E-E-A-T ?", "Comment améliorer ses signaux", "E-E-A-T et IA générative"], internalLinks: ["/blog/seo-ia", "/blog/contenu-expert"] },
-  { id: 8,  title: "Schema.org et données structurées",         url: "/blog/schema-org",   type: "creer", priority: "haute",   keyword: "données structurées seo",   volume: 1100,             tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 1800, h2s: ["Introduction aux données structurées", "Les types de schema", "Implémenter JSON-LD"], internalLinks: ["/blog/rich-snippets"] },
-  { id: 31, title: "SEO et IA générative : s'adapter",          url: "/blog/seo-ia",       type: "creer", priority: "haute",   keyword: "seo intelligence artificielle", volume: 2100,          tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 2200, h2s: ["Impact de l'IA sur le SEO", "SGE et Search Generative Experience", "Stratégies d'adaptation"], internalLinks: ["/blog/eeat-google"] },
-  { id: 32, title: "Answer Engine Optimization (AEO)",          url: "/blog/aeo",          type: "creer", priority: "haute",   keyword: "answer engine optimization",volume: 1700,             tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 1900, h2s: ["Qu'est-ce que l'AEO ?", "Différence SEO / AEO", "Optimiser pour les IA"], internalLinks: ["/blog/seo-ia"] },
-  { id: 33, title: "GEO : Generative Engine Optimization",      url: "/blog/geo-seo",      type: "creer", priority: "haute",   keyword: "generative engine optimization", volume: 1500,         tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 2000, h2s: ["Définition du GEO", "Facteurs de citation IA", "Mesurer sa visibilité IA"], internalLinks: ["/blog/aeo", "/blog/seo-ia"] },
-  { id: 34, title: "Rich snippets : guide 2024",                url: "/blog/rich-snippets",type: "creer", priority: "moyenne", keyword: "rich snippets seo",         volume: 1200,             tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 1400, h2s: ["Types de rich snippets", "Implémenter les données structurées", "Tester avec l'outil Google"], internalLinks: ["/blog/schema-org"] },
-  { id: 35, title: "FAQ schema et voice search",                url: "/blog/faq-schema",   type: "creer", priority: "moyenne", keyword: "faq schema seo",            volume: 950,              tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 1100, h2s: ["Qu'est-ce que le FAQ schema ?", "Implémentation", "Voice search et SEO"], internalLinks: ["/blog/rich-snippets"] },
-  { id: 36, title: "Signaux E-E-A-T pour les PME",              url: "/blog/eeat-pme",     type: "creer", priority: "moyenne", keyword: "eeat pme site web",         volume: 780,              tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 1300, h2s: ["E-E-A-T adapté aux PME", "Construire son autorité", "Contenu expert à budget limité"], internalLinks: ["/blog/eeat-google"] },
-  { id: 37, title: "Optimisation pour ChatGPT et Perplexity",  url: "/blog/seo-chatgpt",  type: "creer", priority: "basse",   keyword: "optimiser site pour chatgpt",volume: 660,             tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 1600, h2s: ["Comment ChatGPT cite les sources", "Stratégie de citation", "Cas pratiques"], internalLinks: ["/blog/geo-seo"] },
-  { id: 38, title: "Structured data pour les articles",         url: "/blog/article-schema", type: "creer", priority: "basse", keyword: "article schema structured data", volume: 540,          tag: "Tag GEO — Structured data",    semanticScore: 0,  wordCount: 900,  h2s: ["Article schema expliqué", "Implémenter NewsArticle", "Erreurs fréquentes"], internalLinks: ["/blog/schema-org"] },
+  // Lot GEO — Structured data (10 URLs)
+  { id: 7,  title: "E-E-A-T : Expérience, Expertise, Autorité", url: "/blog/eeat-google", type: "creer", priority: "haute",   keyword: "eeat google",               volume: 1300,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 2400, h2s: ["Qu'est-ce que l'E-E-A-T ?", "Comment améliorer ses signaux", "E-E-A-T et IA générative"], internalLinks: ["/blog/seo-ia", "/blog/contenu-expert"] },
+  { id: 8,  title: "Schema.org et données structurées",         url: "/blog/schema-org",   type: "creer", priority: "haute",   keyword: "données structurées seo",   volume: 1100,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1800, h2s: ["Introduction aux données structurées", "Les types de schema", "Implémenter JSON-LD"], internalLinks: ["/blog/rich-snippets"] },
+  { id: 31, title: "SEO et IA générative : s'adapter",          url: "/blog/seo-ia",       type: "creer", priority: "haute",   keyword: "seo intelligence artificielle", volume: 2100,          tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 2200, h2s: ["Impact de l'IA sur le SEO", "SGE et Search Generative Experience", "Stratégies d'adaptation"], internalLinks: ["/blog/eeat-google"] },
+  { id: 32, title: "Answer Engine Optimization (AEO)",          url: "/blog/aeo",          type: "creer", priority: "haute",   keyword: "answer engine optimization",volume: 1700,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1900, h2s: ["Qu'est-ce que l'AEO ?", "Différence SEO / AEO", "Optimiser pour les IA"], internalLinks: ["/blog/seo-ia"] },
+  { id: 33, title: "GEO : Generative Engine Optimization",      url: "/blog/geo-seo",      type: "creer", priority: "haute",   keyword: "generative engine optimization", volume: 1500,         tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 2000, h2s: ["Définition du GEO", "Facteurs de citation IA", "Mesurer sa visibilité IA"], internalLinks: ["/blog/aeo", "/blog/seo-ia"] },
+  { id: 34, title: "Rich snippets : guide 2024",                url: "/blog/rich-snippets",type: "creer", priority: "moyenne", keyword: "rich snippets seo",         volume: 1200,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1400, h2s: ["Types de rich snippets", "Implémenter les données structurées", "Tester avec l'outil Google"], internalLinks: ["/blog/schema-org"] },
+  { id: 35, title: "FAQ schema et voice search",                url: "/blog/faq-schema",   type: "creer", priority: "moyenne", keyword: "faq schema seo",            volume: 950,              tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1100, h2s: ["Qu'est-ce que le FAQ schema ?", "Implémentation", "Voice search et SEO"], internalLinks: ["/blog/rich-snippets"] },
+  { id: 36, title: "Signaux E-E-A-T pour les PME",              url: "/blog/eeat-pme",     type: "creer", priority: "moyenne", keyword: "eeat pme site web",         volume: 780,              tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1300, h2s: ["E-E-A-T adapté aux PME", "Construire son autorité", "Contenu expert à budget limité"], internalLinks: ["/blog/eeat-google"] },
+  { id: 37, title: "Optimisation pour ChatGPT et Perplexity",  url: "/blog/seo-chatgpt",  type: "creer", priority: "basse",   keyword: "optimiser site pour chatgpt",volume: 660,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1600, h2s: ["Comment ChatGPT cite les sources", "Stratégie de citation", "Cas pratiques"], internalLinks: ["/blog/geo-seo"] },
+  { id: 38, title: "Structured data pour les articles",         url: "/blog/article-schema", type: "creer", priority: "basse", keyword: "article schema structured data", volume: 540,          tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 900,  h2s: ["Article schema expliqué", "Implémenter NewsArticle", "Erreurs fréquentes"], internalLinks: ["/blog/schema-org"] },
 
   // Sans tag
   { id: 3,  title: "Création de liens (link building)", url: "/blog/link-building",  type: "optimiser", priority: "moyenne", keyword: "link building",    volume: 2900, position: 22, semanticScore: 55, wordCount: 2200, h2s: ["Qu'est-ce que le link building ?", "Les meilleures stratégies", "Mesurer son profil de liens"], internalLinks: ["/blog/netlinking"] },
@@ -226,17 +231,17 @@ export const TAG_COUNTS = BRIEFS.reduce<Record<string, number>>((acc, b) => {
 }, {});
 
 export const TAG_COLORS_DEFAULT: Record<string, string> = {
-  "Tag SEO — Optimisation Q2":  "#3B82F6",
-  "Tag Création — Blog expert": "var(--color-success)",
-  "Tag GEO — Structured data":  "#A855F7",
-  "Sans tag":                   "#64748B",
+  "Lot SEO — Optimisation Q2":  "#3B82F6",
+  "Lot Création — Blog expert": "var(--color-success)",
+  "Lot GEO — Structured data":  "#A855F7",
+  "Sans lot":                   "#64748B",
 };
 
 // Nombre de briefs "terminés" par tag (mock : 6, 4, 2)
 const TAG_DONE: Record<string, number> = {
-  "Tag SEO — Optimisation Q2":  6,
-  "Tag Création — Blog expert": 4,
-  "Tag GEO — Structured data":  2,
+  "Lot SEO — Optimisation Q2":  6,
+  "Lot Création — Blog expert": 4,
+  "Lot GEO — Structured data":  2,
 };
 
 export function TagRow({
@@ -282,7 +287,7 @@ type TagRowData = { tag: string; color: string; total: number; done: number };
 
 export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) {
   const allTags: TagRowData[] = Object.keys(TAG_COLORS_DEFAULT)
-    .filter((l) => l !== "Sans tag")
+    .filter((l) => l !== "Sans lot")
     .map((tag) => ({
       tag,
       color: TAG_COLORS_DEFAULT[tag],
@@ -293,7 +298,7 @@ export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) 
   if (allTags.length === 0) {
     return (
       <div className="rounded-2xl bg-[var(--bg-card)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
-        Aucun tag récent.
+        Aucun lot récent.
       </div>
     );
   }
@@ -676,13 +681,61 @@ function ClicsSparkline({ history, color }: { history: { date: string; clics: nu
 
 /* ── Semantic score pill ─────────────────────────────────────────────── */
 
+/** CTR attendu par position SERP (courbe simplifiée GSC industrie) */
+function expectedCtrFromPosition(pos: number | undefined): number | null {
+  if (pos == null) return null;
+  if (pos <= 1) return 27;
+  if (pos <= 2) return 15;
+  if (pos <= 3) return 11;
+  if (pos <= 5) return 6.5;
+  if (pos <= 10) return 3;
+  if (pos <= 20) return 1.2;
+  return 0.5;
+}
+
+/** Effort estimé en heures pour livrer/optimiser la page (mock déterministe) */
+function estimateEffortHours(brief: Brief): number {
+  if (brief.type === "creer") return Math.max(6, Math.ceil(brief.wordCount / 250));
+  if (brief.type === "combler") return Math.max(4, Math.ceil(brief.wordCount / 350));
+  return Math.max(1, Math.ceil(brief.wordCount / 700));
+}
+
+/** Convertit une chaîne de temps "30 min" ou "2h" en minutes */
+function parseTimeToMinutes(time?: string): number {
+  if (!time) return 0;
+  const t = time.toLowerCase().trim();
+  // "2h" / "2 h" / "2h30"
+  const hourMatch = t.match(/(\d+(?:\.\d+)?)\s*h\s*(\d+)?/);
+  if (hourMatch) {
+    const h = parseFloat(hourMatch[1]);
+    const m = hourMatch[2] ? parseInt(hourMatch[2], 10) : 0;
+    return h * 60 + m;
+  }
+  // "30 min" / "45min"
+  const minMatch = t.match(/(\d+)\s*min/);
+  if (minMatch) return parseInt(minMatch[1], 10);
+  return 0;
+}
+
+/** Formate des minutes en label lisible : "1h30", "45 min", "3h" */
+function formatMinutesLabel(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) return `${h}h`;
+  return `${h}h${m.toString().padStart(2, "0")}`;
+}
+
 function SemanticPill({ score }: { score: number }) {
   if (!score) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
   const color = score >= 70 ? "var(--color-success)" : score >= 40 ? "var(--color-warning)" : "var(--color-danger)";
   return (
     <span
       className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-[12px] font-semibold tabular-nums"
-      style={{ color, backgroundColor: `${color}18` }}
+      style={{
+        color,
+        backgroundColor: `color-mix(in oklab, ${color} 10%, transparent)`,
+      }}
     >
       {score}
     </span>
@@ -972,7 +1025,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
             {doneCount}/{actions.length} faites
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-2">
           {actions.map((a) => (
             <ActionCard
               key={a.id}
@@ -1019,7 +1072,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
 
       {/* Brief éditorial — pills + checklist (structuré, conservé) */}
       <div>
-        <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Brief éditorial</p>
+        <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Analyse éditoriale</p>
         <div className="rounded-2xl bg-[var(--bg-card)] p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">B2B / Services</span>
@@ -1106,7 +1159,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions d'amélioration</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-2">
           {actions.map((a) => (
             <ActionCard
               key={a.id}
@@ -1256,27 +1309,87 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
         />
       </div>
 
-      {/* Profil d'ancres */}
+      {/* Backlinks de cette page — section dédiée, distincte du profil d'ancres */}
       <div>
-        <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Profil d'ancres</p>
-        <div className="rounded-2xl bg-[var(--bg-card)] p-6 space-y-4">
-          <div className="rounded-xl bg-[var(--bg-subtle)] px-4 py-5 text-center">
-            <p className="text-[13px] text-[var(--text-muted)]">Aucun backlink détecté — profil d'ancres non disponible</p>
-            <p className="mt-1 text-[12px] text-[var(--text-muted)]">Cibles de répartition recommandées :</p>
-          </div>
-          <div className="space-y-2.5">
-            {ancreSegments.map((s) => (
-              <div key={s.label}>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[12px] text-[var(--text-secondary)]">{s.label}</span>
-                  <span className="text-[12px] font-semibold tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
+        <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Backlinks de cette page</p>
+        <div className="rounded-2xl bg-[var(--bg-card)] p-6">
+          {(() => {
+            const ownBacklinks = 0;
+            const competitorBls = serpBenchmark.filter((r) => !r.isYou);
+            const avg = Math.round(competitorBls.reduce((s, r) => s + r.bl, 0) / Math.max(1, competitorBls.length));
+            const maxBl = Math.max(...competitorBls.map((r) => r.bl), 1);
+            return (
+              <>
+                {/* 2 chiffres clés en grille */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-[var(--border-subtle)] p-4">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Total</p>
+                    <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">
+                      {ownBacklinks.toLocaleString("fr-FR")}
+                    </p>
+                    <p className="mt-1.5 text-[11px] tracking-caption text-[var(--text-muted)]">
+                      backlinks pointant vers cette URL
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[var(--border-subtle)] p-4">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Moyenne concurrents</p>
+                    <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">
+                      {avg.toLocaleString("fr-FR")}
+                    </p>
+                    <p className="mt-1.5 text-[11px] tracking-caption text-[var(--text-muted)]">
+                      quantité moyenne · {competitorBls.length} concurrents top SERP
+                    </p>
+                  </div>
                 </div>
-                <div className="h-1.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
-                  <div className="h-1.5 rounded-full" style={{ width: `${s.pct}%`, backgroundColor: s.color, opacity: 0.5 }} />
+
+                {/* Comparaison visuelle vs concurrents */}
+                <div className="mt-5 space-y-2">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Comparaison</p>
+                  {[{ domain: "votre-site.fr", bl: ownBacklinks, isYou: true }, ...competitorBls].map((row) => {
+                    const pct = (row.bl / maxBl) * 100;
+                    return (
+                      <div key={row.domain} className="grid grid-cols-[140px_1fr_60px] items-center gap-3">
+                        <span className={`truncate text-[12px] ${row.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>{row.domain}</span>
+                        <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-subtle)]">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: row.isYou ? "var(--accent-primary)" : "color-mix(in oklab, var(--text-secondary) 30%, transparent)",
+                            }}
+                          />
+                        </div>
+                        <span className="text-right text-[12px] font-semibold tabular-nums text-[var(--text-primary)]">
+                          {row.bl.toLocaleString("fr-FR")}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Profil d'ancres — section distincte, cibles de répartition recommandées */}
+      <div>
+        <p className="mb-1 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Profil d'ancres</p>
+        <p className="mb-4 text-[12px] tracking-caption text-[var(--text-muted)]">
+          Cibles de répartition recommandées pour vos futurs backlinks
+        </p>
+        <div className="rounded-2xl bg-[var(--bg-card)] p-6 space-y-2.5">
+          {ancreSegments.map((s) => (
+            <div key={s.label}>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[12px] text-[var(--text-secondary)]">{s.label}</span>
+                <span className="text-[12px] font-semibold tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
               </div>
-            ))}
-          </div>
+              <div className="h-1.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
+                <div className="h-1.5 rounded-full" style={{ width: `${s.pct}%`, backgroundColor: s.color, opacity: 0.5 }} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -1319,7 +1432,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions recommandées</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-2">
           {actions.map((a) => (
             <ActionCard
               key={a.id}
@@ -1341,18 +1454,32 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
   void brief;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
 
-  const cwv = [
-    { label: "LCP",  value: "3.90s",  threshold: "< 2.5s",  ok: false },
-    { label: "FCP",  value: "3.75s",  threshold: "< 1.8s",  ok: false },
-    { label: "CLS",  value: "0.08",   threshold: "< 0.1",   ok: true  },
-    { label: "TTFB", value: "53ms",   threshold: "< 800ms", ok: true  },
-  ];
+  // Score Lighthouse mockés par device (typique : desktop > mobile)
+  const deviceScores = { desktop: 78, mobile: 52 };
+
+  // Core Web Vitals par device — mobile généralement moins bon
+  const cwvByDevice = {
+    desktop: [
+      { label: "LCP",  value: "3.90s",  threshold: "< 2.5s",  ok: false },
+      { label: "FCP",  value: "3.75s",  threshold: "< 1.8s",  ok: false },
+      { label: "CLS",  value: "0.08",   threshold: "< 0.1",   ok: true  },
+      { label: "TTFB", value: "53ms",   threshold: "< 800ms", ok: true  },
+    ],
+    mobile: [
+      { label: "LCP",  value: "5.20s",  threshold: "< 2.5s",  ok: false },
+      { label: "FCP",  value: "4.80s",  threshold: "< 1.8s",  ok: false },
+      { label: "CLS",  value: "0.14",   threshold: "< 0.1",   ok: false },
+      { label: "TTFB", value: "180ms",  threshold: "< 800ms", ok: true  },
+    ],
+  };
+  const cwv = cwvByDevice[device];
 
   const auditItems = [
     { label: "Code statut",      value: "200 OK",        ok: true  },
     { label: "Balise title",     value: "Optimisée",     ok: true  },
-    { label: "Temps de charg.",  value: "3.9s",          ok: false },
+    { label: "Temps de charg.",  value: device === "mobile" ? "5.2s" : "3.9s",  ok: false },
     { label: "Balise H1",        value: "Présente",      ok: true  },
     { label: "Meta description", value: "Présente",      ok: true  },
     { label: "Nombre de mots",   value: "2 000 mots",    ok: false },
@@ -1373,9 +1500,52 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* 3 chiffres clés */}
+
+      {/* Switch device — segmented pill iOS-like (inspiré Vercel Speed Insights) */}
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">
+          Audit Lighthouse
+        </p>
+        <div
+          role="tablist"
+          aria-label="Choisir l'appareil"
+          className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-subtle)] p-1"
+        >
+          {(["desktop", "mobile"] as const).map((dev) => {
+            const score = deviceScores[dev];
+            const active = device === dev;
+            const Icon = dev === "desktop" ? Monitor : Smartphone;
+            const scoreColor = score >= 70 ? "var(--color-success)" : score >= 40 ? "var(--color-warning)" : "var(--color-danger)";
+            return (
+              <button
+                key={dev}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setDevice(dev)}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
+                  active
+                    ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span>{dev === "desktop" ? "Desktop" : "Mobile"}</span>
+                <span
+                  className="font-semibold tabular-nums"
+                  style={{ color: active ? scoreColor : "var(--text-muted)" }}
+                >
+                  {score}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3 chiffres clés — données dépendantes du device */}
       <KpiGroup columns={3}>
-        <KpiCard bare icon={Gauge}         label="LCP"             value="3,90s" valueColor="var(--color-danger)" sub="cible < 2,5s" />
+        <KpiCard bare icon={Gauge}         label="LCP"             value={cwv[0].value} valueColor="var(--color-danger)" sub="cible < 2,5s" />
         <KpiCard bare icon={Activity}      label="Score audit"     value={`${auditItems.length - errCount}/${auditItems.length}`} sub="checks OK" />
         <KpiCard bare icon={ShieldCheck}   label="Erreurs critiques" value={String(errCount)} valueColor="var(--color-danger)" sub="à corriger" />
       </KpiGroup>
@@ -1483,7 +1653,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions techniques</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-2">
           {actions.map((a) => (
             <ActionCard
               key={a.id}
@@ -1534,9 +1704,7 @@ function ActionsTab({
       setStatus(id, "done");
       showToast(
         "Action validée",
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-success)]">
-          <CheckIcon className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-        </span>,
+        <SuccessCheck size={14} bg="var(--color-success)" replayKey={Date.now()} />,
       );
     }
   }
@@ -1547,9 +1715,7 @@ function ActionsTab({
     setSelected(new Set());
     showToast(
       `${count} action${count > 1 ? "s" : ""} validée${count > 1 ? "s" : ""}`,
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-success)]">
-        <CheckIcon className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-      </span>,
+      <SuccessCheck size={14} bg="var(--color-success)" replayKey={Date.now()} />,
     );
   }
 
@@ -1938,18 +2104,25 @@ function AnalyseLaunchModal({
   }
   const includedCount = briefs.length - excluded.size;
   const includedIds = briefs.filter((b) => !excluded.has(b.id)).map((b) => b.id);
+  const { phase, requestClose } = useModalTransition(onClose);
+
+  const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
+  const modalClass   = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
 
   return createPortal(
-    <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className={`t-modal-overlay ${overlayClass} fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+      onClick={requestClose}
+    >
       <div
-        className="relative flex w-[560px] max-h-[80vh] flex-col rounded-3xl bg-[var(--bg-card)] shadow-2xl"
+        className={`t-modal ${modalClass} relative flex w-[560px] max-h-[80vh] flex-col rounded-3xl bg-[var(--bg-card)] shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         {step === 1 ? (
           <>
             <div className="flex-shrink-0 px-8 pt-6 pb-4 border-b border-[var(--border-subtle)]">
-              <Stepper steps={2} current={1} onClose={onClose} />
-              <h2 className="text-[18px] font-semibold text-[var(--text-primary)]">Mode d'analyse</h2>
+              <Stepper steps={2} current={1} onClose={requestClose} />
+              <h2 className="font-semibold text-[var(--text-primary)]">Mode d'analyse</h2>
               <p className="mt-1 text-[13px] text-[var(--text-muted)]">
                 Que faire des URLs déjà analysées dans la sélection ?
               </p>
@@ -1970,7 +2143,7 @@ function AnalyseLaunchModal({
             </div>
             <div className="flex-shrink-0 flex items-center justify-end gap-3 px-8 py-6 border-t border-[var(--border-subtle)]">
               <button
-                onClick={onClose}
+                onClick={requestClose}
                 className="rounded-xl px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
               >
                 Annuler
@@ -1981,8 +2154,8 @@ function AnalyseLaunchModal({
         ) : (
           <>
             <div className="flex-shrink-0 px-8 pt-6 pb-4 border-b border-[var(--border-subtle)]">
-              <Stepper steps={2} current={2} onClose={onClose} />
-              <h2 className="text-[18px] font-semibold text-[var(--text-primary)]">Lancer l'analyse</h2>
+              <Stepper steps={2} current={2} onClose={requestClose} />
+              <h2 className="font-semibold text-[var(--text-primary)]">Lancer l'analyse</h2>
               <p className="mt-1 text-[13px] text-[var(--text-muted)]">
                 Décochez les URLs à exclure et vérifiez le mot-clé cible avant de lancer l'analyse sur {includedCount} URL{includedCount > 1 ? "s" : ""}.
               </p>
@@ -2030,7 +2203,7 @@ function AnalyseLaunchModal({
               </button>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={onClose}
+                  onClick={requestClose}
                   className="rounded-xl px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
                 >
                   Annuler
@@ -2199,7 +2372,7 @@ function PagePanelContent({
         {/* Title */}
         <div className="mb-4 min-w-0">
           <p className="mb-1.5 font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
-          <h1 className="text-[22px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">{brief.title}</h1>
+          <h1 className="font-semibold leading-snug tracking-tight text-[var(--text-primary)]">{brief.title}</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -2209,16 +2382,16 @@ function PagePanelContent({
             trigger={
               <button className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-opacity hover:opacity-80">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tagColor }} />
-                {brief.tag ? shortTag(brief.tag) : "Sans tag"}
+                {brief.tag ? shortTag(brief.tag) : "Sans lot"}
               </button>
             }
           >
-            <DropdownHeader>Changer de tag</DropdownHeader>
+            <DropdownHeader>Changer de lot</DropdownHeader>
             {tags.map((tag) => (
               <DropdownItem
                 key={tag}
-                selected={(brief.tag ?? "Sans tag") === tag}
-                onClick={() => onTagChange(tag === "Sans tag" ? null : tag)}
+                selected={(brief.tag ?? "Sans lot") === tag}
+                onClick={() => onTagChange(tag === "Sans lot" ? null : tag)}
               >
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
                   <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[tag] }} />
@@ -2232,6 +2405,20 @@ function PagePanelContent({
             </DropdownItem>
           </DropdownMenu>
           <span className="rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-primary)]">{keyword}</span>
+          {(() => {
+            const panelActions = getAnalysisActions(brief);
+            const totalMin = panelActions.reduce((sum, a) => sum + parseTimeToMinutes(a.time), 0);
+            if (totalMin === 0) return null;
+            return (
+              <Tooltip side="top" portal label={`Temps cumulé de toutes les actions de cette analyse (${panelActions.length} actions)`}>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                  <Clock className="h-3 w-3" />
+                  <span className="font-medium tabular-nums text-[var(--text-primary)]">{formatMinutesLabel(totalMin)}</span>
+                  <span>d'actions</span>
+                </span>
+              </Tooltip>
+            );
+          })()}
         </div>
       </div>
 
@@ -2378,34 +2565,30 @@ function CreateTagModal({
   const trimmed = name.trim();
   const exists = existingTags.includes(trimmed);
   const canSubmit = trimmed.length > 0 && !exists;
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  }, [onCancel]);
+  const { phase, requestClose } = useModalTransition(onCancel);
 
   if (typeof document === "undefined") return null;
+  const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
+  const modalClass   = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onCancel()}
+      className={`t-modal-overlay ${overlayClass} fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+      onClick={(e) => e.target === e.currentTarget && requestClose()}
     >
-      <div className="relative w-full max-w-[420px] rounded-3xl bg-[var(--modal-bg)] p-7 shadow-[var(--shadow-floating)]">
+      <div className={`t-modal ${modalClass} relative w-full max-w-[420px] rounded-3xl bg-[var(--modal-bg)] p-7 shadow-[var(--shadow-floating)]`}>
         <button
-          onClick={onCancel}
+          onClick={requestClose}
           className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
         >
           <XMarkIcon className="h-5 w-5" />
         </button>
 
-        <h3 className="mb-1.5 text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">
+        <h3 className="mb-1.5 font-semibold tracking-subheading text-[var(--text-primary)]">
           Créer un nouveau tag
         </h3>
         <p className="mb-5 text-[13px] text-[var(--text-secondary)]">
-          Donnez un nom à votre tag — une couleur lui sera attribuée automatiquement.
+          Donnez un nom à votre lot — une couleur lui sera attribuée automatiquement.
         </p>
 
         <input
@@ -2414,11 +2597,11 @@ function CreateTagModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) onCreate(trimmed); }}
-          placeholder="Ex. Tag Mai 2026 — Refonte"
+          placeholder="Ex. Lot Mai 2026 — Refonte"
           className="w-full rounded-full border border-[var(--border-medium)] bg-[var(--input-bg)] px-4 py-2.5 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-input)] focus:border-[var(--accent-primary)] focus:outline-none"
         />
         {exists && (
-          <p className="mt-2 text-[12px] text-[var(--color-danger)]">Ce tag existe déjà.</p>
+          <p className="mt-2 text-[12px] text-[var(--color-danger)]">Ce lot existe déjà.</p>
         )}
 
         <div className="mt-6 flex justify-end gap-2">
@@ -2609,10 +2792,10 @@ export function BriefsView({
   }
 
   const [tagColors, setTagColors] = useState<Record<string, string>>({
-    "Tag SEO — Optimisation Q2":  "#3B82F6",
-    "Tag Création — Blog expert": "var(--color-success)",
-    "Tag GEO — Structured data":  "#A855F7",
-    "Sans tag":                   "#64748B",
+    "Lot SEO — Optimisation Q2":  "#3B82F6",
+    "Lot Création — Blog expert": "var(--color-success)",
+    "Lot GEO — Structured data":  "#A855F7",
+    "Sans lot":                   "#64748B",
   });
   function setTagColor(tag: string, color: string) {
     setTagColors((prev) => ({ ...prev, [tag]: color }));
@@ -2641,7 +2824,7 @@ export function BriefsView({
   const [colTag,      setColTag]      = useState("all");
 
   // Tri sur les colonnes chiffrables — clic sur header cycle asc → desc → off
-  type SortKey = "position" | "volume" | "trafic" | "score" | "analyse";
+  type SortKey = "position" | "volume" | "trafic" | "ctr" | "effort" | "score" | "analyse";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   function toggleSort(key: SortKey) {
@@ -2694,6 +2877,8 @@ export function BriefsView({
         case "position": return b.position ?? 9999;
         case "volume":   return b.volume;
         case "trafic":   return b.clics ?? -1;
+        case "ctr":      return (b.clics != null && b.impressions) ? (b.clics / b.impressions) * 100 : -1;
+        case "effort":   return estimateEffortHours(b);
         case "score":    return b.semanticScore;
         case "analyse":  return b.analysedAt ? new Date(b.analysedAt).getTime() : -1;
       }
@@ -2737,7 +2922,7 @@ export function BriefsView({
       {/* ── Header — H2 + count badge à gauche, CTA Analyser à droite ── */}
       <div className="mb-4 flex items-center justify-between gap-4 px-[var(--page-px)]">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-[24px] font-semibold leading-none tracking-heading text-[var(--text-primary)]">URLs</h2>
+          <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">URLs</h1>
           <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
             {filtered.length.toLocaleString("fr-FR")}
             {hasActiveFilters && filtered.length !== briefs.length && (
@@ -2757,17 +2942,17 @@ export function BriefsView({
       <div className="mb-4 flex flex-wrap items-center gap-3 px-[var(--page-px)]">
         <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un brief…" alwaysExpanded />
         <ColPill
-          name="Tag"
-          label={colTag === "all" ? "Tag" : colTag === "__none__" ? "Sans tag" : colTag.replace(/^Tag\s+/, "")}
+          name="Lot"
+          label={colTag === "all" ? "Tag" : colTag === "__none__" ? "Sans lot" : colTag.replace(/^Tag\s+/, "")}
           active={colTag !== "all"}
           value={colTag}
           onChange={setColTag}
           items={[
             { value: "all",                        label: "Tous les tags" },
-            { value: "Tag SEO — Optimisation Q2",  label: "SEO — Optimisation Q2" },
-            { value: "Tag Création — Blog expert", label: "Création — Blog expert" },
-            { value: "Tag GEO — Structured data",  label: "GEO — Structured data" },
-            { value: "__none__",                   label: "Sans tag" },
+            { value: "Lot SEO — Optimisation Q2",  label: "SEO — Optimisation Q2" },
+            { value: "Lot Création — Blog expert", label: "Création — Blog expert" },
+            { value: "Lot GEO — Structured data",  label: "GEO — Structured data" },
+            { value: "__none__",                   label: "Sans lot" },
           ]}
         />
         <ColPill
@@ -2844,7 +3029,7 @@ export function BriefsView({
             >
               <DropdownHeader>Choisir un tag</DropdownHeader>
               {Object.keys(tagColors).map((tag) => (
-                <DropdownItem key={tag} onClick={() => assignTag(tag === "Sans tag" ? null : tag)}>
+                <DropdownItem key={tag} onClick={() => assignTag(tag === "Sans lot" ? null : tag)}>
                   <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[tag] }} />
                   {tag}
                 </DropdownItem>
@@ -2913,18 +3098,20 @@ export function BriefsView({
 
       {/* ── Sticky column header — labels statiques + tri sur colonnes chiffrables ── */}
       <div className="sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]">
-        <div ref={headerInnerRef} style={{ minWidth: 1910 }} className="flex h-10 items-center gap-3 pl-[var(--page-px)] pr-4">
+        <div ref={headerInnerRef} style={{ minWidth: 2150 }} className="flex h-10 items-center gap-3 pl-[var(--page-px)] pr-4">
             <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} />
             <ColHeader width={200}>Page</ColHeader>
             <ColHeader width={130}>Mot-clé</ColHeader>
             <ColHeader width={110}>Origine</ColHeader>
-            <SortHeader width={90}  sortKey={sortKey} sortDir={sortDir} k="position" onClick={() => toggleSort("position")}>Position</SortHeader>
+            <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="position" onClick={() => toggleSort("position")}>Position</SortHeader>
             <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="volume"   onClick={() => toggleSort("volume")}>Volume</SortHeader>
             <SortHeader width={200} sortKey={sortKey} sortDir={sortDir} k="trafic"   onClick={() => toggleSort("trafic")}>Trafic</SortHeader>
+            <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="ctr"      onClick={() => toggleSort("ctr")}>CTR</SortHeader>
             <ColHeader width={110}>Priorité</ColHeader>
-            <ColHeader width={100}>Statut</ColHeader>
-            <ColHeader width={200}>Tag</ColHeader>
+            <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="effort"   onClick={() => toggleSort("effort")}>Effort</SortHeader>
+            <ColHeader width={200}>Lot</ColHeader>
             <SortHeader width={130} sortKey={sortKey} sortDir={sortDir} k="analyse"  onClick={() => toggleSort("analyse")}>Analyse</SortHeader>
+            <ColHeader width={100}>Statut</ColHeader>
             <div className="w-12 flex-shrink-0 min-w-0" />
             <SortHeader width={64}  sortKey={sortKey} sortDir={sortDir} k="score"    onClick={() => toggleSort("score")}>Score</SortHeader>
             <div className="sticky right-0 w-16 flex-shrink-0 min-w-0 bg-[var(--bg-subtle)]" />
@@ -2942,7 +3129,7 @@ export function BriefsView({
             description={search ? `Aucun résultat pour « ${search} »` : "Aucun brief dans cette catégorie."}
           />
         ) : (
-          <div style={{ minWidth: 1910 }}>
+          <div style={{ minWidth: 2150 }}>
             {pageBriefs.map((brief, i) => {
                 const { color, colorBg, text: typeText } = TYPE_CONFIG[brief.type];
                 const prio = PRIORITY_CONFIG[briefPriorities[brief.id] ?? brief.priority];
@@ -2994,12 +3181,31 @@ export function BriefsView({
                       </span>
                     </div>
 
-                    {/* Position SERP */}
-                    <div className="w-[90px] flex-shrink-0 min-w-0">
+                    {/* Position SERP + delta pill (vs analyse précédente) */}
+                    <div className="w-[110px] flex-shrink-0 min-w-0">
                       {brief.position ? (
-                        <span className={`text-[13px] font-semibold tabular-nums ${brief.position <= 10 ? "text-[var(--color-success)]" : brief.position <= 20 ? "text-[var(--color-warning)]" : "text-[var(--text-muted)]"}`}>
-                          #{brief.position}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+                            #{brief.position}
+                          </span>
+                          {brief.positionDelta != null && brief.positionDelta !== 0 && (() => {
+                            // negatif = gain de position (meilleur), positif = perte
+                            const isGain = brief.positionDelta < 0;
+                            const abs = Math.abs(brief.positionDelta);
+                            const color = isGain ? "var(--color-success)" : "var(--color-danger)";
+                            return (
+                              <span
+                                className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
+                                style={{
+                                  color,
+                                  backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)`,
+                                }}
+                              >
+                                {isGain ? "↑" : "↓"}{abs.toFixed(abs < 10 ? 1 : 0)}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       ) : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
                     </div>
 
@@ -3061,6 +3267,54 @@ export function BriefsView({
                       })() : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
                     </div>
 
+                    {/* CTR — réel + pill gap inline (même style que Position) */}
+                    <div className="w-[110px] flex-shrink-0 min-w-0">
+                      {(() => {
+                        if (brief.clics == null || brief.impressions == null || !brief.impressions) {
+                          return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+                        }
+                        const ctrReel = (brief.clics / brief.impressions) * 100;
+                        const ctrAttendu = expectedCtrFromPosition(brief.position);
+                        const gap = ctrAttendu != null ? ctrReel - ctrAttendu : null;
+                        const sousPerf = gap != null && gap < 0;
+                        const color = sousPerf ? "var(--color-danger)" : "var(--color-success)";
+                        return (
+                          <Tooltip
+                            side="top"
+                            rich
+                            portal
+                            label={
+                              <div className="flex flex-col gap-1">
+                                <p className="font-semibold">CTR</p>
+                                <div className="flex items-center justify-between gap-4"><span className="opacity-70">Réel</span><span className="font-semibold tabular-nums">{ctrReel.toFixed(1)}%</span></div>
+                                {ctrAttendu != null && (
+                                  <div className="flex items-center justify-between gap-4"><span className="opacity-70">Attendu</span><span className="font-semibold tabular-nums">{ctrAttendu.toFixed(1)}%</span></div>
+                                )}
+                                {gap != null && (
+                                  <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-1 mt-0.5"><span className="opacity-70">Gap</span><span className="font-semibold tabular-nums" style={{ color: sousPerf ? "#f87171" : "#34d399" }}>{gap > 0 ? "+" : ""}{gap.toFixed(1)}pts</span></div>
+                                )}
+                              </div>
+                            }
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{ctrReel.toFixed(1)}%</span>
+                              {gap != null && gap !== 0 && (
+                                <span
+                                  className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
+                                  style={{
+                                    color,
+                                    backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)`,
+                                  }}
+                                >
+                                  {sousPerf ? "↓" : "↑"}{Math.abs(gap).toFixed(1)}
+                                </span>
+                              )}
+                            </div>
+                          </Tooltip>
+                        );
+                      })()}
+                    </div>
+
                     {/* Priorité */}
                     <div className="w-[110px] flex-shrink-0 min-w-0">
                       <div onClick={(e) => e.stopPropagation()}>
@@ -3091,17 +3345,21 @@ export function BriefsView({
                       </div>
                     </div>
 
-                    {/* Statut */}
-                    <div className="w-[100px] flex-shrink-0 min-w-0">
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <StatusPillDropdown
-                          status={briefStatuses[brief.id] ?? "todo"}
-                          onChange={(next) => toggleStatus(brief.id, next)}
-                        />
-                      </div>
+                    {/* Effort — durée estimée (texte simple) */}
+                    <div className="w-[80px] flex-shrink-0 min-w-0">
+                      {(() => {
+                        const h = estimateEffortHours(brief);
+                        return (
+                          <Tooltip side="top" portal label={`${h}h estimées pour livrer cette analyse`}>
+                            <span className="text-[13px] font-medium tabular-nums text-[var(--text-secondary)]">
+                              {h}h
+                            </span>
+                          </Tooltip>
+                        );
+                      })()}
                     </div>
 
-                    {/* Tag — dropdown pour changer (même comportement que Priorité) */}
+                    {/* Lot — chip large, label complet sans crop */}
                     <div className="w-[200px] flex-shrink-0 min-w-0">
                       <div onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu
@@ -3109,25 +3367,25 @@ export function BriefsView({
                           trigger={brief.tag ? (
                             <button
                               type="button"
-                              className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                              className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                             >
-                              <span className="h-2 w-2 flex-shrink-0 min-w-0 rounded-full" style={{ backgroundColor: tagColors[brief.tag] ?? "#64748B" }} />
-                              <span className="truncate">{shortTag(brief.tag)}</span>
+                              <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[brief.tag] ?? "#64748B" }} />
+                              <span className="whitespace-nowrap">{shortTag(brief.tag)}</span>
                             </button>
                           ) : (
                             <button
                               type="button"
-                              className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                             >
-                              + Ajouter un tag
+                              + Ajouter un lot
                             </button>
                           )}
                         >
-                          <DropdownHeader>Changer de tag</DropdownHeader>
+                          <DropdownHeader>Changer de lot</DropdownHeader>
                           {Object.keys(tagColors).map((tag) => (
                             <DropdownItem
                               key={tag}
-                              onClick={() => changeBriefTag(brief.id, tag === "Sans tag" ? null : tag)}
+                              onClick={() => changeBriefTag(brief.id, tag === "Sans lot" ? null : tag)}
                               selected={brief.tag === tag}
                             >
                               <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[tag] }} />
@@ -3146,7 +3404,7 @@ export function BriefsView({
                       </div>
                     </div>
 
-                    {/* Analyse */}
+                    {/* Analyse — version + date */}
                     <div className="w-[130px] flex-shrink-0 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span
@@ -3157,9 +3415,30 @@ export function BriefsView({
                               : (brief.analysisCount && brief.analysisCount > 1 ? "var(--color-success)" : "var(--color-warning)"),
                           }}
                         />
-                        <span className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
-                          {analyseLabel ? `Analysée · ${analyseLabel}` : "Pas encore analysée"}
-                        </span>
+                        {analyseLabel ? (
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
+                              Analyse {brief.analysisCount ?? 1}
+                            </p>
+                            <p className="truncate text-[11px] tracking-caption text-[var(--text-muted)]">
+                              {analyseLabel}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="truncate text-[13px] font-medium text-[var(--text-muted)]">
+                            Pas encore analysée
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Statut — workflow actions (à faire / en cours / fait) — colocalisé avec l'analyse */}
+                    <div className="w-[100px] flex-shrink-0 min-w-0">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <StatusPillDropdown
+                          status={briefStatuses[brief.id] ?? "todo"}
+                          onChange={(next) => toggleStatus(brief.id, next)}
+                        />
                       </div>
                     </div>
 
@@ -3260,7 +3539,7 @@ export function BriefsView({
           brief={activeBrief}
           briefs={filtered}
           briefKeyword={briefKeywords[activeBrief.id] ?? activeBrief.keyword}
-          tagColor={tagColors[activeBrief.tag ?? "Sans tag"] ?? "#64748B"}
+          tagColor={tagColors[activeBrief.tag ?? "Sans lot"] ?? "#64748B"}
           tags={Object.keys(tagColors)}
           tagColors={tagColors}
           status={briefStatuses[activeBrief.id] ?? "todo"}
