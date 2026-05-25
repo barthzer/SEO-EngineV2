@@ -8,7 +8,7 @@ import { SeoEngineLogo } from "@/components/SeoEngineLogo";
 import { SeoEngineWordmark } from "@/components/SeoEngineWordmark";
 import { Tooltip } from "@/components/Tooltip";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
-import { PROJECTS } from "@/data/projects";
+import { useProjects } from "@/context/ProjectsContext";
 import {
   HomeIcon as HomeOutline,
   Cog6ToothIcon as Cog6ToothOutline,
@@ -55,13 +55,15 @@ type ProjectNavItem = { icon: React.ElementType; label: string; tab: string };
 const projectNav: ProjectNavItem[] = [
   { icon: LayoutDashboard,  label: "Vue d'ensemble",     tab: "general" },
   { icon: LinkIcon,         label: "URLs",               tab: "briefs" },
+  // F4 — Études remonté juste après URLs : c'est la 1re chose qu'un consultant
+  // fait sur un nouveau client, pas un sous-onglet enterré en fin de liste.
+  { icon: Lightbulb,        label: "Études de mots-clés", tab: "recommandations" },
   { icon: ClipboardList,    label: "Audit",              tab: "audit" },
   { icon: ChartLine,        label: "Analytics SEO",      tab: "seo" },
   { icon: Target,           label: "Tracking",           tab: "tracking" },
   { icon: CopyIcon,         label: "Cannibalisation",    tab: "cannibal" },
   { icon: Network,          label: "Netlinking",         tab: "netlinking" },
   { icon: Tags,             label: "Univers sémantique", tab: "univers" },
-  { icon: Lightbulb,        label: "Études de mots-clés", tab: "recommandations" },
 ];
 
 /* ── NavRow primitive ──────────────────────────────────────────────── */
@@ -160,13 +162,14 @@ export function Sidebar() {
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
   const unreadCount = NOTIFS.filter((n) => n.unread).length;
+  const projects = useProjects();
 
   const isProjectPage = pathname.startsWith("/analyse/");
   // L'utilisateur est toujours connecté à un projet : si pas dans l'URL, fallback au dernier consulté ou au premier de la liste.
   const projectFromUrl = isProjectPage
     ? decodeURIComponent(pathname.split("/analyse/")[1]?.split("/")[0] ?? "")
     : undefined;
-  const projectDomain = projectFromUrl ?? PROJECTS[0].domain;
+  const projectDomain = projectFromUrl ?? projects[0]?.domain ?? "";
   const activeTab = searchParams.get("tab") ?? "general";
   const isHome = pathname === "/";
 

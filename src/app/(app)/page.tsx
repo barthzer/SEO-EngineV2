@@ -23,6 +23,7 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { Stepper } from "@/components/Stepper";
+import { ScoreGauges } from "@/components/ScoreGauges";
 
 /* ── Mock analyses ───────────────────────────────────────────────────── */
 
@@ -31,7 +32,10 @@ type Analysis = {
   domain: string;
   updatedAt: string; // ISO date string
   gscConnected: boolean;
-  score: number;
+  /** 3 sous-scores transparents : Technique / Contenu / Netlinking. */
+  scoreTechnique: number;
+  scoreContenu: number;
+  scoreNetlinking: number;
   trafic: string;
   traficDir: "up" | "down" | "neutral";
   tagsActifs: number;
@@ -40,55 +44,30 @@ type Analysis = {
 };
 
 const MOCK_ANALYSES: Analysis[] = [
-  { id: 1,  domain: "leboncoin.fr",      updatedAt: "2026-04-28", gscConnected: true,  score: 84, trafic: "+12 %", traficDir: "up",   tagsActifs: 6,  briefs: 42,  status: "actif"   },
-  { id: 2,  domain: "doctolib.fr",       updatedAt: "2026-04-15", gscConnected: true,  score: 61, trafic: "−3 %",  traficDir: "down", tagsActifs: 2,  briefs: 18,  status: "actif"   },
-  { id: 3,  domain: "backmarket.com",    updatedAt: "2026-04-02", gscConnected: false, score: 73, trafic: "+5 %",  traficDir: "up",   tagsActifs: 4,  briefs: 31,  status: "actif"   },
-  { id: 4,  domain: "sephora.fr",        updatedAt: "2026-04-28", gscConnected: true,  score: 91, trafic: "+18 %", traficDir: "up",   tagsActifs: 9,  briefs: 67,  status: "actif"   },
-  { id: 5,  domain: "fnac.com",          updatedAt: "2026-04-24", gscConnected: false, score: 78, trafic: "+7 %",  traficDir: "up",   tagsActifs: 5,  briefs: 38,  status: "actif"   },
-  { id: 6,  domain: "decathlon.fr",      updatedAt: "2026-04-22", gscConnected: true,  score: 87, trafic: "+9 %",  traficDir: "up",   tagsActifs: 7,  briefs: 55,  status: "actif"   },
-  { id: 7,  domain: "lafourchette.com",  updatedAt: "2026-04-19", gscConnected: false, score: 66, trafic: "+2 %",  traficDir: "up",   tagsActifs: 3,  briefs: 22,  status: "actif"   },
-  { id: 8,  domain: "boulanger.com",     updatedAt: "2026-04-17", gscConnected: false, score: 71, trafic: "−1 %",  traficDir: "down", tagsActifs: 4,  briefs: 29,  status: "actif"   },
-  { id: 9,  domain: "veepee.fr",         updatedAt: "2026-04-14", gscConnected: true,  score: 58, trafic: "+4 %",  traficDir: "up",   tagsActifs: 2,  briefs: 15,  status: "actif"   },
-  { id: 10, domain: "blablacar.fr",      updatedAt: "2026-04-10", gscConnected: false, score: 79, trafic: "+11 %", traficDir: "up",   tagsActifs: 5,  briefs: 41,  status: "actif"   },
-  { id: 11, domain: "mano-mano.fr",      updatedAt: "2026-04-20", gscConnected: true,  score: 69, trafic: "+9 %",  traficDir: "up",   tagsActifs: 3,  briefs: 24,  status: "archive" },
-  { id: 12, domain: "cdiscount.com",     updatedAt: "2026-04-18", gscConnected: false, score: 82, trafic: "+14 %", traficDir: "up",   tagsActifs: 7,  briefs: 54,  status: "archive" },
-  { id: 13, domain: "lemonde.fr",        updatedAt: "2026-04-12", gscConnected: true,  score: 88, trafic: "+6 %",  traficDir: "up",   tagsActifs: 8,  briefs: 61,  status: "archive" },
-  { id: 14, domain: "kiabi.com",         updatedAt: "2026-04-05", gscConnected: false, score: 38, trafic: "−8 %",  traficDir: "down", tagsActifs: 1,  briefs: 9,   status: "archive" },
-  { id: 15, domain: "darty.com",         updatedAt: "2026-04-03", gscConnected: true,  score: 74, trafic: "+3 %",  traficDir: "up",   tagsActifs: 5,  briefs: 37,  status: "archive" },
-  { id: 16, domain: "leroymerlin.fr",    updatedAt: "2026-04-01", gscConnected: true,  score: 92, trafic: "+21 %", traficDir: "up",   tagsActifs: 11, briefs: 89,  status: "archive" },
-  { id: 17, domain: "seloger.com",       updatedAt: "2026-03-28", gscConnected: false, score: 55, trafic: "−5 %",  traficDir: "down", tagsActifs: 2,  briefs: 13,  status: "archive" },
-  { id: 18, domain: "lequipe.fr",        updatedAt: "2026-03-25", gscConnected: true,  score: 83, trafic: "+16 %", traficDir: "up",   tagsActifs: 6,  briefs: 48,  status: "archive" },
+  { id: 1,  domain: "leboncoin.fr",      updatedAt: "2026-04-28", gscConnected: true,  scoreTechnique: 84, scoreContenu: 78, scoreNetlinking: 90, trafic: "+12 %", traficDir: "up",   tagsActifs: 6,  briefs: 42,  status: "actif"   },
+  { id: 2,  domain: "doctolib.fr",       updatedAt: "2026-04-15", gscConnected: true,  scoreTechnique: 61, scoreContenu: 58, scoreNetlinking: 65, trafic: "−3 %",  traficDir: "down", tagsActifs: 2,  briefs: 18,  status: "actif"   },
+  { id: 3,  domain: "backmarket.com",    updatedAt: "2026-04-02", gscConnected: false, scoreTechnique: 73, scoreContenu: 70, scoreNetlinking: 79, trafic: "+5 %",  traficDir: "up",   tagsActifs: 4,  briefs: 31,  status: "actif"   },
+  { id: 4,  domain: "sephora.fr",        updatedAt: "2026-04-28", gscConnected: true,  scoreTechnique: 91, scoreContenu: 88, scoreNetlinking: 94, trafic: "+18 %", traficDir: "up",   tagsActifs: 9,  briefs: 67,  status: "actif"   },
+  { id: 5,  domain: "fnac.com",          updatedAt: "2026-04-24", gscConnected: false, scoreTechnique: 78, scoreContenu: 75, scoreNetlinking: 82, trafic: "+7 %",  traficDir: "up",   tagsActifs: 5,  briefs: 38,  status: "actif"   },
+  { id: 6,  domain: "decathlon.fr",      updatedAt: "2026-04-22", gscConnected: true,  scoreTechnique: 87, scoreContenu: 90, scoreNetlinking: 84, trafic: "+9 %",  traficDir: "up",   tagsActifs: 7,  briefs: 55,  status: "actif"   },
+  { id: 7,  domain: "lafourchette.com",  updatedAt: "2026-04-19", gscConnected: false, scoreTechnique: 66, scoreContenu: 60, scoreNetlinking: 70, trafic: "+2 %",  traficDir: "up",   tagsActifs: 3,  briefs: 22,  status: "actif"   },
+  { id: 8,  domain: "boulanger.com",     updatedAt: "2026-04-17", gscConnected: false, scoreTechnique: 71, scoreContenu: 68, scoreNetlinking: 75, trafic: "−1 %",  traficDir: "down", tagsActifs: 4,  briefs: 29,  status: "actif"   },
+  { id: 9,  domain: "veepee.fr",         updatedAt: "2026-04-14", gscConnected: true,  scoreTechnique: 58, scoreContenu: 55, scoreNetlinking: 62, trafic: "+4 %",  traficDir: "up",   tagsActifs: 2,  briefs: 15,  status: "actif"   },
+  { id: 10, domain: "blablacar.fr",      updatedAt: "2026-04-10", gscConnected: false, scoreTechnique: 79, scoreContenu: 81, scoreNetlinking: 76, trafic: "+11 %", traficDir: "up",   tagsActifs: 5,  briefs: 41,  status: "actif"   },
+  { id: 11, domain: "mano-mano.fr",      updatedAt: "2026-04-20", gscConnected: true,  scoreTechnique: 69, scoreContenu: 65, scoreNetlinking: 73, trafic: "+9 %",  traficDir: "up",   tagsActifs: 3,  briefs: 24,  status: "archive" },
+  { id: 12, domain: "cdiscount.com",     updatedAt: "2026-04-18", gscConnected: false, scoreTechnique: 82, scoreContenu: 78, scoreNetlinking: 86, trafic: "+14 %", traficDir: "up",   tagsActifs: 7,  briefs: 54,  status: "archive" },
+  { id: 13, domain: "lemonde.fr",        updatedAt: "2026-04-12", gscConnected: true,  scoreTechnique: 88, scoreContenu: 92, scoreNetlinking: 84, trafic: "+6 %",  traficDir: "up",   tagsActifs: 8,  briefs: 61,  status: "archive" },
+  { id: 14, domain: "kiabi.com",         updatedAt: "2026-04-05", gscConnected: false, scoreTechnique: 38, scoreContenu: 42, scoreNetlinking: 35, trafic: "−8 %",  traficDir: "down", tagsActifs: 1,  briefs: 9,   status: "archive" },
+  { id: 15, domain: "darty.com",         updatedAt: "2026-04-03", gscConnected: true,  scoreTechnique: 74, scoreContenu: 72, scoreNetlinking: 78, trafic: "+3 %",  traficDir: "up",   tagsActifs: 5,  briefs: 37,  status: "archive" },
+  { id: 16, domain: "leroymerlin.fr",    updatedAt: "2026-04-01", gscConnected: true,  scoreTechnique: 92, scoreContenu: 90, scoreNetlinking: 94, trafic: "+21 %", traficDir: "up",   tagsActifs: 11, briefs: 89,  status: "archive" },
+  { id: 17, domain: "seloger.com",       updatedAt: "2026-03-28", gscConnected: false, scoreTechnique: 55, scoreContenu: 52, scoreNetlinking: 60, trafic: "−5 %",  traficDir: "down", tagsActifs: 2,  briefs: 13,  status: "archive" },
+  { id: 18, domain: "lequipe.fr",        updatedAt: "2026-03-25", gscConnected: true,  scoreTechnique: 83, scoreContenu: 86, scoreNetlinking: 80, trafic: "+16 %", traficDir: "up",   tagsActifs: 6,  briefs: 48,  status: "archive" },
 ];
 
-/* ── Score circle ────────────────────────────────────────────────────── */
-
-function ScoreCircle({ score }: { score: number }) {
-  const color = score >= 70 ? "var(--color-success)" : score >= 50 ? "var(--color-warning)" : "var(--color-danger)";
-  const r = 22;
-  const stroke = 3;
-  const size = (r + stroke) * 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - score / 100);
-
-  return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-subtle)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke={color} strokeWidth={stroke}
-          strokeDasharray={circ} strokeDashoffset={offset}
-          strokeLinecap="round"
-        />
-      </svg>
-      <span
-        className="absolute inset-0 flex items-center justify-center text-[12px] font-semibold text-[var(--text-primary)]"
-      >
-        {score}
-      </span>
-    </div>
-  );
-}
+/* ── Score (F3 : ScoreCircle opaque → 3 jauges verticales transparentes) ─ */
+// L'ancien ScoreCircle 0-100 ne survivait pas à un client qui demandait
+// "pourquoi 61 ?" — le composite était indéfendable. On le remplace par
+// 3 jauges (Technique / Contenu / Netlinking) défendables individuellement.
 
 /* ── Relative time ───────────────────────────────────────────────────── */
 
@@ -260,7 +239,11 @@ function AnalysisCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">{a.domain}</p>
         </div>
-        <ScoreCircle score={a.score} />
+        <ScoreGauges
+          technique={a.scoreTechnique}
+          contenu={a.scoreContenu}
+          netlinking={a.scoreNetlinking}
+        />
       </div>
 
       {/* Metrics */}
@@ -457,7 +440,9 @@ export default function DashboardPage() {
           domain,
           updatedAt: "2026-04-29",
           gscConnected: false,
-          score: Math.floor(Math.random() * 40 + 55),
+          scoreTechnique: Math.floor(Math.random() * 40 + 55),
+          scoreContenu: Math.floor(Math.random() * 40 + 55),
+          scoreNetlinking: Math.floor(Math.random() * 40 + 55),
           trafic: "+0 %",
           traficDir: "neutral",
           tagsActifs: 0,

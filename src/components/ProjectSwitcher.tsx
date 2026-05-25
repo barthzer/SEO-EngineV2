@@ -7,7 +7,8 @@ import Link from "next/link";
 import { ChevronDownIcon, MagnifyingGlassIcon, Squares2X2Icon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { Tooltip } from "@/components/Tooltip";
 import { Kbd } from "@/components/Kbd";
-import { PROJECTS, type Project } from "@/data/projects";
+import { useProjects } from "@/context/ProjectsContext";
+import { type Project } from "@/data/projects";
 
 /* ── Favicon helper — favicon Google, fallback initial avec dégradé ─── */
 
@@ -91,6 +92,7 @@ function pushRecent(domain: string) {
 
 export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
   const router = useRouter();
+  const projects = useProjects();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -139,18 +141,18 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
     router.push(`/analyse/${encodeURIComponent(p.domain)}`);
   }
 
-  const currentProject = PROJECTS.find((p) => p.domain === currentDomain);
+  const currentProject = projects.find((p) => p.domain === currentDomain);
   const q = search.trim().toLowerCase();
-  const filtered = q ? PROJECTS.filter((p) => p.domain.toLowerCase().includes(q)) : PROJECTS;
+  const filtered = q ? projects.filter((p) => p.domain.toLowerCase().includes(q)) : projects;
   const recentProjects = q
     ? []
     : recent
-        .map((d) => PROJECTS.find((p) => p.domain === d))
+        .map((d) => projects.find((p) => p.domain === d))
         .filter((p): p is Project => !!p && p.domain !== currentDomain)
         .slice(0, 4);
 
   // L'utilisateur est toujours connecté à un projet — fallback au premier si pas trouvé.
-  const project = currentProject ?? PROJECTS[0];
+  const project = currentProject ?? projects[0];
   const isSidebar = sidebarExpanded !== undefined;
 
   return (

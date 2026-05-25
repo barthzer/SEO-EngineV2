@@ -2,9 +2,11 @@ import { Suspense } from "react";
 import { DrawerProvider } from "@/context/DrawerContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { PageMetaProvider } from "@/context/PageMetaContext";
+import { ProjectsProvider } from "@/context/ProjectsContext";
 import { Drawer } from "@/components/Drawer";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import type { Project } from "@/data/projects";
 
 /**
  * Fallback statique de la sidebar pendant l'hydratation côté SSR/static export.
@@ -14,11 +16,18 @@ function SidebarFallback() {
   return <aside className="h-full w-16 flex-shrink-0 bg-[var(--bg-primary)]" aria-hidden="true" />;
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  projects,
+}: {
+  children: React.ReactNode;
+  projects: Project[];
+}) {
   return (
     <ToastProvider>
       <DrawerProvider>
         <PageMetaProvider>
+          <ProjectsProvider value={projects}>
           <div className="flex h-[100dvh] overflow-hidden bg-[var(--bg-primary)]">
             {/* Sidebar lit useSearchParams (?tab=) — wrap dans Suspense pour permettre le static prerender. */}
             <Suspense fallback={<SidebarFallback />}>
@@ -30,6 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </main>
           </div>
           <Drawer />
+          </ProjectsProvider>
         </PageMetaProvider>
       </DrawerProvider>
     </ToastProvider>
