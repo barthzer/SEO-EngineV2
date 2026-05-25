@@ -116,7 +116,21 @@ export function OnboardingShell({
             "linear-gradient(to bottom, #0C0C0C 0%, #0C0C0C 25%, var(--accent-primary) 75%, color-mix(in oklab, var(--accent-primary) 55%, white) 100%)",
         }}
       >
-        {preview}
+        {/* Texture pointillés — seuls les points blancs ressortent
+            (mix-blend-mode: screen → le noir devient transparent). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: "url('/onboarding-dots.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            mixBlendMode: "screen",
+            opacity: 0.5,
+          }}
+        />
+        <div className="relative h-full">{preview}</div>
       </aside>
     </div>
   );
