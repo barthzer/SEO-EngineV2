@@ -816,6 +816,8 @@ const ACTION_SOURCE_LABEL: Record<ActionSource, string> = {
   technique: "Technique",
 };
 
+import type { ActionOwner } from "@/components/ActionCard";
+
 type Action = {
   id: string;
   source: ActionSource;
@@ -824,18 +826,21 @@ type Action = {
   time?: string;
   impact?: string;
   /** B1 — Owner + deadline + récurrence (mock pour l'instant, persistance en B1b). */
-  owner?: { name: string; initials: string; colorIndex?: number };
+  owner?: ActionOwner;
   deadline?: string;
   recurrence?: "none" | "weekly" | "monthly" | "quarterly";
 };
 
-/** B1 — Owners de démo (réutilisés par les actions ci-dessous). */
-const DEMO_OWNERS = {
-  BL: { name: "Barthélemy L.", initials: "BL", colorIndex: 0 },
-  SM: { name: "Sophie M.",     initials: "SM", colorIndex: 1 },
-  TL: { name: "Thomas L.",     initials: "TL", colorIndex: 2 },
-  MP: { name: "Marie P.",      initials: "MP", colorIndex: 3 },
-} as const;
+/** B1 — Owners de démo (cohérents avec /equipe pour les vraies photos pravatar.cc). */
+const DEMO_OWNERS: Record<string, ActionOwner> = {
+  BL: { id: "bl", name: "Barthélemy L.", initials: "BL", photoSeed: "barthelemy-l-seo" },
+  SM: { id: "sm", name: "Sophie M.",     initials: "SM", photoSeed: "sophie-m-seo" },
+  TL: { id: "tl", name: "Thomas L.",     initials: "TL", photoSeed: "thomas-l-seo" },
+  MP: { id: "mp", name: "Marie P.",      initials: "MP", photoSeed: "marie-p-seo" },
+};
+
+/** Liste complète des candidats pour le picker d'assignation. */
+const ALL_OWNERS: ActionOwner[] = Object.values(DEMO_OWNERS);
 
 function getAnalysisActions(brief: Brief): Action[] {
   // Deadline générique (29 mai 2026, dans la semaine) pour les démos
@@ -1054,6 +1059,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
+              ownerCandidates={ALL_OWNERS}
               deadline={a.deadline}
               recurrence={a.recurrence}
             />
@@ -1191,6 +1197,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
+              ownerCandidates={ALL_OWNERS}
               deadline={a.deadline}
               recurrence={a.recurrence}
             />
@@ -1467,6 +1474,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
+              ownerCandidates={ALL_OWNERS}
               deadline={a.deadline}
               recurrence={a.recurrence}
             />
@@ -1691,6 +1699,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
+              ownerCandidates={ALL_OWNERS}
               deadline={a.deadline}
               recurrence={a.recurrence}
             />
@@ -1712,42 +1721,9 @@ function ActionsTab({
   getStatus: (id: string) => BriefStatus;
   setStatus: (id: string, s: BriefStatus) => void;
 }) {
-  const { show: showToast } = useToast();
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<ActionSource | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<ActionPriorityLevel | "all">("all");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleValidate(id: string) {
-    if (getStatus(id) === "done") {
-      setStatus(id, "todo");
-    } else {
-      setStatus(id, "done");
-      showToast(
-        "Action validée",
-        <SuccessCheck size={14} bg="var(--color-success)" replayKey={Date.now()} />,
-      );
-    }
-  }
-
-  function validateSelected() {
-    selected.forEach((id) => setStatus(id, "done"));
-    const count = selected.size;
-    setSelected(new Set());
-    showToast(
-      `${count} action${count > 1 ? "s" : ""} validée${count > 1 ? "s" : ""}`,
-      <SuccessCheck size={14} bg="var(--color-success)" replayKey={Date.now()} />,
-    );
-  }
 
   const filtered = actions.filter((a) =>
     (sourceFilter === "all" || a.source === sourceFilter) &&
@@ -1815,92 +1791,31 @@ function ActionsTab({
         )}
       </div>
 
-      {/* Liste — encarts horizontaux (une action par ligne) */}
+      {/* Liste — ActionCard expandable (cohérent avec les autres onglets) */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl bg-[var(--bg-card)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
           Aucune action ne correspond aux filtres.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((a) => {
-            const isDone = getStatus(a.id) === "done";
-            const isSelected = selected.has(a.id);
-            return (
-              <div
-                key={a.id}
-                className={`group flex items-center gap-4 rounded-2xl border bg-[var(--bg-card)] px-4 py-3 transition-colors ${
-                  isSelected ? "border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)]"
-                }`}
-              >
-                {/* Checkbox sélection multi */}
-                <Checkbox checked={isSelected} onChange={() => toggleSelect(a.id)} />
-
-                {/* Wrapper largeur fixe pour aligner les badges verticalement */}
-                <div className="w-[88px] flex-shrink-0">
-                  <PriorityBadge level={a.priority} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium leading-snug text-[var(--text-primary)]">
-                    {a.title}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--text-muted)]">
-                    <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 font-medium text-[var(--text-secondary)]">
-                      {sourceLabel(a.source)}
-                    </span>
-                    {a.time && (
-                      <>
-                        <span className="text-[var(--border-medium)]">·</span>
-                        <span className="tabular-nums">⏱ {a.time}</span>
-                      </>
-                    )}
-                    {a.impact && (
-                      <>
-                        <span className="text-[var(--border-medium)]">·</span>
-                        <span className="font-medium text-[var(--text-secondary)]">{a.impact}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <ValidateSwitch value={isDone} onChange={() => toggleValidate(a.id)} />
-              </div>
-            );
-          })}
+          {filtered.map((a) => (
+            <ActionCard
+              key={a.id}
+              priority={a.priority}
+              title={a.title}
+              time={a.time}
+              impact={a.impact}
+              status={getStatus(a.id)}
+              onStatusChange={(s) => setStatus(a.id, s)}
+              owner={a.owner}
+              ownerCandidates={ALL_OWNERS}
+              deadline={a.deadline}
+              recurrence={a.recurrence}
+            />
+          ))}
         </div>
       )}
 
-      {/* Bulk action bar — apparaît dès qu'au moins une action est sélectionnée */}
-      {selected.size > 0 && typeof window !== "undefined" && createPortal(
-        <div className="pointer-events-none fixed inset-x-0 bottom-8 z-[700] flex justify-center animate-slide-up">
-          <div
-            className="pointer-events-auto relative flex items-center gap-1 rounded-2xl px-2 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.28)]"
-            style={{ backgroundColor: "var(--floating-bar-bg)" }}
-          >
-            <span className="px-3 text-[14px] font-medium" style={{ color: "var(--floating-bar-text)", opacity: 0.5 }}>
-              {selected.size} sélectionnée{selected.size > 1 ? "s" : ""}
-            </span>
-            <div className="h-4 w-px" style={{ backgroundColor: "var(--floating-bar-sep)" }} />
-            <button
-              onClick={validateSelected}
-              className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors hover:bg-[var(--floating-bar-hover)]"
-              style={{ color: "var(--floating-bar-text)" }}
-            >
-              <CheckIcon className="h-4 w-4" strokeWidth={2.5} />
-              Valider la sélection
-            </button>
-            <div className="h-4 w-px" style={{ backgroundColor: "var(--floating-bar-sep)" }} />
-            <button
-              onClick={() => setSelected(new Set())}
-              className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-[var(--floating-bar-hover)]"
-              style={{ color: "var(--floating-bar-text)" }}
-              aria-label="Fermer la sélection"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }

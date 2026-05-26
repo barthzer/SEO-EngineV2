@@ -1,21 +1,17 @@
 "use client";
 
 /**
- * Page Équipe — refonte A2.
+ * Page Équipe — refonte A2 (v2 post-feedback).
  *
- * Avant : accordéon façon trombinoscope (qui gère quels projets).
- * Maintenant : tableau dense orienté pilotage (charge, actions ouvertes,
- * briefs en cours, heures cette semaine) + modale détail au clic sur une
- * ligne consultant.
- *
- * Répond à : "Marie est à 130%, Thomas est à 40%" — un patron doit voir
- * sa flotte en 5 secondes.
+ * - Vraies photos via pravatar.cc (déterministes par seed).
+ * - KPI cards via le composant DS `KpiCard`.
+ * - Tableau dense : pas de bg distinct sur le header (respect convention DS).
+ * - Modale détail : Drawer latéral (DS) — pas une modale centrée.
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  XMarkIcon,
   ChevronRightIcon,
   EnvelopeIcon,
   PhoneIcon,
@@ -26,9 +22,11 @@ import {
   ArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
+import { KpiCard } from "@/components/KpiCard";
+import { useDrawer } from "@/context/DrawerContext";
 
 /* ─────────────────────────────────────────────────────────────────────
-   MOCK DATA — version enrichie pilotage
+   MOCK DATA — pilotage
    ───────────────────────────────────────────────────────────────────── */
 
 type ProjectMini = {
@@ -43,21 +41,14 @@ type ProjectMini = {
   stage: "actif" | "en pause" | "terminé";
 };
 
-type Meeting = {
-  client: string;
-  date: string; // ISO
-  label: string;
-};
-
-type Alert = {
-  level: "critical" | "warning";
-  text: string;
-};
+type Meeting = { client: string; date: string; label: string };
+type Alert = { level: "critical" | "warning"; text: string };
 
 type Consultant = {
   id: number;
   name: string;
-  avatar: string;
+  /** Seed pour pravatar.cc — choisir des seeds stables qui rendent bien. */
+  photoSeed: string;
   role: string;
   email: string;
   phone: string;
@@ -72,7 +63,7 @@ const TEAM: Consultant[] = [
   {
     id: 1,
     name: "Barthélemy L.",
-    avatar: "BL",
+    photoSeed: "barthelemy-l-seo",
     role: "Lead SEO",
     email: "barthelemy@awi.com",
     phone: "+33 6 12 34 56 78",
@@ -95,7 +86,7 @@ const TEAM: Consultant[] = [
   {
     id: 2,
     name: "Sophie M.",
-    avatar: "SM",
+    photoSeed: "sophie-m-seo",
     role: "Consultante SEO senior",
     email: "sophie@awi.com",
     phone: "+33 6 23 45 67 89",
@@ -118,7 +109,7 @@ const TEAM: Consultant[] = [
   {
     id: 3,
     name: "Thomas L.",
-    avatar: "TL",
+    photoSeed: "thomas-l-seo",
     role: "Consultant SEO/SEA",
     email: "thomas@awi.com",
     phone: "+33 6 34 56 78 90",
@@ -138,7 +129,7 @@ const TEAM: Consultant[] = [
   {
     id: 4,
     name: "Marie P.",
-    avatar: "MP",
+    photoSeed: "marie-p-seo",
     role: "Content Strategist",
     email: "marie@awi.com",
     phone: "+33 6 45 67 89 01",
@@ -159,35 +150,27 @@ const TEAM: Consultant[] = [
    HELPERS
    ───────────────────────────────────────────────────────────────────── */
 
-const AVATAR_COLORS = ["var(--accent-primary)", "var(--color-success)", "var(--color-warning)", "var(--color-danger)"];
-
 function workloadPct(c: Consultant): number {
   return Math.round((c.hoursThisWeek / c.hoursBudget) * 100);
 }
-
 function totalActions(c: Consultant): number {
   return c.projects.reduce((sum, p) => sum + (p.stage === "actif" ? p.actionsOpen : 0), 0);
 }
-
 function totalBriefs(c: Consultant): number {
   return c.projects.reduce((sum, p) => sum + (p.stage === "actif" ? p.briefsInProgress : 0), 0);
 }
-
 function activeProjectsCount(c: Consultant): number {
   return c.projects.filter((p) => p.stage === "actif").length;
 }
-
 function avgScore(p: ProjectMini): number {
   return Math.round((p.scoreTechnique + p.scoreContenu + p.scoreNetlinking) / 3);
 }
-
 function workloadColor(pct: number): string {
-  if (pct > 110) return "var(--color-danger)";   // surcharge
-  if (pct > 90)  return "var(--color-warning)";  // limite
-  if (pct < 50)  return "var(--text-muted)";     // sous-charge
-  return "var(--color-success)";                  // sain
+  if (pct > 110) return "var(--color-danger)";
+  if (pct > 90)  return "var(--color-warning)";
+  if (pct < 50)  return "var(--text-muted)";
+  return "var(--color-success)";
 }
-
 function formatMeetingDate(iso: string): string {
   const d = new Date(iso);
   const days = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
@@ -195,37 +178,65 @@ function formatMeetingDate(iso: string): string {
   return `${days[d.getDay()]}. ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   SUB-COMPONENTS
-   ───────────────────────────────────────────────────────────────────── */
-
-function Avatar({ initials, index, size = 36 }: { initials: string; index: number; size?: number }) {
-  const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
+/* Photo avatar — vraie photo via pravatar.cc, fallback initiales si erreur réseau. */
+function PhotoAvatar({
+  seed,
+  initials,
+  size = 36,
+}: {
+  seed: string;
+  initials: string;
+  size?: number;
+}) {
+  const [errored, setErrored] = useState(false);
+  // pravatar.cc renvoie une photo réaliste déterministe par seed.
+  const src = `https://i.pravatar.cc/${size * 2}?u=${encodeURIComponent(seed)}`;
+  if (errored) {
+    return (
+      <div
+        className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] font-semibold text-[var(--text-secondary)]"
+        style={{ width: size, height: size, fontSize: size * 0.36 }}
+      >
+        {initials}
+      </div>
+    );
+  }
   return (
-    <div
-      className="flex flex-shrink-0 items-center justify-center rounded-full font-semibold text-white"
-      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.36 }}
-    >
-      {initials}
-    </div>
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      onError={() => setErrored(true)}
+      className="flex-shrink-0 rounded-full object-cover"
+      style={{ width: size, height: size }}
+    />
   );
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .slice(0, 2)
+    .join("");
 }
 
 function WorkloadBar({ pct }: { pct: number }) {
   const color = workloadColor(pct);
-  const capped = Math.min(pct, 150); // visuel : on cap à 150% pour la barre
+  const capped = Math.min(pct, 150);
   return (
     <div className="flex items-center gap-2">
       <div className="relative h-1.5 w-24 overflow-hidden rounded-full bg-[var(--border-subtle)]">
         <div
-          className="absolute inset-y-0 left-0 rounded-full transition-all"
+          className="absolute inset-y-0 left-0 rounded-full"
           style={{
             width: `${(capped / 150) * 100}%`,
             backgroundColor: color,
             transition: "width 500ms var(--ease-expo, cubic-bezier(0.16, 1, 0.3, 1))",
           }}
         />
-        {/* Marker 100% */}
         <div
           className="absolute inset-y-0 w-px bg-[var(--text-muted)] opacity-60"
           style={{ left: `${(100 / 150) * 100}%` }}
@@ -275,221 +286,193 @@ function Favicon({ domain }: { domain: string }) {
   );
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
-      <p className="text-[11px] font-medium text-[var(--text-muted)]">{label}</p>
-      <p className="mt-2 text-[28px] font-semibold leading-none tracking-tight text-[var(--text-primary)] tabular-nums">{value}</p>
-      {sub && <p className="mt-1.5 text-[12px] text-[var(--text-muted)]">{sub}</p>}
-    </div>
-  );
-}
-
 /* ─────────────────────────────────────────────────────────────────────
-   MODALE DÉTAIL CONSULTANT
+   DRAWER CONTENT — détail consultant (side panel via DS Drawer)
    ───────────────────────────────────────────────────────────────────── */
 
-function ConsultantModal({
-  consultant,
-  consultantIndex,
-  onClose,
-}: {
-  consultant: Consultant;
-  consultantIndex: number;
-  onClose: () => void;
-}) {
-  // ESC pour fermer
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
+function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
   const wl = workloadPct(consultant);
   const wlColor = workloadColor(wl);
   const activeCount = activeProjectsCount(consultant);
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-primary)] px-7 py-5">
-          <div className="flex items-center gap-4">
-            <Avatar initials={consultant.avatar} index={consultantIndex} size={52} />
-            <div>
-              <p className="text-[20px] font-semibold tracking-tight text-[var(--text-primary)]">
-                {consultant.name}
-              </p>
-              <p className="text-[13px] text-[var(--text-muted)]">{consultant.role}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-            aria-label="Fermer"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Contact bar */}
-        <div className="flex items-center gap-6 border-b border-[var(--border-subtle)] px-7 py-3 text-[12px] text-[var(--text-secondary)]">
-          <a href={`mailto:${consultant.email}`} className="flex items-center gap-1.5 hover:text-[var(--text-primary)]">
-            <EnvelopeIcon className="h-4 w-4" /> {consultant.email}
-          </a>
-          <a href={`tel:${consultant.phone}`} className="flex items-center gap-1.5 hover:text-[var(--text-primary)]">
-            <PhoneIcon className="h-4 w-4" /> {consultant.phone}
-          </a>
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-3 px-7 py-5">
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Projets</p>
-            <p className="mt-1.5 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">{activeCount}</p>
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">actifs / {consultant.projects.length} total</p>
-          </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Actions ouvertes</p>
-            <p className="mt-1.5 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">{totalActions(consultant)}</p>
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">à traiter</p>
-          </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Briefs en cours</p>
-            <p className="mt-1.5 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">{totalBriefs(consultant)}</p>
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">en rédaction</p>
-          </div>
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Charge semaine</p>
-            <p className="mt-1.5 text-[22px] font-semibold leading-none tabular-nums" style={{ color: wlColor }}>
-              {consultant.hoursThisWeek}h
-            </p>
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">/ {consultant.hoursBudget}h budget · {wl}%</p>
-          </div>
-        </div>
-
-        {/* Alerts */}
-        {consultant.alerts.length > 0 && (
-          <div className="px-7 pb-5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Points d'attention
-            </p>
-            <div className="flex flex-col gap-2">
-              {consultant.alerts.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px]"
-                  style={{
-                    borderColor:
-                      a.level === "critical"
-                        ? "color-mix(in oklab, var(--color-danger) 30%, transparent)"
-                        : "color-mix(in oklab, var(--color-warning) 30%, transparent)",
-                    backgroundColor:
-                      a.level === "critical"
-                        ? "color-mix(in oklab, var(--color-danger) 7%, transparent)"
-                        : "color-mix(in oklab, var(--color-warning) 7%, transparent)",
-                  }}
-                >
-                  <ExclamationTriangleIcon
-                    className="h-4 w-4 flex-shrink-0"
-                    style={{
-                      color: a.level === "critical" ? "var(--color-danger)" : "var(--color-warning)",
-                    }}
-                  />
-                  <span className="text-[var(--text-primary)]">{a.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Projects */}
-        <div className="px-7 pb-5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Projets ({consultant.projects.length})
+    <div className="flex flex-col gap-6">
+      {/* Header — photo XL + nom + rôle */}
+      <div className="flex items-center gap-4">
+        <PhotoAvatar seed={consultant.photoSeed} initials={initialsOf(consultant.name)} size={64} />
+        <div className="min-w-0">
+          <p className="text-[20px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+            {consultant.name}
           </p>
-          <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)]">
-            {consultant.projects.map((p, i) => (
-              <Link
-                key={p.domain}
-                href={`/analyse/${p.domain}`}
-                className={`flex items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--bg-card-hover)] ${
-                  i < consultant.projects.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                }`}
+          <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">{consultant.role}</p>
+        </div>
+      </div>
+
+      {/* Contact */}
+      <div className="flex flex-col gap-1.5">
+        <a
+          href={`mailto:${consultant.email}`}
+          className="inline-flex items-center gap-2 text-[13px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+        >
+          <EnvelopeIcon className="h-4 w-4 text-[var(--text-muted)]" />
+          {consultant.email}
+        </a>
+        <a
+          href={`tel:${consultant.phone}`}
+          className="inline-flex items-center gap-2 text-[13px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+        >
+          <PhoneIcon className="h-4 w-4 text-[var(--text-muted)]" />
+          {consultant.phone}
+        </a>
+      </div>
+
+      {/* Stats — 2×2 dense */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Projets actifs</p>
+          <p className="mt-1 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">
+            {activeCount}
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">/ {consultant.projects.length} total</p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Actions ouvertes</p>
+          <p className="mt-1 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">
+            {totalActions(consultant)}
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">à traiter</p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Briefs en cours</p>
+          <p className="mt-1 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">
+            {totalBriefs(consultant)}
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">en rédaction</p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Charge semaine</p>
+          <p className="mt-1 text-[22px] font-semibold leading-none tabular-nums" style={{ color: wlColor }}>
+            {consultant.hoursThisWeek}h
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+            / {consultant.hoursBudget}h · {wl}%
+          </p>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      {consultant.alerts.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Points d'attention
+          </p>
+          <div className="flex flex-col gap-2">
+            {consultant.alerts.map((a, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 rounded-xl border px-3 py-2.5 text-[13px]"
+                style={{
+                  borderColor:
+                    a.level === "critical"
+                      ? "color-mix(in oklab, var(--color-danger) 30%, transparent)"
+                      : "color-mix(in oklab, var(--color-warning) 30%, transparent)",
+                  backgroundColor:
+                    a.level === "critical"
+                      ? "color-mix(in oklab, var(--color-danger) 7%, transparent)"
+                      : "color-mix(in oklab, var(--color-warning) 7%, transparent)",
+                }}
               >
-                <Favicon domain={p.domain} />
-                <div className="flex-1">
-                  <p className="text-[13px] font-medium text-[var(--text-primary)]">{p.domain}</p>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    {p.actionsOpen} actions · {p.briefsInProgress} briefs
-                  </p>
-                </div>
-                <StageBadge stage={p.stage} />
-                <div
-                  className="flex items-center gap-1 text-[12px] tabular-nums"
+                <ExclamationTriangleIcon
+                  className="mt-0.5 h-4 w-4 flex-shrink-0"
                   style={{
-                    color:
-                      p.traficDir === "up"
-                        ? "var(--color-success)"
-                        : p.traficDir === "down"
-                        ? "var(--color-danger)"
-                        : "var(--text-muted)",
+                    color: a.level === "critical" ? "var(--color-danger)" : "var(--color-warning)",
                   }}
-                >
-                  {p.traficDir === "up" ? (
-                    <ArrowUpIcon className="h-3 w-3" />
-                  ) : p.traficDir === "down" ? (
-                    <ArrowDownIcon className="h-3 w-3" />
-                  ) : null}
-                  {p.trafic}
-                </div>
-                <span className="w-10 text-right text-[13px] font-semibold text-[var(--text-primary)] tabular-nums">
-                  {avgScore(p)}
-                </span>
-                <ChevronRightIcon className="h-4 w-4 text-[var(--text-muted)]" />
-              </Link>
+                />
+                <span className="text-[var(--text-primary)]">{a.text}</span>
+              </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Upcoming meetings */}
-        {consultant.upcomingMeetings.length > 0 && (
-          <div className="px-7 pb-7">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Prochains RDV
-            </p>
-            <div className="flex flex-col gap-1.5">
-              {consultant.upcomingMeetings.map((m, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-2.5"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-primary-bg,var(--bg-secondary))]">
-                      <CalendarDaysIcon className="h-4 w-4 text-[var(--accent-primary)]" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-medium text-[var(--text-primary)]">{m.client}</p>
-                      <p className="text-[11px] text-[var(--text-muted)]">{m.label}</p>
-                    </div>
-                  </div>
-                  <span className="text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
-                    {formatMeetingDate(m.date)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Projets */}
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Projets ({consultant.projects.length})
+        </p>
+        <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)]">
+          {consultant.projects.map((p, i) => (
+            <Link
+              key={p.domain}
+              href={`/analyse/${p.domain}`}
+              className={`flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[var(--bg-card-hover)] ${
+                i < consultant.projects.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
+              }`}
+            >
+              <Favicon domain={p.domain} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{p.domain}</p>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  {p.actionsOpen} actions · {p.briefsInProgress} briefs
+                </p>
+              </div>
+              <StageBadge stage={p.stage} />
+              <div
+                className="flex w-14 items-center justify-end gap-1 text-[12px] tabular-nums"
+                style={{
+                  color:
+                    p.traficDir === "up"
+                      ? "var(--color-success)"
+                      : p.traficDir === "down"
+                      ? "var(--color-danger)"
+                      : "var(--text-muted)",
+                }}
+              >
+                {p.traficDir === "up" ? (
+                  <ArrowUpIcon className="h-3 w-3" />
+                ) : p.traficDir === "down" ? (
+                  <ArrowDownIcon className="h-3 w-3" />
+                ) : null}
+                {p.trafic}
+              </div>
+              <span className="w-8 text-right text-[13px] font-semibold text-[var(--text-primary)] tabular-nums">
+                {avgScore(p)}
+              </span>
+              <ChevronRightIcon className="h-4 w-4 text-[var(--text-muted)]" />
+            </Link>
+          ))}
+        </div>
       </div>
+
+      {/* Upcoming meetings */}
+      {consultant.upcomingMeetings.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Prochains RDV
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {consultant.upcomingMeetings.map((m, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-3 py-2.5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bg-secondary)]">
+                    <CalendarDaysIcon className="h-4 w-4 text-[var(--accent-primary)]" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-[var(--text-primary)]">{m.client}</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">{m.label}</p>
+                  </div>
+                </div>
+                <span className="text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
+                  {formatMeetingDate(m.date)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -500,22 +483,39 @@ function ConsultantModal({
 
 export default function EquipePage() {
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<{ consultant: Consultant; index: number } | null>(null);
+  const drawer = useDrawer();
 
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? TEAM.filter((c) => c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q))
-    : TEAM;
+  const filtered = useMemo(
+    () =>
+      q
+        ? TEAM.filter((c) => c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q))
+        : TEAM,
+    [q],
+  );
 
-  // Stats globales agence
-  const allProjects = TEAM.flatMap((c) => c.projects);
-  const stats = {
-    consultants: TEAM.length,
-    activeProjects: allProjects.filter((p) => p.stage === "actif").length,
-    totalActions: TEAM.reduce((s, c) => s + totalActions(c), 0),
-    avgWorkload: Math.round(TEAM.reduce((s, c) => s + workloadPct(c), 0) / TEAM.length),
-    overloaded: TEAM.filter((c) => workloadPct(c) > 110).length,
-  };
+  // Stats globales agence (calculées une fois)
+  const stats = useMemo(() => {
+    const allProjects = TEAM.flatMap((c) => c.projects);
+    return {
+      consultants: TEAM.length,
+      activeProjects: allProjects.filter((p) => p.stage === "actif").length,
+      totalActions: TEAM.reduce((s, c) => s + totalActions(c), 0),
+      avgWorkload: Math.round(TEAM.reduce((s, c) => s + workloadPct(c), 0) / TEAM.length),
+      overloaded: TEAM.filter((c) => workloadPct(c) > 110).length,
+      underutilized: TEAM.filter((c) => workloadPct(c) < 70).length,
+    };
+  }, []);
+
+  function openDrawer(c: Consultant) {
+    drawer.open(c.name, <ConsultantDrawerContent consultant={c} />);
+  }
+
+  // Fermer le drawer au démontage si encore ouvert
+  useEffect(() => {
+    return () => drawer.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
@@ -531,18 +531,30 @@ export default function EquipePage() {
           </p>
         </div>
 
-        {/* Global stats */}
+        {/* KPI cards — composants DS */}
         <div className="mb-8 grid grid-cols-4 gap-4">
-          <StatCard label="Projets actifs" value={stats.activeProjects} sub={`portés par ${stats.consultants} consultants`} />
-          <StatCard label="Actions à traiter" value={stats.totalActions} sub="cumulé sur l'équipe" />
-          <StatCard
+          <KpiCard
+            label="Projets actifs"
+            value={stats.activeProjects}
+            sub={`portés par ${stats.consultants} consultants`}
+          />
+          <KpiCard
+            label="Actions à traiter"
+            value={stats.totalActions}
+            sub="cumulé sur l'équipe"
+          />
+          <KpiCard
             label="Charge moyenne"
             value={`${stats.avgWorkload}%`}
-            sub={stats.overloaded > 0 ? `${stats.overloaded} consultant${stats.overloaded > 1 ? "s" : ""} en surcharge` : "équipe équilibrée"}
+            sub={
+              stats.overloaded > 0
+                ? `${stats.overloaded} consultant${stats.overloaded > 1 ? "s" : ""} en surcharge`
+                : "équipe équilibrée"
+            }
           />
-          <StatCard
+          <KpiCard
             label="Capacité dispo"
-            value={`${TEAM.filter((c) => workloadPct(c) < 70).length}`}
+            value={stats.underutilized}
             sub="consultant(s) sous-chargé(s)"
           />
         </div>
@@ -557,20 +569,18 @@ export default function EquipePage() {
           />
         </div>
 
-        {/* Table */}
+        {/* Table — header SANS bg distinct (convention DS) */}
         <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-          {/* Table header */}
-          <div className="grid grid-cols-[1.6fr_0.9fr_0.6fr_0.7fr_0.7fr_1.2fr_auto] items-center gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-6 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Consultant</p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Rôle</p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Projets</p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Actions</p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Briefs</p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Charge semaine</p>
+          <div className="grid grid-cols-[1.6fr_0.9fr_0.6fr_0.7fr_0.7fr_1.2fr_auto] items-center gap-4 border-b border-[var(--border-subtle)] px-6 py-3">
+            <p className="text-[12px] font-medium text-[var(--text-muted)]">Consultant</p>
+            <p className="text-[12px] font-medium text-[var(--text-muted)]">Rôle</p>
+            <p className="text-[12px] font-medium text-[var(--text-muted)]">Projets</p>
+            <p className="text-[12px] font-medium text-[var(--text-muted)]">Actions</p>
+            <p className="text-[12px] font-medium text-[var(--text-muted)]">Briefs</p>
+            <p className="text-[12px] font-medium text-[var(--text-muted)]">Charge semaine</p>
             <span className="w-5" aria-hidden />
           </div>
 
-          {/* Rows */}
           {filtered.length === 0 ? (
             <div className="px-6 py-12 text-center text-[14px] text-[var(--text-muted)]">
               Aucun consultant ne correspond à « {search} ».
@@ -578,18 +588,17 @@ export default function EquipePage() {
           ) : (
             filtered.map((c, ci) => {
               const wl = workloadPct(c);
-              const originalIndex = TEAM.indexOf(c);
               return (
                 <button
                   key={c.id}
-                  onClick={() => setSelected({ consultant: c, index: originalIndex })}
+                  onClick={() => openDrawer(c)}
                   className={`grid w-full grid-cols-[1.6fr_0.9fr_0.6fr_0.7fr_0.7fr_1.2fr_auto] items-center gap-4 px-6 py-4 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
                     ci < filtered.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                   }`}
                 >
                   {/* Consultant */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Avatar initials={c.avatar} index={originalIndex} />
+                  <div className="flex min-w-0 items-center gap-3">
+                    <PhotoAvatar seed={c.photoSeed} initials={initialsOf(c.name)} />
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{c.name}</p>
                       <p className="truncate text-[11px] text-[var(--text-muted)]">{c.email}</p>
@@ -635,15 +644,6 @@ export default function EquipePage() {
         </div>
 
       </div>
-
-      {/* Modale détail */}
-      {selected && (
-        <ConsultantModal
-          consultant={selected.consultant}
-          consultantIndex={selected.index}
-          onClose={() => setSelected(null)}
-        />
-      )}
     </div>
   );
 }

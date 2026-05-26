@@ -3,37 +3,39 @@
 /**
  * ActionCard — l'unité économique d'une presta SEO/GEO en agence.
  *
- * B1 — refonte vers le modèle riche :
+ * B1 v2 (post-feedback) :
  *
  *  Collapsed row :
- *    [PRIO] · Titre + sous-meta (⏱ time / impact / 🔁 recurrence)
- *           ─ chevron ─ owner avatar ─ deadline ─ status dropdown (5 valeurs)
+ *    [PRIO] · Titre · meta (⏱ time / impact / 🔁 récurrence) · — ·
+ *    chevron · owner (cliquable → édition) · deadline (cliquable → édition)
+ *    · status dropdown (5 valeurs)
  *
  *  Expanded :
- *    - Description longue + Steps "comment faire" + Resources (déjà existait)
- *    - + Owner / Deadline / Récurrence pills (read-only, edit en B1b)
- *    - + Section "Implémentation" : URL preuve + narratif client
- *      (visibles dès qu'on passe en "done", éditables inline)
- *    - + Indicateur Impact (snapshot T+0/30/60/90 — placeholder pour B1b)
+ *    - Description longue (mise en avant)
+ *    - Steps "comment faire" (mise en avant)
+ *    - Resources optionnelles
+ *    - Narratif client (textarea inline) — affiché dès in_progress / done /
+ *      blocked_client. PAS d'input "URL preuve" (abandonné).
+ *    - Indicateur snapshot impact (placeholder, vrai cycle T+30/60/90 en B1b)
  *
- * Le cycle de redevabilité — ce qu'on facture / mesure / prouve — passe
- * désormais par cette carte. Voir src/db/schema.ts > action_cards.
+ * Pas de couleur sur la deadline — un consultant juge l'urgence à la
+ * lecture, pas via un code couleur rouge anxiogène.
  */
 
-import { useState, type ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
   ChevronDown,
   FileText,
   Sparkles,
-  User,
   Calendar,
   Repeat,
-  LinkIcon as Link2,
   MessageSquare,
   TrendingUp,
+  ChevronDown as CaretDown,
 } from "lucide-react";
 import { PriorityBadge, type ActionPriorityLevel } from "@/components/PriorityBars";
 import { type Status, StatusPillDropdown } from "@/components/StatusPill";
+import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
 import { useToast } from "@/context/ToastContext";
 
 export type { ActionPriorityLevel } from "@/components/PriorityBars";
@@ -48,57 +50,179 @@ const RECURRENCE_LABEL: Record<ActionRecurrence, string> = {
 };
 
 export type ActionOwner = {
+  /** Identifiant stable (slug ou id DB) — utilisé pour le picker. */
+  id: string;
   name: string;
   initials: string;
-  /** Index couleur (0-3) pour l'avatar. */
-  colorIndex?: number;
+  /** Seed photo pravatar.cc (optionnel — fallback initiales). */
+  photoSeed?: string;
 };
 
-const AVATAR_COLORS = [
-  "var(--accent-primary)",
-  "var(--color-success)",
-  "var(--color-warning)",
-  "var(--color-danger)",
-];
-
-function OwnerAvatar({ owner, size = 24 }: { owner: ActionOwner; size?: number }) {
-  const color = AVATAR_COLORS[(owner.colorIndex ?? 0) % AVATAR_COLORS.length];
+/** Photo avatar — vraie photo si seed, sinon initiales. */
+function OwnerAvatar({ owner, size = 22 }: { owner: ActionOwner; size?: number }) {
+  const [errored, setErrored] = useState(false);
+  if (owner.photoSeed && !errored) {
+    return (
+      <img
+        src={`https://i.pravatar.cc/${size * 2}?u=${encodeURIComponent(owner.photoSeed)}`}
+        alt={owner.name}
+        title={owner.name}
+        width={size}
+        height={size}
+        onError={() => setErrored(true)}
+        className="flex-shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
     <div
       title={owner.name}
-      className="flex flex-shrink-0 items-center justify-center rounded-full font-semibold text-white"
-      style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.42 }}
+      className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] font-semibold text-[var(--text-secondary)]"
+      style={{ width: size, height: size, fontSize: size * 0.42 }}
     >
       {owner.initials}
     </div>
   );
 }
 
-/** Format de deadline : "auj.", "demain", "dans 3j", "il y a 2j", ou date courte. */
-function formatDeadline(iso: string): { label: string; tone: "neutral" | "warning" | "danger" } {
+/** Format de deadline — neutre, sans code couleur. */
+function formatDeadline(iso: string): string {
   const target = new Date(iso);
   const now = new Date();
-  // Ramener à minuit pour comparer en jours
   target.setHours(0, 0, 0, 0);
   now.setHours(0, 0, 0, 0);
   const diffDays = Math.round((target.getTime() - now.getTime()) / 86_400_000);
 
-  if (diffDays < 0) {
-    return {
-      label: diffDays === -1 ? "Hier" : `Il y a ${Math.abs(diffDays)}j`,
-      tone: "danger",
-    };
-  }
-  if (diffDays === 0) return { label: "Aujourd'hui", tone: "danger" };
-  if (diffDays === 1) return { label: "Demain", tone: "warning" };
-  if (diffDays <= 7) return { label: `Dans ${diffDays}j`, tone: "warning" };
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Demain";
+  if (diffDays === -1) return "Hier";
+  if (diffDays > 0 && diffDays <= 7) return `Dans ${diffDays}j`;
+  if (diffDays < 0 && diffDays >= -7) return `Il y a ${Math.abs(diffDays)}j`;
 
   const months = ["jan", "fév", "mar", "avr", "mai", "juin", "juil", "août", "sep", "oct", "nov", "déc"];
-  return {
-    label: `${target.getDate()} ${months[target.getMonth()]}`,
-    tone: "neutral",
-  };
+  return `${target.getDate()} ${months[target.getMonth()]}`;
 }
+
+/* ── Owner picker — dropdown DS pour choisir le consultant ────────────── */
+
+function OwnerPicker({
+  owner,
+  candidates,
+  onChange,
+}: {
+  owner?: ActionOwner;
+  candidates: ActionOwner[];
+  onChange?: (next: ActionOwner | undefined) => void;
+}) {
+  const trigger = (
+    <button
+      type="button"
+      className="flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-[var(--bg-card-hover)]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {owner ? (
+        <>
+          <OwnerAvatar owner={owner} size={20} />
+          <CaretDown className="h-3 w-3 text-[var(--text-muted)]" />
+        </>
+      ) : (
+        <span className="flex h-5 items-center text-[11px] text-[var(--text-muted)]">
+          + Assigner
+        </span>
+      )}
+    </button>
+  );
+
+  if (!onChange) {
+    return owner ? <OwnerAvatar owner={owner} size={20} /> : null;
+  }
+
+  return (
+    <DropdownMenu width={220} trigger={trigger}>
+      <DropdownHeader>Assigner à</DropdownHeader>
+      {candidates.map((c) => (
+        <DropdownItem
+          key={c.id}
+          onClick={() => onChange(c)}
+          selected={owner?.id === c.id}
+        >
+          <span className="inline-flex items-center gap-2">
+            <OwnerAvatar owner={c} size={20} />
+            <span className="text-[13px] text-[var(--text-primary)]">{c.name}</span>
+          </span>
+        </DropdownItem>
+      ))}
+      {owner && (
+        <>
+          <div className="my-1 h-px bg-[var(--border-subtle)]" />
+          <DropdownItem onClick={() => onChange(undefined)}>
+            <span className="text-[12px] text-[var(--text-muted)]">Retirer l'assignation</span>
+          </DropdownItem>
+        </>
+      )}
+    </DropdownMenu>
+  );
+}
+
+/* ── Deadline picker — input date inline ──────────────────────────────── */
+
+function DeadlinePicker({
+  deadline,
+  onChange,
+}: {
+  deadline?: string;
+  onChange?: (next: string | undefined) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  if (!onChange) {
+    return deadline ? (
+      <span className="inline-flex items-center gap-1 text-[12px] tabular-nums text-[var(--text-muted)]">
+        <Calendar className="h-3 w-3" />
+        {formatDeadline(deadline)}
+      </span>
+    ) : null;
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="date"
+        defaultValue={deadline}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(v || undefined);
+        }}
+        onBlur={() => setEditing(false)}
+        className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2 py-1 text-[12px] text-[var(--text-primary)] outline-none focus:border-[var(--border-medium)]"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] tabular-nums text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+    >
+      <Calendar className="h-3 w-3" />
+      {deadline ? formatDeadline(deadline) : "Pas de deadline"}
+    </button>
+  );
+}
+
+/* ── Composant principal ──────────────────────────────────────────────── */
 
 export function ActionCard({
   priority,
@@ -111,12 +235,13 @@ export function ActionCard({
   status,
   onStatusChange,
   owner,
+  ownerCandidates = [],
+  onOwnerChange,
   deadline,
+  onDeadlineChange,
   recurrence = "none",
-  evidenceUrl,
   clientNarrative,
   timeSpentMinutes,
-  onEvidenceChange,
   onNarrativeChange,
 }: {
   priority: ActionPriorityLevel;
@@ -128,28 +253,24 @@ export function ActionCard({
   impact?: string;
   status: Status;
   onStatusChange: (s: Status) => void;
-  /** Owner de l'action (consultant responsable). */
   owner?: ActionOwner;
-  /** Deadline ISO (YYYY-MM-DD). */
+  /** Liste de consultants candidats pour l'assignation. */
+  ownerCandidates?: ActionOwner[];
+  onOwnerChange?: (next: ActionOwner | undefined) => void;
   deadline?: string;
-  /** Récurrence. */
+  onDeadlineChange?: (next: string | undefined) => void;
   recurrence?: ActionRecurrence;
-  /** URL preuve d'implémentation (visible quand done). */
-  evidenceUrl?: string;
-  /** Narratif client business (édité par le consultant pour le rapport). */
   clientNarrative?: string;
-  /** Temps passé en minutes (saisie consultant). */
   timeSpentMinutes?: number;
-  onEvidenceChange?: (v: string) => void;
   onNarrativeChange?: (v: string) => void;
 }) {
   const { show: showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
-  const [localEvidence, setLocalEvidence] = useState(evidenceUrl ?? "");
   const [localNarrative, setLocalNarrative] = useState(clientNarrative ?? "");
 
   const isDone = status === "done";
   const isAbandoned = status === "abandoned";
+  const showImplementation = isDone || status === "in_progress" || status === "blocked_client";
 
   const fallbackSteps = [
     `Auditer la situation actuelle : ${title.toLowerCase().slice(0, 80)}`,
@@ -166,7 +287,6 @@ export function ActionCard({
     onStatusChange(next);
     if (next === "done" && status !== "done") {
       showToast("Action livrée");
-      // Ouvre automatiquement la zone d'implémentation pour saisir la preuve.
       setExpanded(true);
     } else if (next === "blocked_client") {
       showToast("Action en attente du client");
@@ -175,20 +295,9 @@ export function ActionCard({
     }
   }
 
-  function handleEvidenceBlur() {
-    if (localEvidence !== evidenceUrl) onEvidenceChange?.(localEvidence);
-  }
   function handleNarrativeBlur() {
     if (localNarrative !== clientNarrative) onNarrativeChange?.(localNarrative);
   }
-
-  const deadlineInfo = deadline ? formatDeadline(deadline) : null;
-  const deadlineColor =
-    deadlineInfo?.tone === "danger"
-      ? "var(--color-danger)"
-      : deadlineInfo?.tone === "warning"
-      ? "var(--color-warning)"
-      : "var(--text-muted)";
 
   return (
     <div
@@ -198,14 +307,14 @@ export function ActionCard({
           : "border-[var(--border-subtle)] hover:border-[var(--border-medium)]"
       } ${isAbandoned ? "opacity-60" : ""}`}
     >
-      {/* Collapsed row */}
-      <div className="flex items-center gap-4 px-4 py-3">
-        {/* Priority — col 1 */}
+      {/* ── COLLAPSED ROW ── */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Priority */}
         <div className="w-[88px] flex-shrink-0">
           <PriorityBadge level={priority} />
         </div>
 
-        {/* Title + meta — col 2 (cliquable pour expand) */}
+        {/* Title + meta — cliquable pour expand */}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -251,178 +360,126 @@ export function ActionCard({
           <ChevronDown className="h-4 w-4" />
         </button>
 
-        {/* Owner avatar */}
-        {owner && (
-          <div className="flex-shrink-0">
-            <OwnerAvatar owner={owner} />
-          </div>
-        )}
+        {/* Owner picker — éditable */}
+        <div className="flex-shrink-0">
+          <OwnerPicker owner={owner} candidates={ownerCandidates} onChange={onOwnerChange} />
+        </div>
 
-        {/* Deadline */}
-        {deadlineInfo && (
-          <span
-            className="hidden min-w-[64px] flex-shrink-0 items-center gap-1 text-right text-[12px] font-medium tabular-nums sm:inline-flex"
-            style={{ color: deadlineColor }}
-            title={deadline}
-          >
-            <Calendar className="h-3 w-3" />
-            {deadlineInfo.label}
-          </span>
-        )}
+        {/* Deadline picker — éditable, neutre (pas de code couleur) */}
+        <div className="hidden flex-shrink-0 sm:block">
+          <DeadlinePicker deadline={deadline} onChange={onDeadlineChange} />
+        </div>
 
-        {/* Status — col 5 */}
+        {/* Status dropdown */}
         <div className="flex-shrink-0">
           <StatusPillDropdown status={status} onChange={handleStatusChange} />
         </div>
       </div>
 
-      {/* Expanded */}
+      {/* ── EXPANDED ── */}
       {expanded && (
-        <div className="border-t border-[var(--border-subtle)] px-4 pb-5 pt-4">
-          <div className="grid grid-cols-[88px_1fr] gap-4">
-            <div /> {/* Spacer */}
-
-            <div className="flex flex-col gap-5">
-              {/* Meta row : owner + deadline + récurrence + temps passé */}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px]">
-                {owner && (
-                  <span className="inline-flex items-center gap-1.5 text-[var(--text-secondary)]">
-                    <User className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                    <OwnerAvatar owner={owner} size={18} />
-                    {owner.name}
-                  </span>
-                )}
-                {deadline && (
-                  <span
-                    className="inline-flex items-center gap-1.5"
-                    style={{ color: deadlineColor }}
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    {deadlineInfo?.label} ({deadline})
-                  </span>
-                )}
-                {recurrence !== "none" && (
-                  <span className="inline-flex items-center gap-1.5 text-[var(--text-secondary)]">
-                    <Repeat className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                    {RECURRENCE_LABEL[recurrence]}
-                  </span>
-                )}
-                {typeof timeSpentMinutes === "number" && timeSpentMinutes > 0 && (
-                  <span className="inline-flex items-center gap-1.5 text-[var(--text-secondary)]">
-                    <span className="font-medium tabular-nums">
-                      {timeSpentMinutes < 60
-                        ? `${timeSpentMinutes} min passées`
-                        : `${(timeSpentMinutes / 60).toFixed(1)} h passées`}
-                    </span>
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              <div>
-                <p className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                  <FileText className="h-3 w-3" />
-                  Description
-                </p>
-                <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
-                  {effectiveDescription}
-                </p>
-              </div>
-
-              {/* Steps */}
-              <div>
-                <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                  <Sparkles className="h-3 w-3" />
-                  Comment réaliser cette action
-                </p>
-                <ol className="flex flex-col gap-2">
-                  {effectiveSteps.map((s, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary-soft)] text-[11px] font-semibold tabular-nums text-[var(--accent-primary)]">
-                        {i + 1}
-                      </span>
-                      <span className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
-                        {s}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-
-              {/* Resources */}
-              {resources && resources.length > 0 && (
-                <div>
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                    Ressources
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {resources.map((r, i) => (
-                      <a
-                        key={i}
-                        href={r.url ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
-                      >
-                        {r.label}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Implémentation — visible si done OU en cours OU bloqué client */}
-              {(isDone || status === "in_progress" || status === "blocked_client") && (
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] p-4">
-                  <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                    <TrendingUp className="h-3 w-3" />
-                    Implémentation
-                  </p>
-
-                  {/* Evidence URL */}
-                  <label className="mb-3 block">
-                    <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)]">
-                      <Link2 className="h-3 w-3" />
-                      URL preuve
-                    </span>
-                    <input
-                      type="url"
-                      value={localEvidence}
-                      onChange={(e) => setLocalEvidence(e.target.value)}
-                      onBlur={handleEvidenceBlur}
-                      placeholder="https://exemple.com/page-modifiée"
-                      className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]"
-                    />
-                  </label>
-
-                  {/* Narratif client */}
-                  <label className="block">
-                    <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)]">
-                      <MessageSquare className="h-3 w-3" />
-                      Narratif client (pour le rapport mensuel)
-                    </span>
-                    <textarea
-                      value={localNarrative}
-                      onChange={(e) => setLocalNarrative(e.target.value)}
-                      onBlur={handleNarrativeBlur}
-                      placeholder="Comment expliquer cette action à votre client en 2 phrases business…"
-                      rows={2}
-                      className="w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[13px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]"
-                    />
-                  </label>
-
-                  {/* Snapshots impact — placeholder UI (vrai cycle T+0/30/60/90 en B1b) */}
-                  {isDone && (
-                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[11px] text-[var(--text-muted)]">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      <span>
-                        Impact mesuré à T+30 / +60 / +90 jours (programmé automatiquement)
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+        <div className="border-t border-[var(--border-subtle)] px-6 pb-6 pt-5">
+          <div className="flex flex-col gap-5">
+            {/* Description — typo plus présente (15px / leading-relaxed / text-primary) */}
+            <div>
+              <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                <FileText className="h-3 w-3" />
+                Description
+              </p>
+              <p className="text-[15px] leading-relaxed text-[var(--text-primary)]">
+                {effectiveDescription}
+              </p>
             </div>
+
+            {/* Steps — typo plus présente, chiffre plus gros */}
+            <div>
+              <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                <Sparkles className="h-3 w-3" />
+                Comment réaliser cette action
+              </p>
+              <ol className="flex flex-col gap-3">
+                {effectiveSteps.map((s, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary-soft)] text-[12px] font-semibold tabular-nums text-[var(--accent-primary)]">
+                      {i + 1}
+                    </span>
+                    <span className="text-[14px] leading-relaxed text-[var(--text-primary)]">
+                      {s}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            {/* Resources */}
+            {resources && resources.length > 0 && (
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                  Ressources
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {resources.map((r, i) => (
+                    <a
+                      key={i}
+                      href={r.url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
+                    >
+                      {r.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Implémentation — visible si in_progress / done / blocked_client.
+                PLUS de champ "URL preuve". Juste narratif + indicateur impact. */}
+            {showImplementation && (
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] p-4">
+                <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                  <TrendingUp className="h-3 w-3" />
+                  Implémentation
+                </p>
+
+                {/* Narratif client */}
+                <label className="block">
+                  <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)]">
+                    <MessageSquare className="h-3 w-3" />
+                    Narratif client (pour le rapport mensuel)
+                  </span>
+                  <textarea
+                    value={localNarrative}
+                    onChange={(e) => setLocalNarrative(e.target.value)}
+                    onBlur={handleNarrativeBlur}
+                    placeholder="Comment expliquer cette action à votre client en 2 phrases business…"
+                    rows={2}
+                    className="w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[13px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]"
+                  />
+                </label>
+
+                {/* Temps passé (read-only pour l'instant) */}
+                {typeof timeSpentMinutes === "number" && timeSpentMinutes > 0 && (
+                  <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                    Temps passé :{" "}
+                    <span className="font-medium tabular-nums text-[var(--text-secondary)]">
+                      {timeSpentMinutes < 60
+                        ? `${timeSpentMinutes} min`
+                        : `${(timeSpentMinutes / 60).toFixed(1)} h`}
+                    </span>
+                  </p>
+                )}
+
+                {isDone && (
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[11px] text-[var(--text-muted)]">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span>
+                      Impact mesuré à T+30 / +60 / +90 jours (programmé automatiquement)
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
