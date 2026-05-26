@@ -245,7 +245,7 @@ const SEVERITY_CONFIG: Record<Severity, { label: string; color: string; bg: stri
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
-const STATUS_CYCLE: Status[] = ["todo", "doing", "done"];
+const STATUS_CYCLE: Status[] = ["todo", "in_progress", "done"];
 
 function nextStatus(s: Status): Status {
   return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
@@ -262,11 +262,11 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
     <button onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all ${
         status === "done"  ? "border-[var(--color-success)] bg-[var(--color-success)]" :
-        status === "doing" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
+        status === "in_progress" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
         "border-[var(--text-muted)]"
       }`}>
       {status === "done"  && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-      {status === "doing" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
+      {status === "in_progress" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
     </button>
   );
 }

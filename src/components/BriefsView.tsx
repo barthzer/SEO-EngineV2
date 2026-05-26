@@ -823,32 +823,50 @@ type Action = {
   title: string;
   time?: string;
   impact?: string;
+  /** B1 — Owner + deadline + récurrence (mock pour l'instant, persistance en B1b). */
+  owner?: { name: string; initials: string; colorIndex?: number };
+  deadline?: string;
+  recurrence?: "none" | "weekly" | "monthly" | "quarterly";
 };
 
+/** B1 — Owners de démo (réutilisés par les actions ci-dessous). */
+const DEMO_OWNERS = {
+  BL: { name: "Barthélemy L.", initials: "BL", colorIndex: 0 },
+  SM: { name: "Sophie M.",     initials: "SM", colorIndex: 1 },
+  TL: { name: "Thomas L.",     initials: "TL", colorIndex: 2 },
+  MP: { name: "Marie P.",      initials: "MP", colorIndex: 3 },
+} as const;
+
 function getAnalysisActions(brief: Brief): Action[] {
+  // Deadline générique (29 mai 2026, dans la semaine) pour les démos
+  const D_SOON   = "2026-05-29";
+  const D_TODAY  = "2026-05-26";
+  const D_PASSED = "2026-05-22";
+  const D_LATER  = "2026-06-10";
+
   return [
     // ── Synthèse ──
-    { id: "syn-1", source: "synthese", priority: "high", title: "Réécrire l'introduction avec le mot-clé principal", time: "30 min", impact: "+CTR" },
-    { id: "syn-2", source: "synthese", priority: "high", title: `Ajouter ${Math.max(1, Math.round(brief.h2s.length * 0.5))} sections H2 manquantes`, time: "45 min", impact: "+8 pts SEO" },
-    { id: "syn-3", source: "synthese", priority: "mid",  title: `Enrichir le contenu à ${brief.wordCount + 400} mots minimum`, time: "2h",     impact: "+5 pts" },
-    { id: "syn-4", source: "synthese", priority: "mid",  title: "Optimiser la balise title et meta description", time: "15 min", impact: "+CTR" },
-    { id: "syn-5", source: "synthese", priority: "low",  title: "Ajouter 3 liens internes depuis les pages piliers", time: "20 min", impact: "+autorité" },
+    { id: "syn-1", source: "synthese", priority: "high", title: "Réécrire l'introduction avec le mot-clé principal", time: "30 min", impact: "+CTR",        owner: DEMO_OWNERS.SM, deadline: D_TODAY },
+    { id: "syn-2", source: "synthese", priority: "high", title: `Ajouter ${Math.max(1, Math.round(brief.h2s.length * 0.5))} sections H2 manquantes`, time: "45 min", impact: "+8 pts SEO", owner: DEMO_OWNERS.MP, deadline: D_SOON },
+    { id: "syn-3", source: "synthese", priority: "mid",  title: `Enrichir le contenu à ${brief.wordCount + 400} mots minimum`, time: "2h",     impact: "+5 pts",       owner: DEMO_OWNERS.MP, deadline: D_LATER },
+    { id: "syn-4", source: "synthese", priority: "mid",  title: "Optimiser la balise title et meta description", time: "15 min", impact: "+CTR",          owner: DEMO_OWNERS.BL, deadline: D_PASSED },
+    { id: "syn-5", source: "synthese", priority: "low",  title: "Ajouter 3 liens internes depuis les pages piliers", time: "20 min", impact: "+autorité",  owner: DEMO_OWNERS.BL },
     // ── Contenu ──
-    { id: "cnt-1", source: "contenu", priority: "high", title: "Ajouter sections H2 : ROI & mesure de performance", time: "2h",     impact: "+18 pts" },
-    { id: "cnt-2", source: "contenu", priority: "high", title: "Enrichir l'intro avec données B2B récentes (2024)", time: "30 min", impact: "+CTR" },
-    { id: "cnt-3", source: "contenu", priority: "mid",  title: "Travailler la densité mot-clé (26,9 → 39,7 cible)", time: "1h",     impact: "+8 pts" },
-    { id: "cnt-4", source: "contenu", priority: "mid",  title: "Ajouter un tableau comparatif des outils content marketing", time: "1h", impact: "+SEO" },
-    { id: "cnt-5", source: "contenu", priority: "low",  title: "Réécrire la conclusion avec un CTA orienté conversion", time: "20 min", impact: "+conv." },
+    { id: "cnt-1", source: "contenu", priority: "high", title: "Ajouter sections H2 : ROI & mesure de performance", time: "2h",     impact: "+18 pts",     owner: DEMO_OWNERS.MP, deadline: D_SOON },
+    { id: "cnt-2", source: "contenu", priority: "high", title: "Enrichir l'intro avec données B2B récentes (2024)", time: "30 min", impact: "+CTR",        owner: DEMO_OWNERS.MP, deadline: D_TODAY },
+    { id: "cnt-3", source: "contenu", priority: "mid",  title: "Travailler la densité mot-clé (26,9 → 39,7 cible)", time: "1h",     impact: "+8 pts",      owner: DEMO_OWNERS.SM },
+    { id: "cnt-4", source: "contenu", priority: "mid",  title: "Ajouter un tableau comparatif des outils content marketing", time: "1h", impact: "+SEO",   owner: DEMO_OWNERS.SM, deadline: D_LATER },
+    { id: "cnt-5", source: "contenu", priority: "low",  title: "Réécrire la conclusion avec un CTA orienté conversion", time: "20 min", impact: "+conv.", owner: DEMO_OWNERS.MP },
     // ── Autorité ──
-    { id: "aut-1", source: "autorite", priority: "high", title: "Publier un article invité sur journalduweb.fr (DR 64)", time: "2 sem.", impact: "Haut" },
-    { id: "aut-2", source: "autorite", priority: "mid",  title: "Créer une infographie linkable sur les KPIs content B2B", time: "1 sem.", impact: "Moyen" },
-    { id: "aut-3", source: "autorite", priority: "low",  title: "Contacter 10 auteurs qui citent des ressources similaires", time: "3 sem.", impact: "Moyen" },
+    { id: "aut-1", source: "autorite", priority: "high", title: "Publier un article invité sur journalduweb.fr (DR 64)", time: "2 sem.", impact: "Haut",   owner: DEMO_OWNERS.TL, deadline: D_LATER },
+    { id: "aut-2", source: "autorite", priority: "mid",  title: "Créer une infographie linkable sur les KPIs content B2B", time: "1 sem.", impact: "Moyen", owner: DEMO_OWNERS.MP },
+    { id: "aut-3", source: "autorite", priority: "low",  title: "Contacter 10 auteurs qui citent des ressources similaires", time: "3 sem.", impact: "Moyen", owner: DEMO_OWNERS.TL, recurrence: "weekly" },
     // ── Technique ──
-    { id: "tec-1", source: "technique", priority: "high", title: "Améliorer le LCP : convertir images above-the-fold en WebP + preload", time: "1 sem.", impact: "Haut" },
-    { id: "tec-2", source: "technique", priority: "high", title: "Réduire le FCP : différer le JS non critique, activer le cache navigateur", time: "1 sem.", impact: "Haut" },
-    { id: "tec-3", source: "technique", priority: "mid",  title: "Ajouter les schémas Organization et Service (JSON-LD)", time: "2h", impact: "Moyen" },
-    { id: "tec-4", source: "technique", priority: "mid",  title: "Augmenter le nombre de mots à 3 500+ (benchmark médiane concurrents)", time: "3h", impact: "Moyen" },
-    { id: "tec-5", source: "technique", priority: "low",  title: "Soumettre l'URL dans Google Search Console pour déclencher l'indexation", time: "15 min.", impact: "Faible" },
+    { id: "tec-1", source: "technique", priority: "high", title: "Améliorer le LCP : convertir images above-the-fold en WebP + preload", time: "1 sem.", impact: "Haut", owner: DEMO_OWNERS.BL, deadline: D_SOON },
+    { id: "tec-2", source: "technique", priority: "high", title: "Réduire le FCP : différer le JS non critique, activer le cache navigateur", time: "1 sem.", impact: "Haut", owner: DEMO_OWNERS.BL, deadline: D_LATER },
+    { id: "tec-3", source: "technique", priority: "mid",  title: "Ajouter les schémas Organization et Service (JSON-LD)", time: "2h", impact: "Moyen",                       owner: DEMO_OWNERS.BL },
+    { id: "tec-4", source: "technique", priority: "mid",  title: "Augmenter le nombre de mots à 3 500+ (benchmark médiane concurrents)", time: "3h", impact: "Moyen",        owner: DEMO_OWNERS.MP },
+    { id: "tec-5", source: "technique", priority: "low",  title: "Soumettre l'URL dans Google Search Console pour déclencher l'indexation", time: "15 min.", impact: "Faible", owner: DEMO_OWNERS.BL, recurrence: "monthly" },
   ];
 }
 
@@ -1035,6 +1053,9 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
               impact={a.impact}
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
+              owner={a.owner}
+              deadline={a.deadline}
+              recurrence={a.recurrence}
             />
           ))}
         </div>
@@ -1169,6 +1190,9 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
               impact={a.impact}
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
+              owner={a.owner}
+              deadline={a.deadline}
+              recurrence={a.recurrence}
             />
           ))}
         </div>
@@ -1442,6 +1466,9 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
               impact={a.impact ? `Impact ${a.impact}` : undefined}
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
+              owner={a.owner}
+              deadline={a.deadline}
+              recurrence={a.recurrence}
             />
           ))}
         </div>
@@ -1663,6 +1690,9 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
               impact={a.impact ? `Impact ${a.impact}` : undefined}
               status={getStatus(a.id)}
               onStatusChange={(s) => setStatus(a.id, s)}
+              owner={a.owner}
+              deadline={a.deadline}
+              recurrence={a.recurrence}
             />
           ))}
         </div>
@@ -2990,7 +3020,7 @@ export function BriefsView({
           items={[
             { value: "all",   label: "Tous" },
             { value: "todo",  label: "À faire" },
-            { value: "doing", label: "En cours" },
+            { value: "in_progress", label: "En cours" },
             { value: "done",  label: "Terminé" },
           ]}
         />

@@ -20,7 +20,7 @@ import type { ElementType } from "react";
 /* ── Types ────────────────────────────────────────────────────────────── */
 
 
-type PilotFilter = "all" | "todo" | "doing" | "done" | "high";
+type PilotFilter = "all" | "todo" | "in_progress" | "done" | "high";
 
 /* ── Data ─────────────────────────────────────────────────────────────── */
 
@@ -215,7 +215,7 @@ const EXTRA_ACCORDIONS = [
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
-const STATUS_CYCLE: Status[] = ["todo", "doing", "done"];
+const STATUS_CYCLE: Status[] = ["todo", "in_progress", "done"];
 
 function nextStatus(s: Status): Status {
   return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
@@ -257,11 +257,11 @@ function StatusDot({ status, onClick }: { status: Status; onClick: () => void })
     <button onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all ${
         status === "done"  ? "border-[var(--color-success)] bg-[var(--color-success)]" :
-        status === "doing" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
+        status === "in_progress" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
         "border-[var(--text-muted)]"
       }`}>
       {status === "done"  && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-      {status === "doing" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
+      {status === "in_progress" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
     </button>
   );
 }
@@ -287,9 +287,9 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
   const getP = (id: number): Status => pilotStatus[id];
 
   const pilotCounts = {
-    todo:  PILOT_DATA.filter((p) => getP(p.id) === "todo").length,
-    doing: PILOT_DATA.filter((p) => getP(p.id) === "doing").length,
-    done:  PILOT_DATA.filter((p) => getP(p.id) === "done").length,
+    todo:        PILOT_DATA.filter((p) => getP(p.id) === "todo").length,
+    in_progress: PILOT_DATA.filter((p) => getP(p.id) === "in_progress").length,
+    done:        PILOT_DATA.filter((p) => getP(p.id) === "done").length,
   };
   const pilotPct = Math.round((pilotCounts.done / PILOT_DATA.length) * 100);
 
@@ -704,19 +704,19 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                 {/* Counts + filters */}
                 <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-7 py-3">
                   <div className="flex gap-2">
-                    {(["todo", "doing", "done"] as const).map((s) => (
+                    {(["todo", "in_progress", "done"] as const).map((s) => (
                       <span key={s} className="rounded-full px-2 py-1 text-[12px] font-semibold"
-                        style={{ backgroundColor: s === "todo" ? "var(--color-danger-bg)" : s === "doing" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
-                                 color: s === "todo" ? "var(--color-danger)" : s === "doing" ? "var(--color-warning)" : "var(--color-success)" }}>
-                        {pilotCounts[s]} {{ todo: "À faire", doing: "En cours", done: "Terminé" }[s].toLowerCase()}
+                        style={{ backgroundColor: s === "todo" ? "var(--color-danger-bg)" : s === "in_progress" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
+                                 color: s === "todo" ? "var(--color-danger)" : s === "in_progress" ? "var(--color-warning)" : "var(--color-success)" }}>
+                        {pilotCounts[s]} {{ todo: "À faire", in_progress: "En cours", done: "Terminé" }[s].toLowerCase()}
                       </span>
                     ))}
                   </div>
                   <div className="flex gap-1.5">
-                    {(["all", "todo", "doing", "done", "high"] as const).map((f) => (
+                    {(["all", "todo", "in_progress", "done", "high"] as const).map((f) => (
                       <button key={f} onClick={() => setPilotFilter(f)}
                         className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors ${pilotFilter === f ? "bg-[var(--text-primary)] text-[var(--bg-card)]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]"}`}>
-                        {f === "all" ? "Tout" : f === "high" ? "Fort+" : { todo: "À faire", doing: "En cours", done: "Terminé" }[f as Status]}
+                        {f === "all" ? "Tout" : f === "high" ? "Fort+" : ({ todo: "À faire", in_progress: "En cours", done: "Terminé", blocked_client: "Bloqué", abandoned: "Abandonné" } as Record<Status, string>)[f as Status]}
                       </button>
                     ))}
                   </div>

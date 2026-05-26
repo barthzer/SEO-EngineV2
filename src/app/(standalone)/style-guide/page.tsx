@@ -371,7 +371,7 @@ function ViewAtomes() {
   const [numVal, setNumVal] = useState("42");
   const [filterTab, setFilterTab] = useState("all");
   const [statusA, setStatusA] = useState<Status>("todo");
-  const [statusB, setStatusB] = useState<Status>("doing");
+  const [statusB, setStatusB] = useState<Status>("in_progress");
   const [animOpen, setAnimOpen] = useState(true);
 
   return (
@@ -426,7 +426,7 @@ function ViewAtomes() {
           <Block title="StatusPill — statuts fixes" note="StatusPill.tsx">
             <div className="flex flex-wrap items-center gap-2">
               <StatusPill status="todo" />
-              <StatusPill status="doing" />
+              <StatusPill status="in_progress" />
               <StatusPill status="done" />
             </div>
           </Block>
