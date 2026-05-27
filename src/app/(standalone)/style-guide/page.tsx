@@ -15,7 +15,6 @@ import { Pill } from "@/components/Pill";
 import { StatusPill, StatusPillDropdown, type Status } from "@/components/StatusPill";
 import { SearchInput } from "@/components/SearchInput";
 import { EmptyState } from "@/components/EmptyState";
-import { Skeleton, SkeletonText, SkeletonCircle } from "@/components/Skeleton";
 import { DropdownMenu, DropdownItem, DropdownSeparator, DropdownHeader } from "@/components/DropdownMenu";
 import { NumberInput } from "@/components/NumberInput";
 import { AnimateIn } from "@/components/AnimateIn";
@@ -624,28 +623,6 @@ function ViewAtomes() {
             </DropdownMenu>
           </div>
         </Block>
-      </Section>
-
-      <Section id="skeleton" title="Skeleton">
-        <div className="flex flex-col gap-4">
-          <Block title="Primitives — Skeleton / SkeletonText / SkeletonCircle" note="Skeleton.tsx">
-            <div className="flex flex-col gap-3">
-              <Skeleton className="h-10 w-full" />
-              <div className="flex flex-col gap-2">
-                <SkeletonText width="w-3/4" />
-                <SkeletonText width="w-1/2" />
-                <SkeletonText width="w-2/3" />
-              </div>
-              <div className="flex items-center gap-3">
-                <SkeletonCircle size="h-12 w-12" />
-                <div className="flex flex-col gap-2 flex-1">
-                  <SkeletonText width="w-1/2" />
-                  <SkeletonText width="w-1/3" />
-                </div>
-              </div>
-            </div>
-          </Block>
-        </div>
       </Section>
 
       <Section id="emptystate" title="EmptyState">

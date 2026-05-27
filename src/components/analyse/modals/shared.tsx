@@ -14,7 +14,16 @@ import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useModalTransition } from "@/hooks/useModalTransition";
 
-export function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+export function ModalShell({
+  onClose,
+  children,
+  maxWidth = 480,
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+  /** Largeur max en px. Défaut 480 ; modales formulaires court → ~400. */
+  maxWidth?: number;
+}) {
   const { phase, requestClose } = useModalTransition(onClose);
   if (typeof document === "undefined") return null;
   const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
@@ -28,7 +37,8 @@ export function ModalShell({ onClose, children }: { onClose: () => void; childre
       <div
         role="dialog"
         aria-modal="true"
-        className={`t-modal ${modalClass} relative w-full max-w-[480px] rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
+        className={`t-modal ${modalClass} relative w-full rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
+        style={{ maxWidth: `${maxWidth}px` }}
       >
         <button onClick={requestClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
           <XMarkIcon className="h-5 w-5" />

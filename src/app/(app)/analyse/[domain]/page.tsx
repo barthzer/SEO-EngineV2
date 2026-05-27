@@ -25,7 +25,6 @@ import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
 import { AuditToc, type TocItem } from "@/components/AuditToc";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
-import { SkeletonAnalyseHeader, SkeletonTabs, SkeletonAnalyseGeneral } from "@/components/Skeleton";
 import {
   ChevronRightIcon,
   ArrowRightIcon,
@@ -132,7 +131,6 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   };
   const [auditTab, setAuditTab] = useState<"technique" | "editorial" | "netlinking">("technique");
   const [seoTab, setSeoTab] = useState<"analytics" | "top-pages">("analytics");
-  const [loading, setLoading] = useState(true);
   const [parametresOpen, setParametresOpen] = useState(false);
   const [urlModal, setUrlModal] = useState<"import-csv" | "add-url" | "new-brief" | null>(null);
   const [gscConnected, setGscConnected] = useState(true);
@@ -147,11 +145,6 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
     setPendingBriefUrl(url);
   }
 
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, [decodedDomain]);
 
   /* ── Push project actions (GSC, GA4, ...) into the Topbar's right slot ── */
   const { setMeta } = usePageMeta();
@@ -218,10 +211,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
       {/* ── Tab content ── */}
       <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
-        {loading ? <SkeletonAnalyseGeneral /> : null}
         {/* key={tab} : force le remount du contenu actif → l'animation `t-tab-enter` rejoue
             à chaque changement d'onglet (fade + slide + blur, ~200ms). */}
-        <div key={tab} className={loading ? "hidden" : "t-tab-enter"}>
+        <div key={tab} className="t-tab-enter">
 
         {/* Titre de la vue + sous-titre éventuel. Skipped pour briefs / tracking / univers /
             recommandations qui rendent leur propre header (title + CTAs sur la même ligne).
@@ -359,7 +351,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             </div>
 
             {/* Core Web Vitals — bloc indépendant */}
-            <div className="overflow-hidden rounded-3xl bg-[var(--bg-card)]">
+            <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)]">
               <div className="p-7">
                 <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
                 <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
@@ -391,7 +383,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             <div className="grid grid-cols-2 gap-4">
 
               {/* Distribution des positions — bar chart */}
-              <div className="flex flex-col rounded-3xl bg-[var(--bg-card)] p-7">
+              <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
@@ -418,7 +410,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               </div>
 
               {/* Visibilité et trafic organique */}
-              <div className="overflow-hidden rounded-3xl bg-[var(--bg-card)] p-7">
+              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] p-7">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
@@ -449,7 +441,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                 <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Activités récentes</p>
                 <button className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Voir tout</button>
               </div>
-              <div className="overflow-hidden rounded-2xl bg-[var(--bg-card)]">
+              <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
                 {[
                   { label: "Analyse publiée",      desc: "Guide SEO local complet · optimisé",          time: "Il y a 2h",  color: "var(--color-success)", Icon: FileText },
                   { label: "Score mis à jour",  desc: "Score sémantique /blog/link-building : 55 → 67", time: "Il y a 5h",  color: "var(--color-warning)", Icon: TrendingUp },
@@ -532,7 +524,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                 <div className="grid grid-cols-2 gap-4">
 
                   {/* Distribution des positions */}
-                  <div className="flex flex-col rounded-3xl bg-[var(--bg-card)] p-7">
+                  <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] p-7">
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
@@ -559,7 +551,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   </div>
 
                   {/* Visibilité et trafic organique */}
-                  <div className="overflow-hidden rounded-3xl bg-[var(--bg-card)] p-7">
+                  <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] p-7">
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>

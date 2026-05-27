@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useModalTransition } from "@/hooks/useModalTransition";
-import { SkeletonAnalysisCard } from "@/components/Skeleton";
 import Link from "next/link";
 import { useDrawer } from "@/context/DrawerContext";
 import { SeoEngineLogo } from "@/components/SeoEngineLogo";
@@ -24,6 +23,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Stepper } from "@/components/Stepper";
 import { ScoreGauges } from "@/components/ScoreGauges";
+import { CockpitSection } from "@/components/home/CockpitSection";
 
 /* ── Mock analyses ───────────────────────────────────────────────────── */
 
@@ -62,6 +62,25 @@ const MOCK_ANALYSES: Analysis[] = [
   { id: 16, domain: "leroymerlin.fr",    updatedAt: "2026-04-01", gscConnected: true,  scoreTechnique: 92, scoreContenu: 90, scoreNetlinking: 94, trafic: "+21 %", traficDir: "up",   tagsActifs: 11, briefs: 89,  status: "archive" },
   { id: 17, domain: "seloger.com",       updatedAt: "2026-03-28", gscConnected: false, scoreTechnique: 55, scoreContenu: 52, scoreNetlinking: 60, trafic: "−5 %",  traficDir: "down", tagsActifs: 2,  briefs: 13,  status: "archive" },
   { id: 18, domain: "lequipe.fr",        updatedAt: "2026-03-25", gscConnected: true,  scoreTechnique: 83, scoreContenu: 86, scoreNetlinking: 80, trafic: "+16 %", traficDir: "up",   tagsActifs: 6,  briefs: 48,  status: "archive" },
+  // ── Batch 2 ──
+  { id: 19, domain: "aliexpress.fr",     updatedAt: "2026-04-27", gscConnected: true,  scoreTechnique: 72, scoreContenu: 65, scoreNetlinking: 81, trafic: "+8 %",  traficDir: "up",   tagsActifs: 5,  briefs: 36,  status: "actif"   },
+  { id: 20, domain: "airbnb.fr",         updatedAt: "2026-04-26", gscConnected: true,  scoreTechnique: 89, scoreContenu: 84, scoreNetlinking: 92, trafic: "+15 %", traficDir: "up",   tagsActifs: 10, briefs: 73,  status: "actif"   },
+  { id: 21, domain: "booking.com",       updatedAt: "2026-04-25", gscConnected: true,  scoreTechnique: 94, scoreContenu: 88, scoreNetlinking: 96, trafic: "+22 %", traficDir: "up",   tagsActifs: 13, briefs: 102, status: "actif"   },
+  { id: 22, domain: "meetic.fr",         updatedAt: "2026-04-21", gscConnected: false, scoreTechnique: 64, scoreContenu: 62, scoreNetlinking: 68, trafic: "−2 %",  traficDir: "down", tagsActifs: 3,  briefs: 19,  status: "actif"   },
+  { id: 23, domain: "monoprix.fr",       updatedAt: "2026-04-23", gscConnected: true,  scoreTechnique: 76, scoreContenu: 79, scoreNetlinking: 73, trafic: "+6 %",  traficDir: "up",   tagsActifs: 4,  briefs: 28,  status: "actif"   },
+  { id: 24, domain: "carrefour.fr",      updatedAt: "2026-04-16", gscConnected: true,  scoreTechnique: 81, scoreContenu: 77, scoreNetlinking: 85, trafic: "+10 %", traficDir: "up",   tagsActifs: 8,  briefs: 59,  status: "actif"   },
+  { id: 25, domain: "auchan.fr",         updatedAt: "2026-04-13", gscConnected: false, scoreTechnique: 67, scoreContenu: 63, scoreNetlinking: 71, trafic: "+3 %",  traficDir: "up",   tagsActifs: 4,  briefs: 26,  status: "actif"   },
+  { id: 26, domain: "ikea.com",          updatedAt: "2026-04-11", gscConnected: true,  scoreTechnique: 90, scoreContenu: 92, scoreNetlinking: 88, trafic: "+13 %", traficDir: "up",   tagsActifs: 9,  briefs: 71,  status: "actif"   },
+  { id: 27, domain: "castorama.fr",      updatedAt: "2026-04-08", gscConnected: false, scoreTechnique: 70, scoreContenu: 68, scoreNetlinking: 74, trafic: "+1 %",  traficDir: "neutral", tagsActifs: 4, briefs: 25, status: "actif"   },
+  { id: 28, domain: "maisonsdumonde.com",updatedAt: "2026-04-07", gscConnected: true,  scoreTechnique: 77, scoreContenu: 81, scoreNetlinking: 75, trafic: "+9 %",  traficDir: "up",   tagsActifs: 6,  briefs: 44,  status: "actif"   },
+  { id: 29, domain: "conforama.fr",      updatedAt: "2026-04-04", gscConnected: false, scoreTechnique: 53, scoreContenu: 56, scoreNetlinking: 51, trafic: "−4 %",  traficDir: "down", tagsActifs: 2,  briefs: 14,  status: "actif"   },
+  { id: 30, domain: "vinted.fr",         updatedAt: "2026-04-30", gscConnected: true,  scoreTechnique: 86, scoreContenu: 82, scoreNetlinking: 89, trafic: "+19 %", traficDir: "up",   tagsActifs: 7,  briefs: 52,  status: "actif"   },
+  { id: 31, domain: "showroomprive.com", updatedAt: "2026-04-06", gscConnected: true,  scoreTechnique: 68, scoreContenu: 64, scoreNetlinking: 72, trafic: "+2 %",  traficDir: "up",   tagsActifs: 3,  briefs: 21,  status: "archive" },
+  { id: 32, domain: "spartoo.com",       updatedAt: "2026-03-30", gscConnected: false, scoreTechnique: 60, scoreContenu: 58, scoreNetlinking: 63, trafic: "−1 %",  traficDir: "down", tagsActifs: 2,  briefs: 17,  status: "archive" },
+  { id: 33, domain: "jules.com",         updatedAt: "2026-03-27", gscConnected: true,  scoreTechnique: 75, scoreContenu: 73, scoreNetlinking: 78, trafic: "+5 %",  traficDir: "up",   tagsActifs: 5,  briefs: 33,  status: "archive" },
+  { id: 34, domain: "celio.fr",          updatedAt: "2026-03-26", gscConnected: false, scoreTechnique: 62, scoreContenu: 59, scoreNetlinking: 66, trafic: "−2 %",  traficDir: "down", tagsActifs: 2,  briefs: 16,  status: "archive" },
+  { id: 35, domain: "camaieu.fr",        updatedAt: "2026-03-22", gscConnected: true,  scoreTechnique: 45, scoreContenu: 48, scoreNetlinking: 42, trafic: "−6 %",  traficDir: "down", tagsActifs: 1,  briefs: 11,  status: "archive" },
+  { id: 36, domain: "houra.fr",          updatedAt: "2026-03-20", gscConnected: false, scoreTechnique: 58, scoreContenu: 55, scoreNetlinking: 61, trafic: "+1 %",  traficDir: "neutral", tagsActifs: 2, briefs: 18, status: "archive" },
 ];
 
 /* ── Score (F3 : ScoreCircle opaque → 3 jauges verticales transparentes) ─ */
@@ -417,13 +436,7 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<"actif" | "archive">("actif");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
   const { open } = useDrawer();
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 700);
-    return () => clearTimeout(t);
-  }, []);
 
   const filtered = analyses.filter((a) => {
     if (a.status !== filter) return false;
@@ -456,23 +469,20 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
-      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
+    <div className="flex h-full flex-col overflow-hidden pt-[var(--page-py)]">
+      <div className="mx-auto flex w-full max-w-[var(--page-max-w)] flex-1 flex-col px-[var(--page-px)] min-h-0">
 
-        {/* Header */}
-        <div className="mb-5">
-          <h1 className="mb-1 font-semibold leading-none tracking-heading text-[var(--text-primary)]">
-            Vos projets
+        {/* Greeting + toolbar — sticky en haut (ne défile pas) */}
+        <div className="mb-6 flex-shrink-0">
+          <h1 className="mb-5 font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+            Bonjour, Barthélemy.
           </h1>
-          <p className="mb-5 text-[14px] tracking-body text-[var(--text-secondary)]">
-            Liste de vos projets actifs et archivés.
-          </p>
           <div className="flex items-center gap-4">
             <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un domaine…" alwaysExpanded />
             <FilterTabs
               tabs={[
                 { key: "actif",   label: "Actifs",   count: analyses.filter((a) => a.status === "actif").length },
-                { key: "archive", label: "Archivés",  count: analyses.filter((a) => a.status === "archive").length },
+                { key: "archive", label: "Archivés", count: analyses.filter((a) => a.status === "archive").length },
               ]}
               value={filter}
               onChange={setFilter}
@@ -486,35 +496,20 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-4 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonAnalysisCard key={i} />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={<FolderOpenIcon className="h-6 w-6" />}
-            title={search ? "Aucun résultat pour cette recherche" : "Aucune analyse pour l'instant"}
-            description={search ? `Aucun domaine ne correspond à « ${search} »` : "Lancez votre première analyse pour commencer."}
-            action={<Button size="md" onClick={() => setModalOpen(true)}>Nouveau projet</Button>}
-          />
-        ) : (
-          <div className="grid grid-cols-3 gap-4 animate-fade-in">
-            {filtered.map((a) => (
-              <AnalysisCard
-                key={a.id}
-                analysis={a}
-                onStatusChange={(s) =>
-                  setAnalyses((prev) =>
-                    prev.map((x) => (x.id === a.id ? { ...x, status: s } : x))
-                  )
-                }
-              />
-            ))}
-          </div>
-        )}
+        {/* Cockpit — grid occupe toute la hauteur restante.
+            flex flex-col pour que le grid enfant utilise flex-1 et remplisse verticalement. */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={<FolderOpenIcon className="h-6 w-6" />}
+              title={search ? "Aucun résultat pour cette recherche" : "Aucune analyse pour l'instant"}
+              description={search ? `Aucun domaine ne correspond à « ${search} »` : "Lancez votre première analyse pour commencer."}
+              action={<Button size="md" onClick={() => setModalOpen(true)}>Nouveau projet</Button>}
+            />
+          ) : (
+            <CockpitSection analyses={filtered} />
+          )}
+        </div>
 
       </div>
 

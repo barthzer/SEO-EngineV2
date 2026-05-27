@@ -39,15 +39,27 @@ interface TooltipProps {
   rich?: boolean;
 }
 
-const sideClasses = {
-  right:  "left-full top-1/2 ml-3 -translate-y-1/2",
-  left:   "right-full top-1/2 mr-3 -translate-y-1/2",
-  top:    "bottom-full left-1/2 mb-2 -translate-x-1/2",
-  bottom: "top-full left-1/2 mt-2 -translate-x-1/2",
+/* Origin de la transformation par côté — la tooltip pousse depuis le trigger. */
+const sideOriginClasses: Record<NonNullable<TooltipProps["side"]>, string> = {
+  right:  "origin-left",
+  left:   "origin-right",
+  top:    "origin-bottom",
+  bottom: "origin-top",
+};
+
+/* Position de base + petit offset directionnel d'entrée. Le scale + opacity
+   font le reste, l'easing donne le feel expo. */
+const sideClasses: Record<NonNullable<TooltipProps["side"]>, string> = {
+  right:  "left-full top-1/2 ml-3 -translate-y-1/2 -translate-x-0.5 group-hover:translate-x-0",
+  left:   "right-full top-1/2 mr-3 -translate-y-1/2 translate-x-0.5  group-hover:translate-x-0",
+  top:    "bottom-full left-1/2 mb-2 -translate-x-1/2 translate-y-0.5  group-hover:translate-y-0",
+  bottom: "top-full left-1/2 mt-2 -translate-x-1/2 -translate-y-0.5 group-hover:translate-y-0",
 };
 
 const TOOLTIP_CLASS = "pointer-events-none whitespace-nowrap rounded-lg bg-[rgba(20,20,20,0.82)] px-3 py-2 text-[12px] font-medium text-white shadow-[var(--shadow-floating)] backdrop-blur-md dark:bg-[rgba(40,40,42,0.80)] dark:border dark:border-[var(--border-subtle)] dark:text-[var(--text-primary)]";
 const RICH_TOOLTIP_CLASS = "pointer-events-none max-w-[280px] rounded-xl bg-[rgba(18,18,20,0.95)] p-3.5 text-[12px] leading-relaxed text-white shadow-[var(--shadow-floating)] backdrop-blur-md";
+
+const TRANSITION_CLASS = "transition-[opacity,transform] duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]";
 
 export function Tooltip({ label, children, side = "right", disabled = false, className = "", portal = false, rich = false }: TooltipProps) {
   if (disabled) return <>{children}</>;
@@ -58,7 +70,9 @@ export function Tooltip({ label, children, side = "right", disabled = false, cla
   return (
     <span className={`group relative inline-flex ${className}`}>
       {children}
-      <span className={`absolute z-50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${cls} ${sideClasses[side]}`}>
+      <span
+        className={`absolute z-50 opacity-0 scale-90 ${TRANSITION_CLASS} group-hover:opacity-100 group-hover:scale-100 ${sideOriginClasses[side]} ${sideClasses[side]} ${cls}`}
+      >
         {label}
       </span>
     </span>
@@ -78,19 +92,20 @@ function PortalTooltip({ label, children, side = "right", className = "", rich =
     else setPos({ x: r.left + r.width / 2, y: r.bottom + 10 });
   };
 
-  const translateClass =
-    side === "right" ? "-translate-y-1/2" :
-    side === "left"  ? "-translate-y-1/2 -translate-x-full" :
-    side === "top"   ? "-translate-x-1/2 -translate-y-full" :
-    "-translate-x-1/2";
-
+  // Animation one-shot via keyframes (cf. globals.css : tooltip-pop-{side}).
+  // Le translate de positionnement est intégré dans la keyframe — pas besoin
+  // de translateClass séparé.
   return (
     <span ref={ref} onMouseEnter={show} onMouseLeave={() => setPos(null)} className={`inline-flex ${className}`}>
       {children}
       {pos && typeof document !== "undefined" && createPortal(
         <span
-          className={`fixed z-[9999] ${translateClass} ${rich ? RICH_TOOLTIP_CLASS : TOOLTIP_CLASS}`}
-          style={{ left: pos.x, top: pos.y }}
+          className={`fixed z-[9999] ${rich ? RICH_TOOLTIP_CLASS : TOOLTIP_CLASS}`}
+          style={{
+            left: pos.x,
+            top: pos.y,
+            animation: `tooltip-pop-${side} 200ms var(--ease-expo, cubic-bezier(0.16,1,0.3,1)) both`,
+          }}
         >
           {label}
         </span>,

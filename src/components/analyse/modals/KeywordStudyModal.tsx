@@ -241,7 +241,7 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
                   </button>
 
                   {showDupesList && (
-                    <div className="mt-2 overflow-hidden rounded-xl bg-[var(--bg-card)]">
+                    <div className="mt-2 overflow-hidden rounded-xl border border-[var(--border-subtle)]">
                       {DETECTED_DUPLICATES.map((d, i) => (
                         <div
                           key={d.keyword}

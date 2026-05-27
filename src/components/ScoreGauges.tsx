@@ -1,8 +1,10 @@
+"use client";
+
 /**
  * ScoreGauges — 3 jauges verticales (Technique / Contenu / Netlinking).
  *
- * Remplace l'ancien ScoreCircle 0-100 opaque. Plus transparent et honnête :
- * le consultant peut défendre chaque sous-score face au client.
+ * Tooltip unique au survol du groupe (rich) qui résume les 3 scores.
+ * Sous chaque jauge : mini encart T/C/N.
  *
  * Couleur par jauge :
  *  - ≥70  → success
@@ -10,13 +12,15 @@
  *  - <50  → danger
  */
 
+import { Tooltip } from "@/components/Tooltip";
+
 type Props = {
   technique: number | null;
   contenu: number | null;
   netlinking: number | null;
-  /** Hauteur des barres (px). Largeur du composant ≈ 3 × 14px = 42px. */
+  /** Hauteur des barres (px). */
   height?: number;
-  /** Si true, n'affiche pas le label T/C/N (utile en très compact). */
+  /** Si true, n'affiche pas les mini encarts T/C/N (utile en très compact). */
   compact?: boolean;
 };
 
@@ -33,7 +37,7 @@ function Gauge({
   height,
   compact,
 }: {
-  label: string;
+  label: "T" | "C" | "N";
   value: number | null;
   height: number;
   compact: boolean;
@@ -43,18 +47,10 @@ function Gauge({
 
   return (
     <div className="flex flex-col items-center gap-1">
-      {/* Score chiffré au-dessus */}
-      <span
-        className="text-[10px] font-semibold leading-none tabular-nums"
-        style={{ color: value == null ? "var(--text-muted)" : "var(--text-primary)" }}
-      >
-        {value ?? "—"}
-      </span>
-      {/* La jauge verticale */}
+      {/* Jauge verticale */}
       <div
         className="relative w-[6px] overflow-hidden rounded-full bg-[var(--border-subtle)]"
         style={{ height }}
-        aria-label={`${label} ${value ?? "non renseigné"}`}
       >
         <div
           className="absolute inset-x-0 bottom-0 rounded-full transition-[height] duration-500"
@@ -65,12 +61,43 @@ function Gauge({
           }}
         />
       </div>
-      {/* Label en-dessous */}
+      {/* Mini encart T/C/N */}
       {!compact && (
-        <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <span className="flex h-4 w-4 items-center justify-center rounded-[5px] border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] text-[9px] font-bold uppercase leading-none text-[var(--text-secondary)]">
           {label}
         </span>
       )}
+    </div>
+  );
+}
+
+function GaugeTooltipContent({
+  technique,
+  contenu,
+  netlinking,
+}: {
+  technique: number | null;
+  contenu: number | null;
+  netlinking: number | null;
+}) {
+  const lines: { label: string; value: number | null; color: string }[] = [
+    { label: "Technique",  value: technique,  color: gaugeColor(technique) },
+    { label: "Contenu",    value: contenu,    color: gaugeColor(contenu) },
+    { label: "Netlinking", value: netlinking, color: gaugeColor(netlinking) },
+  ];
+  return (
+    <div className="flex flex-col gap-1.5">
+      {lines.map((l) => (
+        <div key={l.label} className="flex items-center justify-between gap-4">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+            <span className="text-[12px] text-white/80">{l.label}</span>
+          </span>
+          <span className="tabular-nums text-[12px] font-semibold text-white">
+            {l.value == null ? "—" : `${l.value} / 100`}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -83,10 +110,23 @@ export function ScoreGauges({
   compact = false,
 }: Props) {
   return (
-    <div className="flex flex-shrink-0 items-end gap-[6px]">
-      <Gauge label="T" value={technique} height={height} compact={compact} />
-      <Gauge label="C" value={contenu} height={height} compact={compact} />
-      <Gauge label="N" value={netlinking} height={height} compact={compact} />
-    </div>
+    <Tooltip
+      label={
+        <GaugeTooltipContent
+          technique={technique}
+          contenu={contenu}
+          netlinking={netlinking}
+        />
+      }
+      side="top"
+      portal
+      rich
+    >
+      <div className="flex flex-shrink-0 items-end gap-2">
+        <Gauge label="T" value={technique}  height={height} compact={compact} />
+        <Gauge label="C" value={contenu}    height={height} compact={compact} />
+        <Gauge label="N" value={netlinking} height={height} compact={compact} />
+      </div>
+    </Tooltip>
   );
 }

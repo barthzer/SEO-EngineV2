@@ -38,7 +38,7 @@ function ProjIntegRow({ name, logo, desc, account, connected, onToggle }: {
   connected: boolean; onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-[var(--bg-card)] px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] px-4 py-3">
       <div className="flex items-center gap-3">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--bg-subtle)]">
           {logo}
@@ -211,7 +211,7 @@ export function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGs
                 { key: "brief" as const, title: "Analyse métier client", configured: briefConfigured, fileName: "brief-metier.md", empty: "Aucune analyse métier configurée", desc: "Cette analyse adapte les recommandations SEO à votre activité.", onRemove: () => setBriefConfigured(false) },
                 { key: "skill" as const, title: "Skill rédactionnel",  configured: skillConfigured, fileName: "skill-redactionnel.md", empty: "Aucun skill rédactionnel configuré", desc: "Définit le style, le ton et les règles de rédaction.", onRemove: () => setSkillConfigured(false) },
               ]).map((card) => (
-                <div key={card.title} className="rounded-2xl bg-[var(--bg-card)] p-5">
+                <div key={card.title} className="rounded-2xl border border-[var(--border-subtle)] p-5">
                   <div className="flex items-start gap-5">
                     {/* Icon */}
                     <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl ${card.configured ? "bg-[rgba(16,185,129,0.1)]" : "bg-[var(--bg-secondary)]"}`}>

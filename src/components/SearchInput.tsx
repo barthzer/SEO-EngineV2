@@ -52,7 +52,7 @@ export function SearchInput({
   return (
     <div
       onClick={!isActive ? handleOpen : undefined}
-      className={`flex h-10 ${alwaysExpanded ? "" : "flex-shrink-0"} items-center overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[var(--card-inner-bg)] transition-all duration-300 ${className}`}
+      className={`flex h-10 ${alwaysExpanded ? "" : "flex-shrink-0"} items-center overflow-hidden rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card-static)] transition-all duration-300 ${className}`}
       style={{
         ...widthStyle,
         cursor: isActive ? "default" : "pointer",

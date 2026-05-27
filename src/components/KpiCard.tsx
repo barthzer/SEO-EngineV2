@@ -2,7 +2,6 @@
 
 import type { ElementType, ReactNode } from "react";
 import { DeltaBadge } from "@/components/DeltaBadge";
-import { Sparkline } from "@/components/Sparkline";
 
 interface KpiCardProps {
   label: string;
@@ -15,17 +14,15 @@ interface KpiCardProps {
   sub?: ReactNode;
   valueColor?: string;
   icon?: ElementType;
-  /** Mini trend visualisation à droite — affichée seulement si ≥ 3 points */
-  trend?: number[];
-  /** Couleur du trend (défaut : accent brand) */
-  trendColor?: string;
-  /** Labels (dates) par point — affichés dans le tooltip de hover */
-  trendLabels?: string[];
-  /** Formatter pour la valeur affichée dans le tooltip (défaut : fr-FR) */
-  trendFormatValue?: (v: number) => string;
   /** Quand true, retire border/bg/rounded — pour usage à l'intérieur d'un KpiGroup */
   bare?: boolean;
   className?: string;
+  /** @deprecated le variant trend a été retiré du composant — les props sont
+   *  conservées pour compat callsite mais ignorées. */
+  trend?: number[];
+  trendColor?: string;
+  trendLabels?: string[];
+  trendFormatValue?: (v: number) => string;
 }
 
 export function KpiCard({
@@ -36,51 +33,41 @@ export function KpiCard({
   sub,
   valueColor,
   icon: Icon,
-  trend,
-  trendColor = "var(--accent-primary)",
-  trendLabels,
-  trendFormatValue,
   bare = false,
   className = "",
 }: KpiCardProps) {
-  const showTrend = trend && trend.length >= 3;
   const wrapperBase = bare
-    ? "flex items-stretch gap-3 p-5"
-    : "flex items-stretch gap-3 rounded-2xl bg-[var(--bg-card)] p-5";
+    ? "flex flex-col gap-1.5 px-5 py-8"
+    : "flex flex-col gap-1.5 rounded-2xl bg-[var(--bg-card-static)] px-5 py-8";
   return (
     <div className={`${wrapperBase} ${className}`}>
-      <div className="flex flex-1 min-w-0 flex-col">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-[var(--text-secondary)]" />}
-          <p className="text-[14px] font-medium tracking-body text-[var(--text-primary)]">{label}</p>
-        </div>
-        <div className="mt-1.5 flex items-center gap-2">
-          <p className="text-[20px] font-semibold tabular-nums tracking-heading leading-none"
-            style={{ color: valueColor ?? "var(--text-primary)" }}>
-            {value}
-          </p>
-          {delta !== undefined && (
-            <DeltaBadge value={delta} positiveIsGood={deltaPositiveIsGood} />
-          )}
-        </div>
-        {sub && (
-          <p className="mt-2 text-[12px] tracking-caption text-[var(--text-muted)]">{sub}</p>
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-[var(--text-secondary)]" />}
+        {/* Titre 16px, gris doux via light-dark() formula */}
+        <p
+          className="text-[16px] font-medium tracking-body"
+          style={{
+            color:
+              "light-dark(color(srgb 0.05 0.05 0.05 / 0.5), var(--text-muted))",
+          }}
+        >
+          {label}
+        </p>
+      </div>
+      <div className="flex items-baseline gap-2">
+        {/* Chiffre clé 24px */}
+        <p
+          className="text-[24px] font-semibold tabular-nums tracking-heading leading-none"
+          style={{ color: valueColor ?? "var(--text-primary)" }}
+        >
+          {value}
+        </p>
+        {delta !== undefined && (
+          <DeltaBadge value={delta} positiveIsGood={deltaPositiveIsGood} />
         )}
       </div>
-      {showTrend && (
-        <div className="flex flex-shrink-0 items-center">
-          <Sparkline
-            data={trend}
-            color={trendColor}
-            area
-            interactive
-            labels={trendLabels}
-            formatValue={trendFormatValue}
-            width={80}
-            height={32}
-            strokeWidth={1.5}
-          />
-        </div>
+      {sub && (
+        <p className="text-[12px] tracking-caption text-[var(--text-muted)]">{sub}</p>
       )}
     </div>
   );

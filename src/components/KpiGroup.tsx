@@ -1,14 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 
 /**
- * KpiGroup — regroupe plusieurs KpiCard `bare` dans un seul encart visuel.
+ * KpiGroup — rend une grille de KpiCards individuelles.
  *
- * Outer : rounded-3xl border bg-card
- * Inner : grid `columns` colonnes, sans dividers entre cellules
+ * NOTE : refondu (post-feedback) — auparavant le composant enveloppait tous
+ * les bare KpiCard dans un seul gros encart "wide". On ne veut plus ça.
+ * Maintenant chaque enfant est rendu dans son propre encart #F8F8F8, avec
+ * un gap entre eux. Le résultat visuel : autant de cards séparées que de
+ * KPIs, en grille.
  *
- * Convention : passer des `<KpiCard bare ... />` en enfants directs (Tooltip-wrap autorisé).
+ * Les call sites restent compatibles : ils passent toujours des
+ * `<KpiCard bare ... />` enfants — chacun est wrappé pour récupérer le bg.
  *
  * @example
  *   <KpiGroup columns={4}>
@@ -27,13 +31,15 @@ export function KpiGroup({
   className?: string;
 }) {
   return (
-    <div className={`overflow-hidden rounded-3xl bg-[var(--bg-card)] ${className}`}>
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-      >
-        {children}
-      </div>
+    <div
+      className={`grid gap-3 ${className}`}
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+    >
+      {Children.map(children, (child, i) => (
+        <div key={i} className="overflow-hidden rounded-2xl bg-[var(--bg-card-static)]">
+          {child}
+        </div>
+      ))}
     </div>
   );
 }

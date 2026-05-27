@@ -32,7 +32,6 @@ import {
   EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
-import { SkeletonBriefs } from "@/components/Skeleton";
 import { IconBadge } from "@/components/IconBadge";
 import { StatusPill, StatusPillDropdown, STATUS_CONFIG, type Status as BriefStatus } from "@/components/StatusPill";
 import { SegmentedControl } from "@/components/SegmentedControl";
@@ -297,7 +296,7 @@ export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) 
 
   if (allTags.length === 0) {
     return (
-      <div className="rounded-2xl bg-[var(--bg-card)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
+      <div className="rounded-2xl border border-[var(--border-subtle)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
         Aucun lot récent.
       </div>
     );
@@ -880,9 +879,12 @@ type TabProps = {
   actions: Action[];
   getStatus: (id: string) => BriefStatus;
   setStatus: (id: string, s: BriefStatus) => void;
+  /** B1 — édition inline owner + deadline */
+  setOwner: (id: string, owner: ActionOwner | undefined) => void;
+  setDeadline: (id: string, deadline: string | undefined) => void;
 };
 
-function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
+function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
   const pos = brief.position;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
@@ -955,7 +957,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
       </KpiGroup>
 
       {/* Évolution position — pleine largeur sous le hero */}
-      <div className="flex flex-col rounded-2xl bg-[var(--bg-card)] p-6">
+      <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution position</p>
           <FilterTabs
@@ -992,7 +994,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
       {/* Aperçu SERP + Analyse CTR — côte à côte */}
       <div className="grid grid-cols-2 gap-4">
         {/* Aperçu SERP */}
-        <div className="flex flex-col rounded-2xl bg-[var(--bg-card)] p-6">
+        <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-6">
           <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Aperçu SERP</p>
           <div className="flex-1 space-y-1.5">
             <p className="font-mono text-[12px] text-[var(--text-muted)]">votre-site.fr › {brief.url.replace(/^\//, "")}</p>
@@ -1010,7 +1012,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
         </div>
 
         {/* Analyse CTR */}
-        <div className="flex flex-col rounded-2xl bg-[var(--bg-card)] p-6">
+        <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-6">
           <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Analyse CTR</p>
           <KpiGroup columns={3}>
             <KpiCard bare icon={MousePointerClick} label="CTR réel" value={`${ctrReel}%`} sub={pos ? `position #${pos}` : "actuel"} />
@@ -1041,7 +1043,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
       </div>
 
       {/* Roadmap — grille de cards d'action */}
-      <section className="rounded-2xl bg-[var(--bg-card)] p-6">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Roadmap</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">
@@ -1060,7 +1062,9 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
               ownerCandidates={ALL_OWNERS}
+              onOwnerChange={(o) => setOwner(a.id, o)}
               deadline={a.deadline}
+              onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
             />
           ))}
@@ -1070,7 +1074,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus }: TabProps) {
   );
 }
 
-function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
+function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
   const seoScore = 78;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
@@ -1100,7 +1104,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
       {/* Brief éditorial — pills + checklist (structuré, conservé) */}
       <div>
         <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Analyse éditoriale</p>
-        <div className="rounded-2xl bg-[var(--bg-card)] p-6 space-y-5">
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">B2B / Services</span>
             <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">Informationnelle</span>
@@ -1156,7 +1160,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
       {/* Top 5 sujets manquants — table triée par impact */}
       <div>
         <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Sujets manquants</p>
-        <div className="overflow-hidden rounded-2xl bg-[var(--bg-card)]">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
@@ -1181,7 +1185,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
       </div>
 
       {/* Actions d'amélioration — grille de cards */}
-      <section className="rounded-2xl bg-[var(--bg-card)] p-6">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions d'amélioration</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
@@ -1198,7 +1202,9 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
               ownerCandidates={ALL_OWNERS}
+              onOwnerChange={(o) => setOwner(a.id, o)}
               deadline={a.deadline}
+              onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
             />
           ))}
@@ -1208,7 +1214,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus }: TabProps) {
   );
 }
 
-function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
+function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
   void brief;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
@@ -1343,7 +1349,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
       {/* Backlinks de cette page — section dédiée, distincte du profil d'ancres */}
       <div>
         <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Backlinks de cette page</p>
-        <div className="rounded-2xl bg-[var(--bg-card)] p-6">
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6">
           {(() => {
             const ownBacklinks = 0;
             const competitorBls = serpBenchmark.filter((r) => !r.isYou);
@@ -1409,7 +1415,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
         <p className="mb-4 text-[12px] tracking-caption text-[var(--text-muted)]">
           Cibles de répartition recommandées pour vos futurs backlinks
         </p>
-        <div className="rounded-2xl bg-[var(--bg-card)] p-6 space-y-2.5">
+        <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-2.5">
           {ancreSegments.map((s) => (
             <div key={s.label}>
               <div className="mb-1 flex items-center justify-between">
@@ -1427,7 +1433,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
       {/* Cibles d'outreach */}
       <div>
         <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Cibles d'outreach</p>
-        <div className="overflow-hidden rounded-2xl bg-[var(--bg-card)]">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-[var(--border-subtle)]">
@@ -1458,7 +1464,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
       </div>
 
       {/* Actions recommandées — grille de cards */}
-      <section className="rounded-2xl bg-[var(--bg-card)] p-6">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions recommandées</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
@@ -1475,7 +1481,9 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
               ownerCandidates={ALL_OWNERS}
+              onOwnerChange={(o) => setOwner(a.id, o)}
               deadline={a.deadline}
+              onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
             />
           ))}
@@ -1485,7 +1493,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus }: TabProps) {
   );
 }
 
-function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
+function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
   void brief;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -1606,7 +1614,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
         <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
         <div className="grid grid-cols-2 gap-3">
           {cwv.map((m) => (
-            <div key={m.label} className="rounded-2xl bg-[var(--bg-card)] p-6">
+            <div key={m.label} className="rounded-2xl border border-[var(--border-subtle)] p-6">
               <div className="flex items-center justify-between">
                 <p className="text-[12px] font-medium text-[var(--text-muted)]">{m.label}</p>
                 <span className={`inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${m.ok ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"}`}>
@@ -1625,7 +1633,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
         <button
           type="button"
           onClick={() => setDetailsOpen((v) => !v)}
-          className="flex w-full items-center justify-between rounded-2xl bg-[var(--bg-card)] px-5 py-4 text-left transition-colors hover:bg-[var(--bg-subtle)]"
+          className="flex w-full items-center justify-between rounded-2xl border border-[var(--border-subtle)] px-5 py-4 text-left transition-colors hover:bg-[var(--bg-subtle)]"
         >
           <span className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Détails on-page</span>
           <span className="flex items-center gap-2 text-[12px] text-[var(--text-muted)]">
@@ -1653,7 +1661,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
             </div>
             <div>
               <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Données structurées</p>
-              <div className="overflow-hidden rounded-2xl bg-[var(--bg-card)]">
+              <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
@@ -1683,7 +1691,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
       </div>
 
       {/* Actions techniques — grille de cards */}
-      <section className="rounded-2xl bg-[var(--bg-card)] p-6">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions techniques</p>
           <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
@@ -1700,7 +1708,9 @@ function TechniqueTab({ brief, actions, getStatus, setStatus }: TabProps) {
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
               ownerCandidates={ALL_OWNERS}
+              onOwnerChange={(o) => setOwner(a.id, o)}
               deadline={a.deadline}
+              onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
             />
           ))}
@@ -1716,10 +1726,14 @@ function ActionsTab({
   actions,
   getStatus,
   setStatus,
+  setOwner,
+  setDeadline,
 }: {
   actions: Action[];
   getStatus: (id: string) => BriefStatus;
   setStatus: (id: string, s: BriefStatus) => void;
+  setOwner: (id: string, owner: ActionOwner | undefined) => void;
+  setDeadline: (id: string, deadline: string | undefined) => void;
 }) {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<ActionSource | "all">("all");
@@ -1793,7 +1807,7 @@ function ActionsTab({
 
       {/* Liste — ActionCard expandable (cohérent avec les autres onglets) */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl bg-[var(--bg-card)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
+        <div className="rounded-2xl border border-[var(--border-subtle)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
           Aucune action ne correspond aux filtres.
         </div>
       ) : (
@@ -1809,7 +1823,9 @@ function ActionsTab({
               onStatusChange={(s) => setStatus(a.id, s)}
               owner={a.owner}
               ownerCandidates={ALL_OWNERS}
+              onOwnerChange={(o) => setOwner(a.id, o)}
               deadline={a.deadline}
+              onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
             />
           ))}
@@ -1847,11 +1863,26 @@ function BriefDrawerContent({
   const hasNext = idx < briefs.length - 1;
 
   // Source unique des actions (les 4 tabs + le tab Actions partagent ce state)
-  const allActions = getAnalysisActions(brief);
+  const rawActions = getAnalysisActions(brief);
   const [actionStatuses, setActionStatuses] = useState<Record<string, BriefStatus>>({});
   const getActionStatus = (id: string): BriefStatus => actionStatuses[id] ?? "todo";
   const setActionStatus = (id: string, s: BriefStatus) =>
     setActionStatuses((prev) => ({ ...prev, [id]: s }));
+
+  // B1 — édition inline owner + deadline (overrides locaux, persistance en B1b)
+  const [actionOwners, setActionOwners] = useState<Record<string, ActionOwner | undefined>>({});
+  const [actionDeadlines, setActionDeadlines] = useState<Record<string, string | undefined>>({});
+  const setActionOwner = (id: string, owner: ActionOwner | undefined) =>
+    setActionOwners((prev) => ({ ...prev, [id]: owner }));
+  const setActionDeadline = (id: string, deadline: string | undefined) =>
+    setActionDeadlines((prev) => ({ ...prev, [id]: deadline }));
+
+  // Merge des overrides dans les actions (overrides > données mock par défaut)
+  const allActions: Action[] = rawActions.map((a) => ({
+    ...a,
+    owner: a.id in actionOwners ? actionOwners[a.id] : a.owner,
+    deadline: a.id in actionDeadlines ? actionDeadlines[a.id] : a.deadline,
+  }));
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -1964,11 +1995,11 @@ function BriefDrawerContent({
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-12 py-10">
-        {tab === "synthese"  && <SyntheseTab  brief={brief} actions={allActions.filter(a => a.source === "synthese")}  getStatus={getActionStatus} setStatus={setActionStatus} />}
-        {tab === "contenu"   && <ContenuTab   brief={brief} actions={allActions.filter(a => a.source === "contenu")}   getStatus={getActionStatus} setStatus={setActionStatus} />}
-        {tab === "autorite"  && <AutoriteTab  brief={brief} actions={allActions.filter(a => a.source === "autorite")}  getStatus={getActionStatus} setStatus={setActionStatus} />}
-        {tab === "technique" && <TechniqueTab brief={brief} actions={allActions.filter(a => a.source === "technique")} getStatus={getActionStatus} setStatus={setActionStatus} />}
-        {tab === "actions"   && <ActionsTab   actions={allActions} getStatus={getActionStatus} setStatus={setActionStatus} />}
+        {tab === "synthese"  && <SyntheseTab  brief={brief} actions={allActions.filter(a => a.source === "synthese")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
+        {tab === "contenu"   && <ContenuTab   brief={brief} actions={allActions.filter(a => a.source === "contenu")}   getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
+        {tab === "autorite"  && <AutoriteTab  brief={brief} actions={allActions.filter(a => a.source === "autorite")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
+        {tab === "technique" && <TechniqueTab brief={brief} actions={allActions.filter(a => a.source === "technique")} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
+        {tab === "actions"   && <ActionsTab   actions={allActions} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
       </div>
     </>
   );
@@ -2060,7 +2091,7 @@ function AnalyseLaunchModal({
       onClick={requestClose}
     >
       <div
-        className={`t-modal ${modalClass} relative flex w-[560px] max-h-[80vh] flex-col rounded-3xl bg-[var(--bg-card)] shadow-2xl`}
+        className={`t-modal ${modalClass} relative flex w-[560px] max-h-[80vh] flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         {step === 1 ? (
@@ -2396,7 +2427,7 @@ function PagePanelContent({
 
           {/* Position GSC + Trafic — deux graphiques séparés côte à côte */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col rounded-2xl bg-[var(--bg-card)] px-5 pt-5 pb-3">
+            <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
               <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Position GSC</p>
               <div className="mt-1 mb-4 flex items-center gap-2">
                 {current?.positionGsc != null ? (
@@ -2411,7 +2442,7 @@ function PagePanelContent({
                 {history.length >= 2 ? <PositionSparkline history={history} /> : <SparklineEmpty />}
               </div>
             </div>
-            <div className="flex flex-col rounded-2xl bg-[var(--bg-card)] px-5 pt-5 pb-3">
+            <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
               <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Trafic</p>
               <div className="mt-1 mb-4 flex items-center gap-2">
                 {current?.clics != null ? (
@@ -2430,7 +2461,7 @@ function PagePanelContent({
         </div>
 
         {/* Right — historique des analyses */}
-        <div className="w-[340px] flex-shrink-0 flex flex-col gap-5 rounded-2xl bg-[var(--bg-card)] p-5">
+        <div className="w-[340px] flex-shrink-0 flex flex-col gap-5 rounded-2xl border border-[var(--border-subtle)] p-5">
           <div className="flex items-center gap-2">
             <p className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Historique des analyses</p>
             <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-primary)]">{history.length}</span>
@@ -2438,7 +2469,7 @@ function PagePanelContent({
 
           <div className="flex-1 overflow-y-auto flex flex-col gap-2">
             {history.length === 0 ? (
-              <div className="rounded-2xl bg-[var(--bg-card)] px-5 py-10 text-center">
+              <div className="rounded-2xl border border-[var(--border-subtle)] px-5 py-10 text-center">
                 <p className="text-[13px] text-[var(--text-muted)]">Aucune analyse disponible</p>
                 <p className="mt-1 text-[12px] text-[var(--text-muted)] opacity-60">Lancez une première analyse.</p>
               </div>
@@ -2446,7 +2477,7 @@ function PagePanelContent({
               <button
                 key={h.date}
                 onClick={() => onOpenAnalysis(brief, i)}
-                className="group flex w-full items-center gap-3 rounded-2xl bg-[var(--bg-card)] px-4 py-3.5 text-left transition-colors hover:bg-[var(--bg-card-hover)]"
+                className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--border-subtle)] px-4 py-3.5 text-left transition-colors hover:bg-[var(--bg-card-hover)]"
               >
                 {h.actionsTotal != null && (
                   <ActionRing done={h.actionsDone ?? 0} total={h.actionsTotal} />
@@ -2637,7 +2668,7 @@ function SidePanel({
         className={`fixed inset-0 z-[59] transition-opacity duration-[320ms] ease-out ${visible && !closing ? "opacity-100" : "opacity-0"}`}
       />
       <div
-        className={`fixed inset-y-0 right-0 z-[60] flex w-[1200px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl transition-all duration-[320ms] ease-out ${visible && !closing ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+        className={`fixed inset-y-0 right-0 z-[60] flex w-[960px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl transition-all duration-[320ms] ease-out ${visible && !closing ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
       >
       <div
         className="flex flex-1 flex-col min-h-0 transition-opacity duration-[150ms]"
@@ -2689,12 +2720,6 @@ export function BriefsView({
   /** Called after the panel opens, so the parent can clear its pending state */
   onPendingHandled?: () => void;
 } = {}) {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
 
   // Refs for horizontal scroll sync between sticky column header and table body
   const headerInnerRef = useRef<HTMLDivElement>(null);
@@ -2859,7 +2884,6 @@ export function BriefsView({
 
   const selectedBriefs = filtered.filter((b) => selected.has(b.id));
 
-  if (loading) return <SkeletonBriefs />;
 
   return (
     <div className="animate-fade-in">

@@ -163,7 +163,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
           <button
             ref={triggerRef}
             onClick={toggle}
-            className={`group flex h-9 w-full items-center gap-2 rounded-xl pr-2 text-[14px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 ${open ? "bg-[var(--bg-secondary)]" : "hover:bg-[var(--bg-secondary)]"}`}
+            className={`group flex h-9 w-full items-center gap-2 rounded-xl pr-2 text-[14px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 ${open ? "bg-[var(--bg-pill-active)]" : "hover:bg-[var(--bg-pill-active)]"}`}
           >
             <span className="flex h-9 w-6 flex-shrink-0 items-center justify-end">
               <ProjectFavicon domain={project.domain} logo={project.logo} size={18} />
@@ -180,7 +180,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
               ref={triggerRef}
               onClick={toggle}
               aria-label={project.domain}
-              className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${open ? "bg-[var(--bg-secondary)]" : "hover:bg-[var(--bg-secondary)]"}`}
+              className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${open ? "bg-[var(--bg-pill-active)]" : "hover:bg-[var(--bg-pill-active)]"}`}
             >
               <ProjectFavicon domain={project.domain} logo={project.logo} size={18} />
             </button>
@@ -191,7 +191,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
         <button
           ref={triggerRef}
           onClick={toggle}
-          className="group inline-flex h-9 items-center gap-2 rounded-full bg-[var(--bg-secondary)] px-3 transition-colors hover:bg-[var(--bg-overlay)]"
+          className="group inline-flex h-9 items-center gap-2 rounded-full bg-[var(--bg-pill-active)] px-3 transition-colors hover:bg-[var(--bg-pill-active-hover)]"
         >
           <ProjectFavicon domain={project.domain} logo={project.logo} size={18} />
           <span className="text-[14px] font-semibold tracking-body text-[var(--text-primary)]">

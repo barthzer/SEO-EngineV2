@@ -33,13 +33,13 @@ export function Drawer() {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="fixed right-0 top-0 bottom-0 z-50 flex w-[480px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--modal-bg)] shadow-2xl transition-transform duration-300"
+        className="fixed right-0 top-0 bottom-0 z-50 flex w-[640px] max-w-[95vw] flex-col border-l border-[var(--border-subtle)] bg-[var(--modal-bg)] shadow-2xl transition-transform duration-300"
         style={{
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
           transitionTimingFunction: "var(--ease-expo)",
         }}
       >
-        <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-6">
+        <div className="flex h-14 flex-shrink-0 items-center justify-between px-6">
           <span className="text-[14px] font-medium text-[var(--text-primary)]">{title}</span>
           <button
             onClick={close}

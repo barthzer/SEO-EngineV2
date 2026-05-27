@@ -25,10 +25,10 @@ export function FilterTabs<T extends string = string>({ tabs, value, onChange }:
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all"
             style={
               active
-                ? { color: "var(--text-primary)", fontWeight: 600, backgroundColor: "var(--bg-secondary)" }
+                ? { color: "var(--text-primary)", fontWeight: 600, backgroundColor: "var(--bg-pill-active)" }
                 : { color: "var(--text-muted)" }
             }
-            onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-secondary)"; }}
+            onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-pill-active)"; }}
             onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
           >
             {tab.color && <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tab.color }} />}

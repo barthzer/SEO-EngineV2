@@ -297,14 +297,14 @@ function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header — photo XL + nom + rôle */}
+      {/* Identité — photo XL + nom + rôle */}
       <div className="flex items-center gap-4">
-        <PhotoAvatar seed={consultant.photoSeed} initials={initialsOf(consultant.name)} size={64} />
+        <PhotoAvatar seed={consultant.photoSeed} initials={initialsOf(consultant.name)} size={72} />
         <div className="min-w-0">
-          <p className="text-[20px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+          <p className="text-[22px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
             {consultant.name}
           </p>
-          <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">{consultant.role}</p>
+          <p className="mt-1 text-[13px] text-[var(--text-muted)]">{consultant.role}</p>
         </div>
       </div>
 
@@ -508,7 +508,8 @@ export default function EquipePage() {
   }, []);
 
   function openDrawer(c: Consultant) {
-    drawer.open(c.name, <ConsultantDrawerContent consultant={c} />);
+    // Title vide : le nom est affiché dans le corps du drawer (évite le doublon).
+    drawer.open("", <ConsultantDrawerContent consultant={c} />);
   }
 
   // Fermer le drawer au démontage si encore ouvert

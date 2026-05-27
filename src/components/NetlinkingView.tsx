@@ -540,7 +540,7 @@ export function NetlinkingView() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
         {/* Left — Benchmark Radar */}
-        <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
@@ -597,7 +597,7 @@ export function NetlinkingView() {
         </section>
 
         {/* Right — Évolution historique (métrique + range configurables) */}
-        <section className="rounded-3xl bg-[var(--bg-card)] p-7 flex flex-col">
+        <section className="rounded-3xl border border-[var(--border-subtle)] p-7 flex flex-col">
           <div className="mb-4 flex items-start justify-between gap-4">
             {/* Left — Title + valeur courante immédiatement dessous */}
             <div>
@@ -673,7 +673,7 @@ export function NetlinkingView() {
 
       {/* ════════════════ 03. Profil des liens (Follow + Texte) ════════════════ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
           <CompareBar
             label="Distribution Follow / Nofollow"
             rows={[
@@ -701,7 +701,7 @@ export function NetlinkingView() {
           />
         </section>
 
-        <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
           <CompareBar
             label="Distribution Texte / Image"
             rows={[
@@ -737,7 +737,7 @@ export function NetlinkingView() {
 
       {/* ════════════════ 05. Distribution géographique ════════════════ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
           <div className="mb-5 flex items-baseline justify-between">
             <h3 className="font-semibold tracking-subheading text-[var(--text-primary)]">
               Distribution par pays
@@ -751,7 +751,7 @@ export function NetlinkingView() {
           </div>
         </section>
 
-        <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
           <h3 className="mb-5 font-semibold tracking-subheading text-[var(--text-primary)]">
             Distribution par langue
           </h3>
@@ -764,7 +764,7 @@ export function NetlinkingView() {
       </div>
 
       {/* ════════════════ 06. Insights géographiques ════════════════ */}
-      <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+      <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
         <h3 className="mb-5 font-semibold tracking-subheading text-[var(--text-primary)]">
           Insights géographiques
         </h3>
@@ -817,7 +817,7 @@ export function NetlinkingView() {
       </section>
 
       {/* ════════════════ 08. Topical Trust Flow ════════════════ */}
-      <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+      <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
         <div className="mb-6">
           <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
             Topical Trust Flow
@@ -883,7 +883,7 @@ export function NetlinkingView() {
       </section>
 
       {/* ════════════════ 09. Distribution des ancres ════════════════ */}
-      <section className="rounded-3xl bg-[var(--bg-card)] p-7">
+      <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">

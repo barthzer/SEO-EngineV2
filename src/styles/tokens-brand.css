@@ -9,16 +9,21 @@
 /* ──────────────── Light mode (défaut) ──────────────── */
 :root,
 [data-theme="light"] {
-  /* Surfaces — cool-tint neutre */
-  --bg-primary:        #F8F9FC;
-  --bg-secondary:      #edeff3;
-  --bg-subtle:         #F2F3F7;
-  --bg-card:           #ffffff;
-  --bg-card-hover:     #edeff3;
-  --bg-footer:         #ECEDF2;
-  --bg-sidebar:        #F8F9FC;
-  --bg-sidebar-active: #F2F3F7;
-  --bg-overlay:        #F2F3F7;
+  /* Surfaces — bg principal blanc, encarts en gris doux #F3F3F3 */
+  --bg-primary:        #ffffff;
+  --bg-secondary:      #ECECEC;
+  --bg-subtle:         #F3F3F3;
+  --bg-card:           transparent;
+  --bg-card-hover:     rgba(15, 23, 42, 0.04);
+  /* Réservé aux KpiCard uniquement. Les autres encarts sont en outline. */
+  --bg-card-static:    #F8F8F8;
+  /* Pills actifs (FilterTabs, ProjectSwitcher trigger). */
+  --bg-pill-active:        #F3F3F3;
+  --bg-pill-active-hover:  #EFEFEF;
+  --bg-footer:         #F3F3F3;
+  --bg-sidebar:        #ffffff;
+  --bg-sidebar-active: #F3F3F3;
+  --bg-overlay:        #F3F3F3;
 
   /* Cards & modales — éléments imbriqués en blanc */
   --card-inner-bg:     #ffffff;
@@ -102,6 +107,10 @@
   --modal-bg:          #1d1c1a;
   --dropdown-bg:       #1d1c1a;
   --input-bg:          #3a3a38;
+  /* Card non-cliquables + pills — équivalents dark des tokens light */
+  --bg-card-static:        #1d1c1a;
+  --bg-pill-active:        #2c2b29;
+  --bg-pill-active-hover:  #3a3a38;
 
   /* Bordures */
   --border-subtle:     rgba(255, 255, 255, 0.08);

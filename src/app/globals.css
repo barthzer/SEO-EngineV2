@@ -354,6 +354,26 @@
   to   { transform: translateX(0);  opacity: 1; }
 }
 
+/* Tooltip — pop d'entrée avec scale + offset directionnel + expo easing.
+   Le translate cible (-50%, -100%, etc) est conservé dans le `to` pour que
+   l'animation gère elle-même le positionnement (pas de conflit avec utilities). */
+@keyframes tooltip-pop-top {
+  from { opacity: 0; transform: translate(-50%, calc(-100% + 4px)) scale(0.92); }
+  to   { opacity: 1; transform: translate(-50%, -100%)             scale(1);    }
+}
+@keyframes tooltip-pop-bottom {
+  from { opacity: 0; transform: translate(-50%, -4px) scale(0.92); }
+  to   { opacity: 1; transform: translate(-50%, 0)    scale(1);    }
+}
+@keyframes tooltip-pop-left {
+  from { opacity: 0; transform: translate(calc(-100% + 4px), -50%) scale(0.92); }
+  to   { opacity: 1; transform: translate(-100%, -50%)             scale(1);    }
+}
+@keyframes tooltip-pop-right {
+  from { opacity: 0; transform: translate(-4px, -50%) scale(0.92); }
+  to   { opacity: 1; transform: translate(0, -50%)    scale(1);    }
+}
+
 /* Dropdown panel — slide dans la direction d'ouverture + opacity, rapide pour UX fluide */
 @keyframes dropdown-down {
   from { opacity: 0; transform: translateY(-8px) scale(0.985); }
