@@ -21,10 +21,14 @@ import { BlocCard, type BlocDef } from "@/components/BlocCard";
 import { CannibalView } from "@/components/CannibalView";
 import { DeltaIndicator } from "@/components/DeltaIndicator";
 import { NetlinkingView } from "@/components/NetlinkingView";
+import { HistoriqueView } from "@/components/analyse/HistoriqueView";
+import { NotesView } from "@/components/analyse/NotesView";
 import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
 import { AuditToc, type TocItem } from "@/components/AuditToc";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
+import { useDrawer } from "@/context/DrawerContext";
+import { ShareLinkDrawer } from "@/components/share/ShareLinkDrawer";
 import {
   ChevronRightIcon,
   ArrowRightIcon,
@@ -123,7 +127,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   const { show: showToast } = useToast();
   // Tab state is driven by `?tab=` in the URL so the sidebar can navigate to it directly.
   const rawTab = (searchParams.get("tab") ?? "general") as Tab;
-  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations"] as Tab[]).includes(rawTab) ? rawTab : "general";
+  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations","historique","notes"] as Tab[]).includes(rawTab) ? rawTab : "general";
   const setTab = (next: Tab) => {
     const sp = new URLSearchParams(searchParams.toString());
     if (next === "general") sp.delete("tab"); else sp.set("tab", next);
@@ -148,6 +152,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
   /* ── Push project actions (GSC, GA4, ...) into the Topbar's right slot ── */
   const { setMeta } = usePageMeta();
+  const { open: drawerOpen } = useDrawer();
   useEffect(() => {
     setMeta({
       rightSlot: (
@@ -176,6 +181,17 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             <DropdownItem icon={LLink}      onClick={() => setUrlModal("add-url")}>Ajouter une URL</DropdownItem>
             <DropdownItem icon={LSparkles}  onClick={() => setUrlModal("new-brief")}>Nouvelle analyse</DropdownItem>
             <DropdownSeparator />
+            <DropdownItem
+              icon={LinkIcon}
+              onClick={() =>
+                drawerOpen(
+                  "Partager avec le client",
+                  <ShareLinkDrawer domain={decodedDomain} />,
+                )
+              }
+            >
+              Partager avec le client
+            </DropdownItem>
             <DropdownItem icon={Settings}   onClick={() => setParametresOpen(true)}>Paramètres du projet</DropdownItem>
             <DropdownSeparator />
             <DropdownItem icon={Trash2} danger>Supprimer le projet</DropdownItem>
@@ -210,7 +226,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           juste sous le titre (cf. bloc `tab === "audit"` plus bas). */}
 
       {/* ── Tab content ── */}
-      <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
+      <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" && tab !== "historique" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
         {/* key={tab} : force le remount du contenu actif → l'animation `t-tab-enter` rejoue
             à chaque changement d'onglet (fade + slide + blur, ~200ms). */}
         <div key={tab} className="t-tab-enter">
@@ -220,7 +236,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             Vue d'ensemble : on accole le nom du projet (lien externe) à droite du titre,
             et la subtitle reprend l'info de fraîcheur GSC/GA4. */}
         {!["briefs", "tracking", "univers", "recommandations"].includes(tab) && (
-          <div className="mb-6">
+          <div className={`mb-6 ${tab === "historique" ? "px-[var(--page-px)]" : ""}`}>
             <div className="flex items-baseline gap-2">
               <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
                 {TAB_TITLES[tab]}
@@ -633,6 +649,11 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* Netlinking tab */}
         {tab === "netlinking" && <NetlinkingView />}
 
+        {/* B2 — Historique tab : timeline d'actions livrées + impact agrégé par mois. */}
+        {tab === "historique" && <HistoriqueView />}
+
+        {tab === "notes" && <NotesView domain={decodedDomain} />}
+
         {tab === "cannibal" && <CannibalView />}
 
         {tab === "univers" && <UniversSemantiqueView title={TAB_TITLES.univers} subtitle={TAB_SUBTITLES.univers} onOpenPageByUrl={openPageByUrl} />}
@@ -655,7 +676,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           ];
           const EDI_TOC: TocItem[] = [
             { id: "edi-synthese",        label: "Synthèse" },
-            { id: "edi-tags",            label: "Tags" },
+            { id: "edi-tags",            label: "Lots" },
             { id: "edi-diagnostic",      label: "01 · Diagnostic" },
             { id: "edi-dimensions",      label: "02 · Dimensions" },
             { id: "edi-donnees",         label: "03 · Données brutes" },

@@ -34,8 +34,10 @@ import {
   ChevronDown as CaretDown,
 } from "lucide-react";
 import { PriorityBadge, type ActionPriorityLevel } from "@/components/PriorityBars";
+import { pravatarUrl } from "@/lib/avatar";
 import { type Status, StatusPillDropdown } from "@/components/StatusPill";
 import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
+import { CommentThread } from "@/components/CommentThread";
 import { useToast } from "@/context/ToastContext";
 
 export type { ActionPriorityLevel } from "@/components/PriorityBars";
@@ -64,7 +66,7 @@ function OwnerAvatar({ owner, size = 22 }: { owner: ActionOwner; size?: number }
   if (owner.photoSeed && !errored) {
     return (
       <img
-        src={`https://i.pravatar.cc/${size * 2}?u=${encodeURIComponent(owner.photoSeed)}`}
+        src={pravatarUrl(owner.photoSeed, size * 2)}
         alt={owner.name}
         title={owner.name}
         width={size}
@@ -157,7 +159,7 @@ function OwnerPicker({
         <>
           <div className="my-1 h-px bg-[var(--border-subtle)]" />
           <DropdownItem onClick={() => onChange(undefined)}>
-            <span className="text-[12px] text-[var(--text-muted)]">Retirer l'assignation</span>
+            <span className="text-[12px] text-[var(--text-muted)]">Retirer l&apos;assignation</span>
           </DropdownItem>
         </>
       )}
@@ -243,6 +245,7 @@ export function ActionCard({
   clientNarrative,
   timeSpentMinutes,
   onNarrativeChange,
+  commentTarget,
 }: {
   priority: ActionPriorityLevel;
   title: string;
@@ -263,6 +266,8 @@ export function ActionCard({
   clientNarrative?: string;
   timeSpentMinutes?: number;
   onNarrativeChange?: (v: string) => void;
+  /** Active un fil de commentaires contextuel dans la zone dépliée. */
+  commentTarget?: { id: string; label: string };
 }) {
   const { show: showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -478,6 +483,14 @@ export function ActionCard({
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {commentTarget && (
+              <div className="border-t border-[var(--border-subtle)] pt-5">
+                <CommentThread
+                  target={{ type: "action", id: commentTarget.id, label: commentTarget.label }}
+                />
               </div>
             )}
           </div>

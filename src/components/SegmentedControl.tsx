@@ -16,7 +16,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, c
           onClick={() => onChange(o.key)}
           className={`flex-1 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
             value === o.key
-              ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm"
+              ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm"
               : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
           }`}
         >

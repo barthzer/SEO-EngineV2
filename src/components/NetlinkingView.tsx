@@ -8,6 +8,7 @@ import { KpiGroup } from "@/components/KpiGroup";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { RadarChart } from "@/components/RadarChart";
 import { Pill } from "@/components/Pill";
+import { VariationPill } from "@/components/VariationPill";
 import { Callout } from "@/components/Callout";
 import { AIInsight } from "@/components/AIInsight";
 import { LineDotChart } from "@/components/LineDotChart";
@@ -220,21 +221,15 @@ const VISIBILITY: VisibilityRow[] = [
    HELPERS UI
    ══════════════════════════════════════════════════════════════════════ */
 
-/** Badge de gap (Vous vs concurrent) — positive = concurrent devant (mauvais) */
+/** Badge de gap (Vous vs concurrent) — negative = vous devant (bon), positive = concurrent devant (mauvais) */
 function GapBadge({ value }: { value: number }) {
   if (value === 0) return <span className="text-[12px] text-[var(--text-muted)]">=</span>;
-  const ahead = value < 0;
-  const color = ahead ? "var(--color-success)" : "var(--color-danger)";
-  const bg = ahead ? "var(--color-success-bg)" : "var(--color-danger-bg)";
+  const ahead = value < 0; // vous devant
   const sign = value > 0 ? "+" : "−";
-  const abs = Math.abs(value);
   return (
-    <span
-      className="inline-flex rounded-full px-2 py-1 text-[12px] font-semibold tabular-nums"
-      style={{ color, backgroundColor: bg }}
-    >
-      {sign}{abs.toLocaleString("fr-FR")}
-    </span>
+    <VariationPill direction={ahead ? "up" : "down"} className="justify-end">
+      {sign}{Math.abs(value).toLocaleString("fr-FR")}
+    </VariationPill>
   );
 }
 
@@ -253,7 +248,7 @@ function buildBenchmarkColumns(): ColumnDef<BenchmarkRow>[] {
             className="h-4 w-4 flex-shrink-0 rounded-sm"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
           />
-          <span className={`block truncate text-[13px] ${r.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+          <span className={`block truncate text-[13px] ${r.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
             {r.domain}
             {r.isYou && <span className="ml-2 text-[11px] font-medium text-[var(--text-muted)]">Vous</span>}
           </span>
@@ -359,7 +354,6 @@ const LANGUAGE_TO_COUNTRY: Record<string, string> = {
 /** Ligne pour distribution géographique (drapeau + code + label + barre + % + delta) */
 function GeoRowItem({ row, max, kind }: { row: GeoRow; max: number; kind: "country" | "language" }) {
   const positive = row.delta >= 0;
-  const deltaColor = positive ? "var(--color-success)" : "var(--color-danger)";
   const flag = (() => {
     if (!row.code || row.code === "–") return null;
     if (kind === "country") return countryFlag(row.code);
@@ -384,12 +378,9 @@ function GeoRowItem({ row, max, kind }: { row: GeoRow; max: number; kind: "count
         />
       </div>
       <span className="text-right text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{row.pct}%</span>
-      <span
-        className="text-right text-[12px] font-semibold tabular-nums"
-        style={{ color: deltaColor }}
-      >
-        {positive ? "+" : ""}{row.delta}%
-      </span>
+      <VariationPill direction={positive ? "up" : "down"} className="justify-end">
+        {positive ? "+" : "−"}{Math.abs(row.delta)}%
+      </VariationPill>
     </div>
   );
 }
@@ -606,16 +597,9 @@ export function NetlinkingView() {
               </h2>
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-[24px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">{evoCfg.format(evoLast)}</span>
-                <span
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums"
-                  style={{
-                    color: evoDelta >= 0 ? "var(--color-success)" : "var(--color-danger)",
-                    backgroundColor: evoDelta >= 0 ? "var(--color-success-bg)" : "var(--color-danger-bg)",
-                  }}
-                >
-                  {evoDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {evoDelta >= 0 ? "+" : ""}{evoCfg.format(Math.abs(evoDelta))} ({evoDelta >= 0 ? "+" : ""}{evoDeltaPct}%)
-                </span>
+                <VariationPill direction={evoDelta >= 0 ? "up" : "down"}>
+                  {evoDelta >= 0 ? "+" : "−"}{evoCfg.format(Math.abs(evoDelta))} ({evoDelta >= 0 ? "+" : ""}{evoDeltaPct}%)
+                </VariationPill>
               </div>
             </div>
 
@@ -1098,7 +1082,7 @@ export function NetlinkingView() {
                     className="h-4 w-4 flex-shrink-0 rounded-sm"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                   />
-                  <span className={`block truncate text-[13px] ${r.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+                  <span className={`block truncate text-[13px] ${r.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
                     {r.domain}
                     {r.isYou && <span className="ml-2 text-[11px] font-medium text-[var(--text-muted)]">Vous</span>}
                   </span>
@@ -1130,16 +1114,11 @@ export function NetlinkingView() {
               render: (r) => {
                 if (r.gap === null) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
                 if (r.gap === 0) return <span className="text-[13px] text-[var(--text-muted)]">0</span>;
+                // Gap positif = concurrent devant (mauvais pour nous) → down/rouge.
                 return (
-                  <span
-                    className="inline-flex rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums"
-                    style={{
-                      color: "var(--color-danger)",
-                      backgroundColor: "var(--color-danger-bg)",
-                    }}
-                  >
+                  <VariationPill direction="down" className="justify-end">
                     +{r.gap.toLocaleString("fr-FR")}
-                  </span>
+                  </VariationPill>
                 );
               },
             },

@@ -469,8 +469,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden pt-[var(--page-py)]">
-      <div className="mx-auto flex w-full max-w-[var(--page-max-w)] flex-1 flex-col px-[var(--page-px)] min-h-0">
+    <div className="flex flex-col pt-10">
+      <div className="mx-auto flex w-full max-w-[var(--page-max-w)] flex-col px-10">
 
         {/* Greeting + toolbar — sticky en haut (ne défile pas) */}
         <div className="mb-6 flex-shrink-0">
@@ -498,7 +498,7 @@ export default function DashboardPage() {
 
         {/* Cockpit — grid occupe toute la hauteur restante.
             flex flex-col pour que le grid enfant utilise flex-1 et remplisse verticalement. */}
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex flex-col">
           {filtered.length === 0 ? (
             <EmptyState
               icon={<FolderOpenIcon className="h-6 w-6" />}

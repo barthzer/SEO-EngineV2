@@ -86,7 +86,7 @@ export function StepProjet({ data, update }: { data: OnboardingData; update: (p:
                 onClick={() => update({ analysisFrequency: key })}
                 className={`rounded-full px-4 py-1.5 text-[12.5px] font-medium transition-colors ${
                   selected
-                    ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                    ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 }`}
               >

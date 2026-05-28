@@ -351,7 +351,7 @@ export function ParametresModal({ domain, gscConnected, ga4Connected, onToggleGs
               <input
                 type="text"
                 value={tagInput}
-                placeholder="Ajoutez votre tag…"
+                placeholder="Ajoutez votre lot…"
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addTag()}
                 className="flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] px-3 py-2 text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--text-primary)]"

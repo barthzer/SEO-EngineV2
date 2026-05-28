@@ -12,6 +12,10 @@ const variants = {
     "border border-[var(--border-medium)] bg-transparent text-[var(--text-primary)] " +
     "hover:bg-[var(--bg-secondary)] " +
     "disabled:opacity-40 disabled:cursor-not-allowed",
+  tertiary:
+    "bg-[var(--bg-card-static)] text-[var(--text-primary)] " +
+    "hover:bg-[var(--bg-pill-active-hover)] " +
+    "disabled:opacity-40 disabled:cursor-not-allowed",
   accent:
     "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] " +
     "disabled:opacity-40 disabled:cursor-not-allowed",

@@ -7,6 +7,7 @@ import { DonutChart } from "@/components/DonutChart";
 import { AreaChart } from "@/components/AreaChart";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
+import { VariationPill } from "@/components/VariationPill";
 import { TriangleAlert, FileText, MousePointerClick, Percent } from "lucide-react";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 
@@ -153,9 +154,13 @@ function CannibalKwRow({ kw }: { kw: CannibalKw }) {
           <span className="text-[13px] tabular-nums font-medium text-[var(--text-primary)]">{totalClicks}</span>
         </td>
         <td className="px-4 py-3.5 text-right align-middle">
-          <span className="text-[13px] tabular-nums text-[var(--color-danger)]">
-            {kw.lostClicks !== null ? kw.lostClicks : "—"}
-          </span>
+          {kw.lostClicks !== null ? (
+            <VariationPill direction="down" className="justify-end">
+              −{kw.lostClicks}
+            </VariationPill>
+          ) : (
+            <span className="text-[13px] tabular-nums text-[var(--text-muted)]">—</span>
+          )}
         </td>
         <td className="px-4 py-3.5 text-right align-middle">
           <span className="text-[13px] tabular-nums text-[var(--text-muted)]">
@@ -260,7 +265,9 @@ const PAGES_COLUMNS: ColumnDef<CannibalPage>[] = [
     key: "clicksAtRisk", header: "Clics à risque", width: 140, align: "right",
     sortable: true, sortValue: (p) => p.clicksAtRisk,
     render: (p) => (
-      <span className="text-[13px] font-medium tabular-nums text-[var(--color-danger)]">{p.clicksAtRisk}</span>
+      <VariationPill direction="down" className="justify-end">
+        −{p.clicksAtRisk}
+      </VariationPill>
     ),
   },
   {

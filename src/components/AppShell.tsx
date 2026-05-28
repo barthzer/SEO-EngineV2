@@ -3,9 +3,12 @@ import { DrawerProvider } from "@/context/DrawerContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { PageMetaProvider } from "@/context/PageMetaContext";
 import { ProjectsProvider } from "@/context/ProjectsContext";
+import { ChatProvider } from "@/context/ChatContext";
 import { Drawer } from "@/components/Drawer";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import { CommandPalette } from "@/components/CommandPalette";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import type { Project } from "@/data/projects";
 
 /**
@@ -13,7 +16,7 @@ import type { Project } from "@/data/projects";
  * Largeur identique à l'état collapsed pour éviter tout shift de layout.
  */
 function SidebarFallback() {
-  return <aside className="h-full w-16 flex-shrink-0 bg-[var(--bg-primary)]" aria-hidden="true" />;
+  return <aside className="h-full w-16 flex-shrink-0 bg-[var(--bg-sidebar)]" aria-hidden="true" />;
 }
 
 export function AppShell({
@@ -28,6 +31,7 @@ export function AppShell({
       <DrawerProvider>
         <PageMetaProvider>
           <ProjectsProvider value={projects}>
+          <ChatProvider>
           <div className="flex h-[100dvh] overflow-hidden bg-[var(--bg-primary)]">
             {/* Sidebar lit useSearchParams (?tab=) — wrap dans Suspense pour permettre le static prerender. */}
             <Suspense fallback={<SidebarFallback />}>
@@ -39,6 +43,13 @@ export function AppShell({
             </main>
           </div>
           <Drawer />
+          {/* Palette de commandes globale (⌘K) — lit useSearchParams → Suspense. */}
+          <Suspense fallback={null}>
+            <CommandPalette />
+          </Suspense>
+          {/* Assistant conversationnel flottant (bulle bas-droite). */}
+          <ChatWidget />
+          </ChatProvider>
           </ProjectsProvider>
         </PageMetaProvider>
       </DrawerProvider>

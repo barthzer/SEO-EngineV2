@@ -16,48 +16,105 @@ interface AreaChartProps {
   data: AreaChartPoint[];
   color?: string;
   height?: number;
+  /** Si true : ignore `height` et adopte la hauteur du parent (ResizeObserver). */
+  fillHeight?: boolean;
   yMin?: number;
   yMax?: number;
   inverted?: boolean;
   actionDots?: ActionDot[];
   formatTooltip?: (point: AreaChartPoint) => ReactNode;
+  /** Format des labels sur l'axe Y. Défaut : suffixe k/M auto pour ≥1000. */
+  formatYTick?: (v: number) => string;
   gradientId?: string;
+}
+
+/* ─── Nice-scale algorithm (Wilkinson-style) ───
+ * Snappe min/max/ticks à des valeurs rondes (200k, 250k, 300k au lieu de
+ * 218 300, 235 580, ...). Améliore drastiquement la lisibilité de l'axe Y. */
+function niceNum(range: number, round: boolean): number {
+  if (range <= 0) return 1;
+  const exp = Math.floor(Math.log10(range));
+  const fraction = range / Math.pow(10, exp);
+  let niceFraction: number;
+  if (round) {
+    if (fraction < 1.5) niceFraction = 1;
+    else if (fraction < 3) niceFraction = 2;
+    else if (fraction < 7) niceFraction = 5;
+    else niceFraction = 10;
+  } else {
+    if (fraction <= 1) niceFraction = 1;
+    else if (fraction <= 2) niceFraction = 2;
+    else if (fraction <= 5) niceFraction = 5;
+    else niceFraction = 10;
+  }
+  return niceFraction * Math.pow(10, exp);
+}
+
+function niceScale(min: number, max: number, maxTicks = 5): { min: number; max: number; ticks: number[] } {
+  const range = niceNum(max - min, false);
+  const step = niceNum(range / (maxTicks - 1), true);
+  const niceMin = Math.floor(min / step) * step;
+  const niceMax = Math.ceil(max / step) * step;
+  const ticks: number[] = [];
+  for (let v = niceMin; v <= niceMax + step * 1e-9; v += step) ticks.push(v);
+  return { min: niceMin, max: niceMax, ticks };
+}
+
+/** Format par défaut : ≥1M → "1,2M", ≥1000 → "12k", sinon entier. */
+function defaultYTickFormat(v: number): string {
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000) {
+    return `${(v / 1_000_000).toFixed(1).replace(".", ",").replace(/,0$/, "")}M`;
+  }
+  if (abs >= 1000) {
+    return `${Math.round(v / 1000)}k`;
+  }
+  return Math.round(v).toString();
 }
 
 export function AreaChart({
   data,
   color = "var(--accent-primary)",
-  height: chartH = 160,
+  height: heightProp = 160,
+  fillHeight = false,
   yMin: yMinProp,
   yMax: yMaxProp,
   inverted = false,
   actionDots,
   formatTooltip,
+  formatYTick = defaultYTickFormat,
   gradientId,
 }: AreaChartProps) {
   const [hovered, setHovered] = useState<{ idx: number; x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [containerW, setContainerW] = useState(0);
+  const [containerH, setContainerH] = useState(0);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setContainerW(entry.contentRect.width));
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerW(entry.contentRect.width);
+      setContainerH(entry.contentRect.height);
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
   const lm = 36, tm = 12, bm = 24;
   const chartW = Math.max(1, containerW - lm - 10);
+  // En mode fillHeight, on déduit chartH de la hauteur observée ; sinon fixe via prop.
+  const chartH = fillHeight ? Math.max(80, containerH - tm - bm) : heightProp;
   const svgH = chartH + tm + bm;
 
   const vals = data.map((d) => d.value);
   const autoMin = Math.min(...vals);
   const autoMax = Math.max(...vals);
-  const range = autoMax - autoMin || 1;
-  const yMin = yMinProp ?? (autoMin - range * 0.1);
-  const yMax = yMaxProp ?? (autoMax + range * 0.1);
+  // Échelle "nice" : ticks ronds (200k, 250k…) au lieu de valeurs brutes
+  const nice = niceScale(autoMin, autoMax, 5);
+  const yMin = yMinProp ?? nice.min;
+  const yMax = yMaxProp ?? nice.max;
   const yRange = yMax - yMin || 1;
 
   const toY = (v: number) => {
@@ -85,10 +142,14 @@ export function AreaChart({
   const reactId = useId().replace(/:/g, "");
   const gradId = gradientId ?? `area-grad-${reactId}`;
 
-  const yTick1 = yMin + yRange * 0.25;
-  const yTick2 = yMin + yRange * 0.5;
-  const yTick3 = yMin + yRange * 0.75;
-  const yTicks = [yMin, yTick1, yTick2, yTick3, yMax].filter((v, i, a) => a.indexOf(v) === i);
+  // Si min/max custom passés (yMinProp/yMaxProp), recalcule des quartiles ;
+  // sinon utilise les ticks nice issus de niceScale().
+  const yTicks =
+    yMinProp !== undefined || yMaxProp !== undefined
+      ? [yMin, yMin + yRange * 0.25, yMin + yRange * 0.5, yMin + yRange * 0.75, yMax].filter(
+          (v, i, a) => a.indexOf(v) === i,
+        )
+      : nice.ticks;
 
   function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
     const svgEl = svgRef.current;
@@ -109,10 +170,22 @@ export function AreaChart({
 
   const hovPt = hovered !== null ? pts[hovered.idx] : null;
 
-  if (containerW === 0) return <div ref={containerRef} style={{ height: svgH }} />;
+  if (containerW === 0) {
+    return (
+      <div
+        ref={containerRef}
+        className={fillHeight ? "h-full w-full" : ""}
+        style={fillHeight ? undefined : { height: svgH }}
+      />
+    );
+  }
 
   return (
-    <div ref={containerRef} className="relative" onMouseLeave={() => setHovered(null)}>
+    <div
+      ref={containerRef}
+      className={`relative ${fillHeight ? "h-full w-full" : ""}`}
+      onMouseLeave={() => setHovered(null)}
+    >
       <svg
         ref={svgRef}
         width={containerW}
@@ -127,14 +200,13 @@ export function AreaChart({
           </linearGradient>
         </defs>
 
-        {/* Grid lines + Y labels */}
+        {/* Grid lines + Y labels (formatés avec suffixe k/M par défaut) */}
         {yTicks.map((v) => {
           const y = toY(v);
-          const label = Number.isInteger(v) ? v : v.toFixed(0);
           return (
             <g key={v}>
               <line x1={lm} y1={y} x2={lm + chartW} y2={y} stroke="var(--border-subtle)" strokeWidth="1" />
-              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{label}</text>
+              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{formatYTick(v)}</text>
             </g>
           );
         })}

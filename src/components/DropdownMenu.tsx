@@ -77,7 +77,7 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
           <div className="fixed inset-0 z-[1100]" onClick={closeDropdown} />
           <div
             data-origin={origin}
-            className={`t-dropdown ${open ? "is-open" : "is-closing"} fixed z-[1101] rounded-2xl p-2 shadow-[var(--shadow-floating)]`}
+            className={`t-dropdown ${open ? "is-open" : "is-closing"} fixed z-[1101] flex flex-col gap-0.5 rounded-2xl p-2 shadow-[var(--shadow-floating)]`}
             style={{
               top: coords.top,
               bottom: coords.bottom,
@@ -99,25 +99,32 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
 }
 
 export function DropdownItem({
-  onClick, danger = false, icon: Icon, selected = false, children,
+  onClick, danger = false, icon: Icon, selected = false, keepOpen = false, children,
 }: {
   onClick?: () => void;
   danger?: boolean;
   icon?: React.ElementType;
   /** When true, renders a check icon on the right (use for sort / filter dropdowns) */
   selected?: boolean;
+  /** Si true : ne ferme PAS le dropdown au clic. Indispensable pour les
+   *  filtres multi-select où on veut cocher plusieurs items à la suite. */
+  keepOpen?: boolean;
   children: ReactNode;
 }) {
   const { close } = useContext(DropdownCtx);
   const iconColor = danger ? "currentColor" : "var(--text-secondary)";
+  // État `selected` : border + bg en couleur main (accent-primary) + check
+  // à droite. Affordance forte pour les dropdowns multi-select.
+  // Le border-transparent fallback évite que l'apparition de la border quand
+  // selected fasse sauter le layout de 2px.
   return (
     <button
-      onClick={() => { onClick?.(); close(); }}
-      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"}`}
+      onClick={() => { onClick?.(); if (!keepOpen) close(); }}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[var(--color-danger)]" : selected ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"} ${selected ? "border border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]" : "border border-transparent"}`}
     >
       {Icon && <Icon className="h-5 w-5 flex-shrink-0" style={{ color: iconColor }} />}
       <span className="flex-1 text-left">{children}</span>
-      {selected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-[var(--text-primary)]" strokeWidth={2.5} />}
+      {selected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-[var(--accent-primary)]" strokeWidth={2.5} />}
     </button>
   );
 }

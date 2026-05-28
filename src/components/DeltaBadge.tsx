@@ -1,52 +1,37 @@
 "use client";
 
-import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
+import { VariationPill } from "@/components/VariationPill";
 
 interface DeltaBadgeProps {
   value: number | string;
   positiveIsGood?: boolean;
-  /** Show the up/down arrow icon when value is non-zero (default: true) */
+  /** Conservé pour compat — sans effet (VariationPill affiche toujours le triangle). */
   showIcon?: boolean;
   className?: string;
 }
 
-export function DeltaBadge({ value, positiveIsGood = true, showIcon = true, className = "" }: DeltaBadgeProps) {
-  // Normalize unicode minus / en-dash and French decimal comma for parsing
+/**
+ * DeltaBadge — variation chiffrée (KPI, etc.).
+ *
+ * Délègue désormais à `VariationPill` (triangle + texte, SANS fond) pour
+ * normaliser tous les indicateurs de variance de l'app. On garde ici la
+ * logique `isGood` : la DIRECTION du triangle (et donc la couleur) suit le
+ * caractère bénéfique de la variation, pas seulement le signe.
+ * Ex. Position : delta −2 (passe #12 → #10) = amélioration → triangle ↑ vert.
+ */
+export function DeltaBadge({ value, positiveIsGood = true, className = "" }: DeltaBadgeProps) {
   const cleaned = typeof value === "string" ? value.replace(/[−–]/g, "-").replace(/,/g, ".") : String(value);
   const num = parseFloat(cleaned);
   const isPositive = num > 0;
   const isNeutral = num === 0 || Number.isNaN(num);
-
-  // isGood = la variation est-elle bénéfique (amélioration) ?
-  // → C'est ce qui détermine couleur ET direction de la flèche, pour cohérence visuelle.
-  // Ex. Position : delta -2 (passe de #12 à #10) = isGood ✓ → flèche ↑ verte (perf en hausse),
-  // même si le nombre affiché reste "-2".
   const isGood = positiveIsGood ? isPositive : !isPositive;
 
-  let color: string;
-  let bg: string;
-
-  if (isNeutral) {
-    color = "var(--text-muted)";
-    bg = "var(--bg-subtle)";
-  } else if (isGood) {
-    color = "var(--color-success)";
-    bg = "rgba(16,185,129,0.1)";
-  } else {
-    color = "var(--color-danger)";
-    bg = "rgba(225,29,72,0.1)";
-  }
-
+  const direction = isNeutral ? "neutral" : isGood ? "up" : "down";
   const display = typeof value === "string" ? value : `${isPositive ? "+" : ""}${value}`;
-  const Icon = isNeutral ? null : isGood ? ArrowUpIcon : ArrowDownIcon;
 
   return (
-    <span
-      className={`inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[12px] font-semibold tabular-nums ${className}`}
-      style={{ color, backgroundColor: bg }}
-    >
-      {showIcon && Icon && <Icon className="h-3 w-3 flex-shrink-0" strokeWidth={2.5} />}
+    <VariationPill direction={direction} className={className}>
       {display}
-    </span>
+    </VariationPill>
   );
 }

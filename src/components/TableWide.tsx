@@ -19,6 +19,8 @@ export type ColumnDef<T> = {
   align?: "left" | "right";
   /** When true, the column grows to fill remaining horizontal space (still respects `width` as min-width). */
   flex?: boolean;
+  /** Plafond optionnel quand `flex=true` — au-delà, la colonne ne s'étire plus. */
+  maxWidth?: number;
   /** Renderer for the cell content */
   render: (row: T, index: number) => ReactNode;
   /** Active le tri sur cette colonne (cycle desc → asc → off au clic). Requiert `sortValue`. */
@@ -143,9 +145,12 @@ export function TableWide<T>({
   const bodyStyle = minWidth ? { minWidth } : undefined;
 
   /* Header element — always sticky to viewport (top-12). When bordered, rounded-t-3xl
-     pour matcher les coins arrondis de la card sans casser le scroll horizontal interne. */
+     pour matcher les coins arrondis de la card sans casser le scroll horizontal interne.
+     Bg conditionnel : `bg-card` quand bordered (matche la card autour, important en dark
+     où bg-card #1d1c1a ≠ bg-primary #131211), sinon `bg-primary` (matche la page). */
+  const headerBgClass = bordered ? "bg-[var(--bg-card)]" : "bg-[var(--bg-primary)]";
   const headerEl = (
-    <div className={`sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-card)] ${bordered ? "rounded-t-3xl" : ""}`}>
+    <div className={`sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] ${headerBgClass} ${bordered ? "rounded-t-3xl" : ""}`}>
       <div style={bodyStyle} className="flex h-10 items-center gap-3">
         <div className="flex flex-1 items-center gap-3" style={rowPadStyles}>
           {columns.map((col) => {
@@ -156,7 +161,7 @@ export function TableWide<T>({
               <div
                 key={col.key}
                 className={`flex-shrink-0 min-w-0 ${col.flex ? "flex-1" : ""}`}
-                style={col.flex ? { minWidth: col.width } : { width: col.width }}
+                style={col.flex ? { minWidth: col.width, maxWidth: col.maxWidth } : { width: col.width }}
               >
                 {isSortable ? (
                   <button
@@ -186,7 +191,7 @@ export function TableWide<T>({
           })}
           {trailingChevron && <div className="w-12 flex-shrink-0 min-w-0" />}
         </div>
-        {trailingChevron && <div className="sticky right-0 w-16 flex-shrink-0 min-w-0 bg-[var(--bg-card)]" />}
+        {trailingChevron && <div className={`sticky right-0 w-16 flex-shrink-0 min-w-0 ${headerBgClass}`} />}
         {/* trailingAction n'occupe pas de colonne dans le header : c'est un overlay absolu sur les rows */}
       </div>
     </div>
@@ -218,8 +223,10 @@ export function TableWide<T>({
           {columns.map((col) => (
             <div
               key={col.key}
-              className={`flex-shrink-0 min-w-0 ${col.flex ? "flex-1" : ""} ${col.align === "right" ? "text-right" : ""}`}
-              style={col.flex ? { minWidth: col.width } : { width: col.width }}
+              // Default cells = text-primary / font-normal (400). Les render()
+              // qui posent explicitement une classe text-* ou font-* l'emporteront.
+              className={`flex-shrink-0 min-w-0 font-normal text-[var(--text-primary)] ${col.flex ? "flex-1" : ""} ${col.align === "right" ? "text-right" : ""}`}
+              style={col.flex ? { minWidth: col.width, maxWidth: col.maxWidth } : { width: col.width }}
             >
               {col.render(row, (safePage - 1) * pageSize + i)}
             </div>
@@ -234,7 +241,7 @@ export function TableWide<T>({
               className="sticky right-0 flex flex-shrink-0 items-center justify-end self-stretch pr-3 opacity-0 transition-opacity group-hover:opacity-100"
               style={{
                 width: trailingActionWidth,
-                background: "linear-gradient(to right, transparent, var(--bg-card-hover) 50%)",
+                background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 50%)",
               }}
               onClick={(e) => e.stopPropagation()}
             >

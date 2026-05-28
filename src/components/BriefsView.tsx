@@ -4,6 +4,7 @@ import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "re
 import { createPortal } from "react-dom";
 import { useModalTransition } from "@/hooks/useModalTransition";
 import { SuccessCheck } from "@/components/SuccessCheck";
+import { CommentThread } from "@/components/CommentThread";
 import { Button } from "@/components/Button";
 import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
@@ -11,6 +12,7 @@ import { Tooltip, ChartTooltip } from "@/components/Tooltip";
 import { AreaChart } from "@/components/AreaChart";
 import { DropdownMenu, DropdownItem, DropdownSeparator, DropdownHeader } from "@/components/DropdownMenu";
 import { ColPill } from "@/components/ColPill";
+import { VariationPill } from "@/components/VariationPill";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import {
   ChevronRightIcon,
@@ -794,7 +796,7 @@ function Checkbox({ checked, indeterminate = false, onChange }: { checked: boole
 
 /* ── Brief drawer (slide-in from right) ──────────────────────────────── */
 
-type DrawerTab = "synthese" | "contenu" | "autorite" | "technique" | "actions";
+type DrawerTab = "synthese" | "contenu" | "autorite" | "technique" | "actions" | "comments";
 
 const DRAWER_TABS: { key: DrawerTab; label: string }[] = [
   { key: "synthese",  label: "Synthèse" },
@@ -802,6 +804,7 @@ const DRAWER_TABS: { key: DrawerTab; label: string }[] = [
   { key: "autorite",  label: "Autorité" },
   { key: "technique", label: "Technique" },
   { key: "actions",   label: "Actions" },
+  { key: "comments",  label: "Commentaires" },
 ];
 
 /* ── Actions partagées — source unique pour les 4 tabs + le tab Actions ── */
@@ -833,7 +836,7 @@ type Action = {
 /** B1 — Owners de démo (cohérents avec /equipe pour les vraies photos pravatar.cc). */
 const DEMO_OWNERS: Record<string, ActionOwner> = {
   BL: { id: "bl", name: "Barthélemy L.", initials: "BL", photoSeed: "barthelemy-l-seo" },
-  SM: { id: "sm", name: "Sophie M.",     initials: "SM", photoSeed: "sophie-m-seo" },
+  SM: { id: "sm", name: "Sophie M.",     initials: "SM", photoSeed: "5" },
   TL: { id: "tl", name: "Thomas L.",     initials: "TL", photoSeed: "thomas-l-seo" },
   MP: { id: "mp", name: "Marie P.",      initials: "MP", photoSeed: "marie-p-seo" },
 };
@@ -1056,6 +1059,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               key={a.id}
               priority={a.priority}
               title={a.title}
+              commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact}
               status={getStatus(a.id)}
@@ -1196,6 +1200,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
               key={a.id}
               priority={a.priority}
               title={a.title}
+              commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact}
               status={getStatus(a.id)}
@@ -1475,6 +1480,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               key={a.id}
               priority={a.priority}
               title={a.title}
+              commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact ? `Impact ${a.impact}` : undefined}
               status={getStatus(a.id)}
@@ -1568,7 +1574,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
                 onClick={() => setDevice(dev)}
                 className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
                   active
-                    ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                    ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 }`}
               >
@@ -1702,6 +1708,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
               key={a.id}
               priority={a.priority}
               title={a.title}
+              commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact ? `Impact ${a.impact}` : undefined}
               status={getStatus(a.id)}
@@ -1817,6 +1824,7 @@ function ActionsTab({
               key={a.id}
               priority={a.priority}
               title={a.title}
+              commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact}
               status={getStatus(a.id)}
@@ -2000,6 +2008,11 @@ function BriefDrawerContent({
         {tab === "autorite"  && <AutoriteTab  brief={brief} actions={allActions.filter(a => a.source === "autorite")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
         {tab === "technique" && <TechniqueTab brief={brief} actions={allActions.filter(a => a.source === "technique")} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
         {tab === "actions"   && <ActionsTab   actions={allActions} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
+        {tab === "comments"  && (
+          <div className="mx-auto max-w-[640px]">
+            <CommentThread target={{ type: "analysis", id: String(brief.id), label: brief.keyword }} />
+          </div>
+        )}
       </div>
     </>
   );
@@ -2917,7 +2930,7 @@ export function BriefsView({
           value={colTag}
           onChange={setColTag}
           items={[
-            { value: "all",                        label: "Tous les tags" },
+            { value: "all",                        label: "Tous les lots" },
             { value: "Lot SEO — Optimisation Q2",  label: "SEO — Optimisation Q2" },
             { value: "Lot Création — Blog expert", label: "Création — Blog expert" },
             { value: "Lot GEO — Structured data",  label: "GEO — Structured data" },
@@ -2996,7 +3009,7 @@ export function BriefsView({
                 </button>
               }
             >
-              <DropdownHeader>Choisir un tag</DropdownHeader>
+              <DropdownHeader>Choisir un lot</DropdownHeader>
               {Object.keys(tagColors).map((tag) => (
                 <DropdownItem key={tag} onClick={() => assignTag(tag === "Sans lot" ? null : tag)}>
                   <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[tag] }} />
@@ -3125,7 +3138,7 @@ export function BriefsView({
 
                     {/* Page */}
                     <div className="w-[200px] flex-shrink-0 min-w-0">
-                      <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{brief.title}</p>
+                      <p className="truncate text-[13px] text-[var(--text-primary)]">{brief.title}</p>
                       <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
                     </div>
 
@@ -3154,24 +3167,17 @@ export function BriefsView({
                     <div className="w-[110px] flex-shrink-0 min-w-0">
                       {brief.position ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+                          <span className="text-[13px] tabular-nums text-[var(--text-primary)]">
                             #{brief.position}
                           </span>
                           {brief.positionDelta != null && brief.positionDelta !== 0 && (() => {
                             // negatif = gain de position (meilleur), positif = perte
                             const isGain = brief.positionDelta < 0;
                             const abs = Math.abs(brief.positionDelta);
-                            const color = isGain ? "var(--color-success)" : "var(--color-danger)";
                             return (
-                              <span
-                                className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
-                                style={{
-                                  color,
-                                  backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)`,
-                                }}
-                              >
-                                {isGain ? "↑" : "↓"}{abs.toFixed(abs < 10 ? 1 : 0)}
-                              </span>
+                              <VariationPill direction={isGain ? "up" : "down"} className="!text-[11px]">
+                                {abs.toFixed(abs < 10 ? 1 : 0)}
+                              </VariationPill>
                             );
                           })()}
                         </div>
@@ -3180,7 +3186,7 @@ export function BriefsView({
 
                     {/* Volume */}
                     <div className="w-[80px] flex-shrink-0 min-w-0">
-                      <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{brief.volume.toLocaleString()}</span>
+                      <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{brief.volume.toLocaleString()}</span>
                     </div>
 
                     {/* Trafic — clics (tooltip Détail GSC) + sparkline interactive (tooltip point survolé) */}
@@ -3227,7 +3233,7 @@ export function BriefsView({
                                 </div>
                               }
                             >
-                              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{brief.clics.toLocaleString()}</span>
+                              <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{brief.clics.toLocaleString()}</span>
                             </Tooltip>
                             {/* Tooltip 2 — point survolé du sparkline (date + valeur) */}
                             <ClicsSparkline history={histClics} color={trendColor} />
@@ -3246,7 +3252,6 @@ export function BriefsView({
                         const ctrAttendu = expectedCtrFromPosition(brief.position);
                         const gap = ctrAttendu != null ? ctrReel - ctrAttendu : null;
                         const sousPerf = gap != null && gap < 0;
-                        const color = sousPerf ? "var(--color-danger)" : "var(--color-success)";
                         return (
                           <Tooltip
                             side="top"
@@ -3266,17 +3271,11 @@ export function BriefsView({
                             }
                           >
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{ctrReel.toFixed(1)}%</span>
+                              <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{ctrReel.toFixed(1)}%</span>
                               {gap != null && gap !== 0 && (
-                                <span
-                                  className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums"
-                                  style={{
-                                    color,
-                                    backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)`,
-                                  }}
-                                >
-                                  {sousPerf ? "↓" : "↑"}{Math.abs(gap).toFixed(1)}
-                                </span>
+                                <VariationPill direction={sousPerf ? "down" : "up"} className="!text-[11px]">
+                                  {Math.abs(gap).toFixed(1)}
+                                </VariationPill>
                               )}
                             </div>
                           </Tooltip>
@@ -3320,7 +3319,7 @@ export function BriefsView({
                         const h = estimateEffortHours(brief);
                         return (
                           <Tooltip side="top" portal label={`${h}h estimées pour livrer cette analyse`}>
-                            <span className="text-[13px] font-medium tabular-nums text-[var(--text-secondary)]">
+                            <span className="text-[13px] tabular-nums text-[var(--text-primary)]">
                               {h}h
                             </span>
                           </Tooltip>
@@ -3411,39 +3410,33 @@ export function BriefsView({
                       </div>
                     </div>
 
-                    {/* Actions — lancer / relancer l'analyse */}
-                    <div className="w-12 flex-shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
-                      <Tooltip
-                        side="top"
-                        rich
-                        portal
-                        label={
-                          <div className="space-y-0.5">
-                            <p className="font-semibold">{analyseLabel ? "Relancer une analyse" : "Lancer une analyse"}</p>
-                            <p className="opacity-70">3min</p>
-                            {brief.analysisCount && brief.analysisCount > 1 && (
-                              <p className="opacity-70">{brief.analysisCount} analyses au total</p>
-                            )}
-                          </div>
-                        }
+                    {/* Actions — lancer / relancer l'analyse — CTA principal du DS */}
+                    <div className="w-[130px] flex-shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); setSelected(new Set([brief.id])); setAnalyseLaunchOpen(true); }}
                       >
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setSelected(new Set([brief.id])); setAnalyseLaunchOpen(true); }}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-                        >
-                          {analyseLabel ? <RefreshCw className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                        </button>
-                      </Tooltip>
+                        {analyseLabel ? "Relancer" : "Lancer"}
+                      </Button>
                     </div>
 
                     <div className="w-16 flex-shrink-0 min-w-0"><SemanticPill score={brief.semanticScore} /></div>
 
-                    {/* Chevron overlay — sticky right edge with gradient fade */}
+                    {/* Chevron overlay — sticky à droite. `self-stretch` étend l'élément
+                        sur toute la hauteur de la row (au lieu de h-7 qui laissait passer
+                        les bords haut/bas du CTA "Lancer/Relancer" derrière le fade). */}
                     <div
-                      className={`sticky right-0 flex-shrink-0 flex h-7 w-20 items-center justify-end pr-3 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                      style={{ background: "linear-gradient(to right, transparent, var(--bg-card-hover) 50%)" }}
+                      className={`sticky right-0 flex-shrink-0 flex w-20 items-center justify-end self-stretch pr-3 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                     >
-                      <ChevronRightIcon className="h-4 w-4 text-[var(--text-muted)]" />
+                      {/* Dégradé étendu à gauche pour recouvrir CTA + SemanticPill,
+                          et plein hauteur via inset-y-0 du parent stretched. */}
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-y-0 right-0 w-[200px]"
+                        style={{ background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 55%)" }}
+                      />
+                      <ChevronRightIcon className="relative h-4 w-4 text-[var(--text-muted)]" />
                     </div>
                   </div>
                   </button>

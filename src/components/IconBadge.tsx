@@ -1,5 +1,3 @@
-"use client";
-
 import type { ElementType } from "react";
 
 type IconBadgeSize = "sm" | "md" | "lg";

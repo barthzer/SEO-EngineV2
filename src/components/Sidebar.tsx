@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { SeoEngineLogo } from "@/components/SeoEngineLogo";
 import { SeoEngineWordmark } from "@/components/SeoEngineWordmark";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { Tooltip } from "@/components/Tooltip";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
 import { useProjects } from "@/context/ProjectsContext";
@@ -13,8 +14,6 @@ import {
   HomeIcon as HomeOutline,
   Cog6ToothIcon as Cog6ToothOutline,
   UserGroupIcon as UserGroupOutline,
-  ChevronLeftIcon,
-  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import {
   HomeIcon as HomeSolid,
@@ -46,6 +45,8 @@ import {
   ClipboardList,
   Copy as CopyIcon,
   Network,
+  History as HistoryIcon,
+  StickyNote,
 } from "lucide-react";
 
 /* ── Project nav items — toujours visibles, contextualisés par le projet courant ─── */
@@ -64,6 +65,10 @@ const projectNav: ProjectNavItem[] = [
   { icon: CopyIcon,         label: "Cannibalisation",    tab: "cannibal" },
   { icon: Network,          label: "Netlinking",         tab: "netlinking" },
   { icon: Tags,             label: "Univers sémantique", tab: "univers" },
+  // B2 — Historique : actions livrées par mois + impact agrégé. Source pour le rapport PDF (C1).
+  { icon: HistoryIcon,      label: "Historique",         tab: "historique" },
+  // E2 — Notes : journal de bord vivant du projet.
+  { icon: StickyNote,       label: "Notes",              tab: "notes" },
 ];
 
 /* ── NavRow primitive ──────────────────────────────────────────────── */
@@ -175,7 +180,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="relative flex h-full flex-col overflow-hidden transition-all duration-300 flex-shrink-0"
+      className="relative flex h-full flex-col overflow-hidden bg-[var(--bg-sidebar)] transition-all duration-300 flex-shrink-0"
       style={{
         width: isExpanded ? "240px" : "64px",
         transitionTimingFunction: "var(--ease-expo)",
@@ -196,6 +201,11 @@ export function Sidebar() {
         </Link>
       </div>
 
+      {/* Workspace switcher (façon Vercel) */}
+      <div className={`h-14 flex-shrink-0 ${isExpanded ? "px-2 py-2" : "flex items-center justify-center"}`}>
+        <WorkspaceSwitcher isExpanded={isExpanded} />
+      </div>
+
       {/* ── Main nav ── */}
       <nav
         className={`flex flex-1 flex-col gap-1 overflow-y-auto py-1 ${isExpanded ? "px-2" : "items-center"}`}
@@ -214,21 +224,21 @@ export function Sidebar() {
         {/* Section Projet courant — collapse animé sur la page d'accueil */}
         <div
           aria-hidden={isHome}
-          className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+          className="grid w-full transition-[grid-template-rows,opacity] duration-300 ease-out"
           style={{
             gridTemplateRows: isHome ? "0fr" : "1fr",
             opacity: isHome ? 0 : 1,
           }}
         >
-          <div className="overflow-hidden">
+          <div className="w-full overflow-hidden">
             {isExpanded ? (
               <p className="mt-4 px-3 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
                 Projet
               </p>
             ) : (
-              <div className="my-2 h-px w-6 bg-[var(--border-subtle)]" />
+              <div className="my-2 h-px w-full bg-[var(--border-subtle)]" />
             )}
-            <div className="flex flex-col gap-1">
+            <div className={`flex flex-col gap-1 ${isExpanded ? "" : "items-center"}`}>
               {projectNav.map((item) => {
                 const href = `/analyse/${encodeURIComponent(projectDomain)}?tab=${item.tab}`;
                 const isActive = isProjectPage && activeTab === item.tab;
@@ -254,7 +264,7 @@ export function Sidebar() {
             Compte
           </p>
         )}
-        {!isExpanded && <div className="my-2 h-px w-6 bg-[var(--border-subtle)]" />}
+        {!isExpanded && <div className="my-2 h-px w-full bg-[var(--border-subtle)]" />}
 
         <NavRow
           icon={UserGroupOutline}
@@ -275,7 +285,7 @@ export function Sidebar() {
       </nav>
 
       {/* ── Bottom : Notifications + Mode + Compte (dropdown) + Réduire ── */}
-      <div className="mx-3 border-t border-[var(--border-subtle)]">
+      <div className="border-t border-[var(--border-subtle)]">
         <div className={`flex flex-col gap-1 py-3 ${isExpanded ? "px-2" : "items-center"}`}>
 
           {/* Notifications — bouton avec liste en dropdown */}
@@ -363,9 +373,6 @@ export function Sidebar() {
             </button>
           </Tooltip>
 
-          {/* Divider Notifs/Mode ↔ Compte */}
-          <div className={`my-1 border-t border-[var(--border-subtle)] ${isExpanded ? "-mx-2" : "w-9"}`} />
-
           {/* Compte — bouton avec nom utilisateur, ouvre dropdown Profil/Déconnexion */}
           <DropdownMenu
             upward
@@ -416,9 +423,6 @@ export function Sidebar() {
             <DropdownItem icon={LogOut} danger onClick={() => router.push("/")}>Se déconnecter</DropdownItem>
           </DropdownMenu>
 
-          {/* Divider Compte ↔ Réduire */}
-          <div className={`my-1 border-t border-[var(--border-subtle)] ${isExpanded ? "-mx-2" : "w-9"}`} />
-
           {/* Expand / collapse toggle */}
           <Tooltip label={isExpanded ? "Réduire" : "Développer"} side="right" portal disabled={isExpanded}>
             <button
@@ -429,7 +433,17 @@ export function Sidebar() {
               }`}
             >
               <span className={`flex h-9 flex-shrink-0 items-center ${isExpanded ? "w-6 justify-end" : "w-9 justify-center"}`}>
-                {isExpanded ? <ChevronLeftIcon className="h-[14px] w-[14px]" /> : <ChevronRightIcon className="h-[14px] w-[14px]" />}
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  aria-hidden="true"
+                  style={{ transform: isExpanded ? undefined : "scaleX(-1)" }}
+                >
+                  <rect x="10.5" y="6.5" width="7" height="5" rx="1" transform="rotate(90 10.5 6.5)" fill="currentColor" />
+                  <rect x="3" y="4" width="14" height="12" rx="2.8" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
               </span>
               <span
                 className="overflow-hidden whitespace-nowrap transition-all duration-300"

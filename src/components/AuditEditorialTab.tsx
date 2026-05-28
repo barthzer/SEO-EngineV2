@@ -157,7 +157,7 @@ type TagData = {
 
 const LOTS: Record<string, TagData> = {
   all: {
-    label: "Tous les tags", count: 11, pct: 8,
+    label: "Tous les lots", count: 11, pct: 8,
     visitsAtRisk: "4,1k", headlineEm: "−4.1k visites/mois", headlineTail: "menacées\npar 9 signaux E-E-A-T faibles.",
     sub: "Neuf pages manquent de signaux d'expertise et d'autorité, mettant en danger 1 361 visites par mois. Priorité avant le prochain Core Update : enrichir le contenu et expliciter les sources.",
     score: 62, grade: "C",

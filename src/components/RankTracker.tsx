@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { PlusIcon, ArrowUpIcon, ArrowDownIcon, XMarkIcon, ChevronDownIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, ChevronDownIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { VariationPill } from "@/components/VariationPill";
 import { Upload, FileSpreadsheet, Plus, Trophy, Medal, Target, Activity } from "lucide-react";
 import { Button } from "@/components/Button";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
@@ -199,12 +200,12 @@ function PosCell({ pos }: { pos: number | null }) {
 function DeltaCell({ delta }: { delta: number | null }) {
   if (delta === null) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
   if (delta === 0)    return <span className="text-[13px] text-[var(--text-muted)]">=</span>;
+  // delta < 0 = gain de position (meilleur) → up/vert.
   const gain = delta < 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[12px] font-semibold ${gain ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>
-      {gain ? <ArrowUpIcon className="h-3 w-3" /> : <ArrowDownIcon className="h-3 w-3" />}
+    <VariationPill direction={gain ? "up" : "down"}>
       {Math.abs(delta)}
-    </span>
+    </VariationPill>
   );
 }
 

@@ -333,6 +333,23 @@
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
+/* Texte « Réflexion en cours… » — balayage dégradé gris (façon ChatGPT) */
+.ai-thinking-text {
+  background: linear-gradient(
+    90deg,
+    var(--text-muted) 0%,
+    var(--text-muted) 35%,
+    var(--text-primary) 50%,
+    var(--text-muted) 65%,
+    var(--text-muted) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2.8s linear infinite;
+}
+
 /* ──────────────── Keyframes ──────────────── */
 @keyframes fade-in {
   from { opacity: 0; }

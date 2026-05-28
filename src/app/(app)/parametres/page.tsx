@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { useToast } from "@/context/ToastContext";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
@@ -14,13 +14,17 @@ import {
   KeyIcon,
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
+import { AgencyBrandingSettings } from "@/components/parametres/AgencyBrandingSettings";
+import { Kbd } from "@/components/Kbd";
 
 /* ── Tabs ─────────────────────────────────────────────────────────────── */
 
-type Tab = "compte" | "api";
+type Tab = "compte" | "agence" | "api" | "raccourcis";
 const TABS: { key: Tab; label: string }[] = [
-  { key: "compte", label: "Mon Compte" },
-  { key: "api",    label: "Connexions API" },
+  { key: "compte",     label: "Mon Compte" },
+  { key: "agence",     label: "Identité agence" },
+  { key: "api",        label: "Connexions API" },
+  { key: "raccourcis", label: "Raccourcis" },
 ];
 
 /* ── Section wrapper ─────────────────────────────────────────────────── */
@@ -57,7 +61,7 @@ function Input({ value, onChange, placeholder, type = "text" }: { value: string;
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-9 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--border-medium)]"
+      className="h-9 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3 text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--border-medium)]"
     />
   );
 }
@@ -171,7 +175,7 @@ function ApiKeyRow({ label, desc, placeholder }: { label: string; desc: string; 
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
-            className="h-9 w-52 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 pr-9 font-mono text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--border-medium)]"
+            className="h-9 w-52 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3 pr-9 font-mono text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--border-medium)]"
           />
           <button
             onClick={() => setShow((s) => !s)}
@@ -249,11 +253,60 @@ function LangueSelect({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
+/* ── Raccourcis clavier ──────────────────────────────────────────────── */
+
+type Shortcut = { keys: string[]; label: string; sub?: string };
+
+/** Construit la liste des raccourcis (la touche modificatrice dépend de l'OS). */
+function buildShortcutGroups(mod: string): { group: string; items: Shortcut[] }[] {
+  return [
+    {
+      group: "Général",
+      items: [
+        { keys: [mod, "K"], label: "Ouvrir la recherche", sub: "Palette de commandes — projets, navigation, actions" },
+        { keys: ["Esc"],    label: "Fermer",              sub: "Referme la palette ou le panneau ouvert" },
+      ],
+    },
+    {
+      group: "Dans la palette de commandes",
+      items: [
+        { keys: ["↑", "↓"], label: "Naviguer",  sub: "Se déplacer entre les résultats" },
+        { keys: ["↵"],      label: "Ouvrir",    sub: "Lance le résultat sélectionné" },
+      ],
+    },
+  ];
+}
+
+function ShortcutRow({ shortcut }: { shortcut: Shortcut }) {
+  return (
+    <div className="flex items-center justify-between gap-6 border-b border-[var(--border-subtle)] py-3.5 last:border-0">
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-[var(--text-primary)]">{shortcut.label}</p>
+        {shortcut.sub && <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">{shortcut.sub}</p>}
+      </div>
+      <div className="flex flex-shrink-0 items-center gap-1">
+        {shortcut.keys.map((k) => (
+          <Kbd key={k}>{k}</Kbd>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function ParametresPage() {
   const [tab, setTab] = useState<Tab>("compte");
   const { show: showToast } = useToast();
+
+  // Touche modificatrice selon l'OS (⌘ sur macOS, Ctrl ailleurs).
+  // Détectée après montage pour éviter tout mismatch d'hydratation.
+  const [mod, setMod] = useState("Ctrl");
+  useEffect(() => {
+    const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent);
+    if (isMac) setMod("⌘");
+  }, []);
+  const shortcutGroups = buildShortcutGroups(mod);
 
   const [name, setName]     = useState("Barthélemy");
   const [email, setEmail]   = useState("clients.lagenceweb@gmail.com");
@@ -392,6 +445,41 @@ export default function ParametresPage() {
               <Button size="md" onClick={handleSave}>Enregistrer</Button>
             </div>
 
+          </div>
+        )}
+
+        {/* ── Identité agence ── */}
+        {tab === "agence" && (
+          <div className="flex flex-col gap-8">
+            <Section
+              title="Identité visuelle de l'agence"
+              description="Ces informations apparaissent dans le portail partagé avec vos clients (nom du studio, logo, couleur d'accent). Seul un admin peut modifier."
+            >
+              <AgencyBrandingSettings />
+            </Section>
+          </div>
+        )}
+
+        {/* ── Raccourcis ── */}
+        {tab === "raccourcis" && (
+          <div className="flex flex-col gap-8">
+            {shortcutGroups.map((g) => (
+              <Section
+                key={g.group}
+                title={g.group}
+                description={
+                  g.group === "Général"
+                    ? "Accélérez votre navigation dans toute l'application."
+                    : undefined
+                }
+              >
+                <div className="flex flex-col">
+                  {g.items.map((s) => (
+                    <ShortcutRow key={s.label} shortcut={s} />
+                  ))}
+                </div>
+              </Section>
+            ))}
           </div>
         )}
 

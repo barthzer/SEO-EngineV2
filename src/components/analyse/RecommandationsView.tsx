@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { CheckIcon } from "@heroicons/react/24/outline";
 import { SparklesIcon } from "@heroicons/react/24/solid";
 import {
   Sparkles as LSparkles,
@@ -16,7 +16,7 @@ import { Button } from "@/components/Button";
 import { Tooltip } from "@/components/Tooltip";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { SearchInput } from "@/components/SearchInput";
-import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
+import { ColPill } from "@/components/ColPill";
 import { EmptyState } from "@/components/EmptyState";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
@@ -329,33 +329,31 @@ export function RecommandationsView({
           <div className="flex flex-wrap items-center gap-3">
             <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un mot-clé…" alwaysExpanded />
 
-            <DropdownMenu
-              width={200}
-              trigger={
-                <FilterTabTrigger active={filterPriority !== "all"}>
-                  {filterPriority === "all" ? "Toutes les priorités" : `Priorité ${filterPriority}`}
-                </FilterTabTrigger>
-              }
-            >
-              <DropdownItem selected={filterPriority === "all"} onClick={() => setFilterPriority("all")}>Toutes les priorités</DropdownItem>
-              <DropdownItem selected={filterPriority === "P1"}  onClick={() => setFilterPriority("P1")}>P1</DropdownItem>
-              <DropdownItem selected={filterPriority === "P2"}  onClick={() => setFilterPriority("P2")}>P2</DropdownItem>
-              <DropdownItem selected={filterPriority === "P3"}  onClick={() => setFilterPriority("P3")}>P3</DropdownItem>
-            </DropdownMenu>
+            <ColPill
+              name="priorité"
+              label={filterPriority === "all" ? "Toutes les priorités" : `Priorité ${filterPriority}`}
+              active={filterPriority !== "all"}
+              value={filterPriority}
+              onChange={(v) => setFilterPriority(v as "all" | StudyPrio)}
+              items={[
+                { value: "all", label: "Toutes les priorités" },
+                { value: "P1", label: "P1" },
+                { value: "P2", label: "P2" },
+                { value: "P3", label: "P3" },
+              ]}
+            />
 
-            <DropdownMenu
-              width={240}
-              trigger={
-                <FilterTabTrigger active={filterCluster !== "all"}>
-                  {filterCluster === "all" ? "Tous les clusters" : filterCluster}
-                </FilterTabTrigger>
-              }
-            >
-              <DropdownItem selected={filterCluster === "all"} onClick={() => setFilterCluster("all")}>Tous les clusters</DropdownItem>
-              {uniqueClusters.map((c) => (
-                <DropdownItem key={c} selected={filterCluster === c} onClick={() => setFilterCluster(c)}>{c}</DropdownItem>
-              ))}
-            </DropdownMenu>
+            <ColPill
+              name="cluster"
+              label={filterCluster === "all" ? "Tous les clusters" : filterCluster}
+              active={filterCluster !== "all"}
+              value={filterCluster}
+              onChange={setFilterCluster}
+              items={[
+                { value: "all", label: "Tous les clusters" },
+                ...uniqueClusters.map((c) => ({ value: c, label: c })),
+              ]}
+            />
 
             {(search || filterPriority !== "all" || filterCluster !== "all") && (
               <button
@@ -366,9 +364,6 @@ export function RecommandationsView({
                 Réinitialiser
               </button>
             )}
-            <span className="ml-auto text-[12px] tabular-nums text-[var(--text-muted)]">
-              {filteredRows.length} / {STUDY_ROWS.length}
-            </span>
           </div>
 
           <TableWide<StudyRow>
@@ -405,25 +400,6 @@ export function RecommandationsView({
         />
       )}
     </div>
-  );
-}
-
-/* ── Helper : trigger button reprenant le style FilterTabs ───────────── */
-
-export function FilterTabTrigger({ active, children }: { active: boolean; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all"
-      style={active
-        ? { color: "var(--text-primary)", fontWeight: 600, backgroundColor: "var(--bg-secondary)" }
-        : { color: "var(--text-muted)" }}
-      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-secondary)"; }}
-      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
-    >
-      {children}
-      <ChevronDownIcon className="h-3 w-3 flex-shrink-0 opacity-70" />
-    </button>
   );
 }
 
@@ -474,7 +450,7 @@ export function TfTip() {
     <div className="flex flex-col gap-1.5">
       <p className="font-semibold">Trust Flow (Majestic)</p>
       <p className="opacity-75">Score de confiance du profil de backlinks (0 – 100). Mesure la qualité et la fiabilité des sites qui pointent vers le domaine.</p>
-      <p className="text-[11px] opacity-60">Plus c'est haut, plus le site est référencé par des sources de confiance.</p>
+      <p className="text-[11px] opacity-60">Plus c&apos;est haut, plus le site est référencé par des sources de confiance.</p>
     </div>
   );
 }
@@ -483,7 +459,7 @@ export function CfTip() {
   return (
     <div className="flex flex-col gap-1.5">
       <p className="font-semibold">Citation Flow (Majestic)</p>
-      <p className="opacity-75">Score d'influence basé sur le volume de backlinks (0 – 100). Mesure la quantité de liens reçus, indépendamment de leur qualité.</p>
+      <p className="opacity-75">Score d&apos;influence basé sur le volume de backlinks (0 – 100). Mesure la quantité de liens reçus, indépendamment de leur qualité.</p>
       <p className="text-[11px] opacity-60">Comparé au TF, donne le ratio qualité/quantité du profil.</p>
     </div>
   );
@@ -493,7 +469,7 @@ export function BasTip() {
   return (
     <div className="flex flex-col gap-1.5">
       <p className="font-semibold">Backlinks Authority Score</p>
-      <p className="opacity-75">Score d'autorité globale du profil de liens externes. Combine fraîcheur, diversité des ancres et qualité des domaines référents.</p>
+      <p className="opacity-75">Score d&apos;autorité globale du profil de liens externes. Combine fraîcheur, diversité des ancres et qualité des domaines référents.</p>
       <p className="text-[11px] opacity-60">Indicateur synthétique du poids SEO off-site.</p>
     </div>
   );
@@ -503,7 +479,7 @@ export function RefDomTip() {
   return (
     <div className="flex flex-col gap-1.5">
       <p className="font-semibold">Domaines référents</p>
-      <p className="opacity-75">Nombre de domaines uniques qui pointent au moins un lien vers le site. Métrique clé d'autorité — plus la diversité est large, plus le profil est solide.</p>
+      <p className="opacity-75">Nombre de domaines uniques qui pointent au moins un lien vers le site. Métrique clé d&apos;autorité — plus la diversité est large, plus le profil est solide.</p>
       <p className="text-[11px] opacity-60">À comparer au Trust Flow pour évaluer la qualité moyenne par référent.</p>
     </div>
   );

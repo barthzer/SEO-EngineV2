@@ -54,7 +54,7 @@ export function StepVous({ data, update }: { data: OnboardingData; update: (p: P
                 onClick={() => update({ seniority: key })}
                 className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-colors ${
                   selected
-                    ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                    ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 }`}
               >

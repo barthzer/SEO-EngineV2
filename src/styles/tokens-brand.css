@@ -15,13 +15,17 @@
   --bg-subtle:         #F3F3F3;
   --bg-card:           transparent;
   --bg-card-hover:     rgba(15, 23, 42, 0.04);
+  /* Équivalent OPAQUE de `--bg-card-hover` rendu sur `--bg-primary` (#fff). À utiliser
+     pour les éléments stick over qui doivent matcher la row hover SANS doubler le tint
+     semi-transparent (ex. dégradé de fade sur sticky column). */
+  --bg-card-hover-flat: #F5F5F6;
   /* Réservé aux KpiCard uniquement. Les autres encarts sont en outline. */
   --bg-card-static:    #F8F8F8;
   /* Pills actifs (FilterTabs, ProjectSwitcher trigger). */
   --bg-pill-active:        #F3F3F3;
   --bg-pill-active-hover:  #EFEFEF;
   --bg-footer:         #F3F3F3;
-  --bg-sidebar:        #ffffff;
+  --bg-sidebar:        #FAFAFA;
   --bg-sidebar-active: #F3F3F3;
   --bg-overlay:        #F3F3F3;
 
@@ -96,6 +100,8 @@
   --bg-subtle:         #1a1917;
   --bg-card:           #1d1c1a;
   --bg-card-hover:     #2c2b29;
+  /* Mode sombre : bg-card-hover est déjà opaque → la flat version vaut la même chose. */
+  --bg-card-hover-flat: #2c2b29;
   --bg-footer:         #161514;
   --bg-sidebar:        #161514;
   --bg-sidebar-active: #2c2b29;

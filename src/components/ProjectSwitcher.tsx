@@ -204,8 +204,8 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
       {open && typeof window !== "undefined" && createPortal(
         <div
           ref={popRef}
-          className="animate-dropdown-down fixed z-[1100] flex flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]"
-          style={{ top: pos.top, left: pos.left, width: 360, maxHeight: "min(70vh, 520px)", transformOrigin: "top center" }}
+          className="animate-dropdown-down fixed z-[1100] flex flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-floating)]"
+          style={{ top: pos.top, left: pos.left, width: 360, maxHeight: "min(70vh, 520px)", transformOrigin: "top center", backgroundColor: "var(--dropdown-bg)" }}
         >
           {/* Search */}
           <div className="flex h-12 flex-shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] px-3">

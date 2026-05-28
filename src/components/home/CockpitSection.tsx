@@ -17,10 +17,17 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from "@heroicons/react/24/outline";
+import { useState, type ElementType } from "react";
+import {
+  ArrowTrendingDownIcon,
+  ArrowTrendingUpIcon,
+  NoSymbolIcon,
+  LinkIcon,
+} from "@heroicons/react/24/outline";
 import { GlobeIcon } from "lucide-react";
 import { ScoreGauges } from "@/components/ScoreGauges";
+import { IconBadge } from "@/components/IconBadge";
+import { VariationPill } from "@/components/VariationPill";
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPES — ré-export du shape Analysis pour les consumers
@@ -49,7 +56,7 @@ type Owner = { id: string; name: string; photoSeed: string; initials: string };
 
 const OWNERS: Record<string, Owner> = {
   BL: { id: "bl", name: "Barthélemy L.", photoSeed: "barthelemy-l-seo", initials: "BL" },
-  SM: { id: "sm", name: "Sophie M.",     photoSeed: "sophie-m-seo",     initials: "SM" },
+  SM: { id: "sm", name: "Sophie M.",     photoSeed: "5",     initials: "SM" },
   TL: { id: "tl", name: "Thomas L.",     photoSeed: "thomas-l-seo",     initials: "TL" },
   MP: { id: "mp", name: "Marie P.",      photoSeed: "marie-p-seo",      initials: "MP" },
 };
@@ -61,13 +68,17 @@ type AlertItem = {
   title: string;
   detail: string;
   owner: Owner;
+  /** Icône symbolique du type d'alerte (à la place du dot couleur). */
+  icon: ElementType;
+  /** Variation affichée dans la pill à droite. Direction + label court ; le `detail` part en tooltip. */
+  variation: { direction: "up" | "down"; label: string };
 };
 
 const ALERTS: AlertItem[] = [
-  { id: "a1", domain: "doctolib.fr", severity: "critical", title: "Chute trafic /rendez-vous", detail: "−18,4% sur 7 j · 3 142 clics perdus", owner: OWNERS.BL },
-  { id: "a2", domain: "kiabi.com",   severity: "critical", title: "12 pages désindexées",      detail: "catégories femme · ce matin",         owner: OWNERS.SM },
-  { id: "a3", domain: "sephora.fr",  severity: "warning",  title: "Concurrent gagne 47 RD",    detail: "marionnaud.fr · momentum BL",         owner: OWNERS.SM },
-  { id: "a4", domain: "veepee.fr",   severity: "warning",  title: "Position « ventes privées » 8 → 14", detail: "kw money · 24 800 vol/mois",  owner: OWNERS.BL },
+  { id: "a1", domain: "doctolib.fr", severity: "critical", title: "Chute trafic /rendez-vous", detail: "−18,4 % sur 7 jours · 3 142 clics perdus", owner: OWNERS.BL, icon: ArrowTrendingDownIcon, variation: { direction: "down", label: "18,4 %" } },
+  { id: "a2", domain: "kiabi.com",   severity: "critical", title: "12 pages désindexées",      detail: "Catégories femme désindexées ce matin",   owner: OWNERS.SM, icon: NoSymbolIcon,          variation: { direction: "down", label: "12 pages" } },
+  { id: "a3", domain: "sephora.fr",  severity: "warning",  title: "Concurrent gagne 47 RD",    detail: "marionnaud.fr · fort momentum backlinks",  owner: OWNERS.SM, icon: LinkIcon,               variation: { direction: "down", label: "47 RD" } },
+  { id: "a4", domain: "veepee.fr",   severity: "warning",  title: "Position « ventes privées »", detail: "8 → 14 · kw money · 24 800 vol/mois",     owner: OWNERS.BL, icon: ArrowTrendingDownIcon, variation: { direction: "down", label: "6 pos." } },
 ];
 
 type QuickWin = {
@@ -100,32 +111,6 @@ function relativeTime(iso: string): string {
   return months === 1 ? "Il y a 1 mois" : `Il y a ${months} mois`;
 }
 
-function OwnerAvatar({ owner, size = 22 }: { owner: Owner; size?: number }) {
-  const [errored, setErrored] = useState(false);
-  if (errored) {
-    return (
-      <div
-        className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] font-semibold text-[var(--text-secondary)]"
-        style={{ width: size, height: size, fontSize: size * 0.42 }}
-      >
-        {owner.initials}
-      </div>
-    );
-  }
-  return (
-    <img
-      src={`https://i.pravatar.cc/${size * 2}?u=${encodeURIComponent(owner.photoSeed)}`}
-      alt={owner.name}
-      title={owner.name}
-      width={size}
-      height={size}
-      onError={() => setErrored(true)}
-      className="flex-shrink-0 rounded-full object-cover"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
 function Favicon({ domain, size = 40 }: { domain: string; size?: number }) {
   const [errored, setErrored] = useState(false);
   if (errored) {
@@ -140,7 +125,9 @@ function Favicon({ domain, size = 40 }: { domain: string; size?: number }) {
   }
   return (
     <div
-      className="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)]"
+      // bg-subtle (gris légèrement plus foncé que la page) → contraste suffisant
+      // quand le favicon est blanc ou très clair, sans border.
+      className="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[var(--bg-subtle)]"
       style={{ width: size, height: size }}
     >
       <img
@@ -156,39 +143,15 @@ function Favicon({ domain, size = 40 }: { domain: string; size?: number }) {
 }
 
 function TraficChip({ value, dir }: { value: string; dir: AnalysisRow["traficDir"] }) {
-  const isUp = dir === "up";
-  const isDown = dir === "down";
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium tabular-nums ${
-        isUp
-          ? "bg-[var(--color-success-bg)] text-[var(--color-success)]"
-          : isDown
-          ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"
-          : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-      }`}
-    >
-      {isUp ? <ArrowUpIcon className="h-3 w-3" /> : isDown ? <ArrowDownIcon className="h-3 w-3" /> : <MinusIcon className="h-3 w-3" />}
+    <VariationPill direction={dir === "neutral" ? "neutral" : dir}>
       {value}
-    </span>
+    </VariationPill>
   );
 }
 
-function StatusPillStatic({ status }: { status: "actif" | "archive" }) {
-  const cfg =
-    status === "actif"
-      ? { label: "Actif",    color: "var(--color-success)", bg: "var(--color-success-bg)" }
-      : { label: "Archivé",  color: "var(--text-muted)",    bg: "var(--bg-secondary)"     };
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
-      style={{ color: cfg.color, backgroundColor: cfg.bg }}
-    >
-      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: cfg.color }} />
-      {cfg.label}
-    </span>
-  );
-}
+// StatusPillStatic retiré : la colonne actif/archive faisait doublon avec
+// le FilterTabs en haut de la vue (on n'affiche que les projets du filtre actif).
 
 /* ─────────────────────────────────────────────────────────────────────
    PROJECT CARD — chaque projet est sa propre card séparée
@@ -241,7 +204,6 @@ function ProjectCard({ a }: { a: AnalysisRow }) {
         </div>
       </div>
 
-      <StatusPillStatic status={a.status} />
     </Link>
   );
 }
@@ -251,22 +213,12 @@ function ProjectCard({ a }: { a: AnalysisRow }) {
    ───────────────────────────────────────────────────────────────────── */
 
 function AlertRow({ alert: a }: { alert: AlertItem }) {
-  const isCritical = a.severity === "critical";
   return (
     <Link
       href={`/analyse/${encodeURIComponent(a.domain)}`}
       className="group flex items-start gap-2.5 rounded-xl px-2.5 py-2.5 transition-[background-color] duration-150 hover:bg-[var(--bg-card-hover)]"
     >
-      <span
-        className="mt-1.5 flex h-2 w-2 flex-shrink-0 rounded-full"
-        style={{
-          backgroundColor: isCritical ? "var(--color-danger)" : "var(--color-warning)",
-          boxShadow: isCritical
-            ? "0 0 0 4px color-mix(in oklab, var(--color-danger) 12%, transparent)"
-            : "0 0 0 4px color-mix(in oklab, var(--color-warning) 12%, transparent)",
-        }}
-        aria-hidden
-      />
+      <IconBadge icon={a.icon} size="sm" outline />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-medium text-[var(--text-muted)]">{a.domain}</p>
         <p className="mt-0.5 text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
@@ -274,7 +226,9 @@ function AlertRow({ alert: a }: { alert: AlertItem }) {
         </p>
         <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-secondary)]">{a.detail}</p>
       </div>
-      <OwnerAvatar owner={a.owner} size={20} />
+      <VariationPill direction={a.variation.direction} tooltip={a.detail} className="flex-shrink-0">
+        {a.variation.label}
+      </VariationPill>
     </Link>
   );
 }
@@ -285,7 +239,7 @@ function QuickWinRow({ qw }: { qw: QuickWin }) {
       href={`/analyse/${encodeURIComponent(qw.domain)}`}
       className="group flex items-start gap-2.5 rounded-xl px-2.5 py-2.5 transition-[background-color] duration-150 hover:bg-[var(--bg-card-hover)]"
     >
-      <span className="mt-1.5 flex h-2 w-2 flex-shrink-0 rounded-full bg-[var(--color-success)]" aria-hidden />
+      <IconBadge icon={ArrowTrendingUpIcon} size="sm" outline />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-medium text-[var(--text-muted)]">{qw.domain}</p>
         <p className="mt-0.5 truncate text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
@@ -300,10 +254,14 @@ function QuickWinRow({ qw }: { qw: QuickWin }) {
           </span>
           {" /mois"}
         </p>
-        <p className="mt-1 text-[11px] font-medium tabular-nums text-[var(--color-success)]">
-          +{qw.estimatedGainClicks.toLocaleString("fr-FR")} clics potentiels
-        </p>
       </div>
+      <VariationPill
+        direction="up"
+        tooltip={`+${qw.estimatedGainClicks.toLocaleString("fr-FR")} clics potentiels si passage en top 3`}
+        className="flex-shrink-0"
+      >
+        +{qw.estimatedGainClicks.toLocaleString("fr-FR")}
+      </VariationPill>
     </Link>
   );
 }
@@ -318,8 +276,8 @@ function SidebarBlock({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-[var(--border-subtle)] p-3.5">
-      <div className="mb-2 flex items-center justify-between px-1">
+    <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
+      <div className="mb-1.5 flex items-center justify-between px-1.5">
         <h3 className="text-[13px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
         <span className="text-[11px] font-medium tabular-nums text-[var(--text-muted)]">{count}</span>
       </div>
@@ -334,12 +292,15 @@ function SidebarBlock({
 
 export function CockpitSection({ analyses }: { analyses: AnalysisRow[] }) {
   return (
+    // Scroll page-level : la grille n'est plus contrainte en hauteur. Le scroll
+    // se passe au niveau du conteneur AppShell. Le `<aside>` droite est `sticky`
+    // → reste visible à l'écran pendant que la liste gauche défile.
     <div
-      className="grid flex-1 min-h-0 gap-6"
+      className="grid items-start gap-12 pb-[var(--page-py)]"
       style={{ gridTemplateColumns: "minmax(0, 1fr) 320px" }}
     >
-      {/* ─── LEFT : liste — overflow-y-auto interne pour scroller ─── */}
-      <section className="min-h-0 overflow-y-auto pr-1 pb-[var(--page-py)]">
+      {/* ─── LEFT : liste — pas d'overflow interne, scroll page-level ─── */}
+      <section>
         {analyses.length === 0 ? (
           <div className="rounded-3xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
             Aucun projet à afficher.
@@ -353,15 +314,19 @@ export function CockpitSection({ analyses }: { analyses: AnalysisRow[] }) {
         )}
       </section>
 
-      {/* ─── RIGHT : sidebar — reste fixée puisque la grille est en hauteur fixe ─── */}
-      <aside className="min-h-0 overflow-y-auto flex flex-col gap-4 pb-[var(--page-py)]">
-        <SidebarBlock title="Qui brûle" count={ALERTS.length}>
+      {/* ─── RIGHT : sidebar STICKY top — reste à l'écran pendant que la liste défile.
+            max-h calé sur 100vh - une marge pour le padding haut de l'app shell ;
+            overflow-y-auto en sécurité si le contenu dépasse. ─── */}
+      <aside
+        className="sticky top-6 flex max-h-[calc(100vh-3rem)] flex-col gap-4 overflow-y-auto"
+      >
+        <SidebarBlock title="Alertes" count={ALERTS.length}>
           {ALERTS.map((a) => (
             <AlertRow key={a.id} alert={a} />
           ))}
         </SidebarBlock>
 
-        <SidebarBlock title="Quick-wins" count={QUICK_WINS.length}>
+        <SidebarBlock title="Opportunités" count={QUICK_WINS.length}>
           {QUICK_WINS.map((q) => (
             <QuickWinRow key={q.id} qw={q} />
           ))}

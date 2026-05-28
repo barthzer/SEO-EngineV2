@@ -18,11 +18,11 @@ import {
   CalendarDaysIcon,
   ExclamationTriangleIcon,
   GlobeAltIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
+import { pravatarUrl } from "@/lib/avatar";
 import { KpiCard } from "@/components/KpiCard";
+import { VariationPill } from "@/components/VariationPill";
 import { useDrawer } from "@/context/DrawerContext";
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ const TEAM: Consultant[] = [
   {
     id: 2,
     name: "Sophie M.",
-    photoSeed: "sophie-m-seo",
+    photoSeed: "5",
     role: "Consultante SEO senior",
     email: "sophie@awi.com",
     phone: "+33 6 23 45 67 89",
@@ -190,7 +190,7 @@ function PhotoAvatar({
 }) {
   const [errored, setErrored] = useState(false);
   // pravatar.cc renvoie une photo réaliste déterministe par seed.
-  const src = `https://i.pravatar.cc/${size * 2}?u=${encodeURIComponent(seed)}`;
+  const src = pravatarUrl(seed, size * 2);
   if (errored) {
     return (
       <div
@@ -417,23 +417,8 @@ function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
                 </p>
               </div>
               <StageBadge stage={p.stage} />
-              <div
-                className="flex w-14 items-center justify-end gap-1 text-[12px] tabular-nums"
-                style={{
-                  color:
-                    p.traficDir === "up"
-                      ? "var(--color-success)"
-                      : p.traficDir === "down"
-                      ? "var(--color-danger)"
-                      : "var(--text-muted)",
-                }}
-              >
-                {p.traficDir === "up" ? (
-                  <ArrowUpIcon className="h-3 w-3" />
-                ) : p.traficDir === "down" ? (
-                  <ArrowDownIcon className="h-3 w-3" />
-                ) : null}
-                {p.trafic}
+              <div className="flex w-14 justify-end">
+                <VariationPill direction={p.traficDir}>{p.trafic}</VariationPill>
               </div>
               <span className="w-8 text-right text-[13px] font-semibold text-[var(--text-primary)] tabular-nums">
                 {avgScore(p)}
