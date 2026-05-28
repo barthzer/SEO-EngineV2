@@ -23,6 +23,7 @@ import { DeltaIndicator } from "@/components/DeltaIndicator";
 import { NetlinkingView } from "@/components/NetlinkingView";
 import { HistoriqueView } from "@/components/analyse/HistoriqueView";
 import { NotesView } from "@/components/analyse/NotesView";
+import { BenchmarkView } from "@/components/analyse/BenchmarkView";
 import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
 import { AuditToc, type TocItem } from "@/components/AuditToc";
@@ -106,7 +107,7 @@ import { KeywordStudyModal } from "@/components/analyse/modals/KeywordStudyModal
 
 
 /* ── Helpers extracted to @/components/analyse — voir wave 1 & 2 du refactor ── */
-import { Tab, TABS, TAB_TITLES, TAB_SUBTITLES } from "@/components/analyse/constants";
+import { Tab, TABS, TAB_TITLES, TAB_SUBTITLES, sectionForTab } from "@/components/analyse/constants";
 import { HealthCard } from "@/components/analyse/HealthCard";
 import { PositionBarChart } from "@/components/analyse/charts/PositionBarChart";
 import { OrganicCompetitorsTable } from "@/components/analyse/charts/OrganicCompetitorsTable";
@@ -127,14 +128,13 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   const { show: showToast } = useToast();
   // Tab state is driven by `?tab=` in the URL so the sidebar can navigate to it directly.
   const rawTab = (searchParams.get("tab") ?? "general") as Tab;
-  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations","historique","notes"] as Tab[]).includes(rawTab) ? rawTab : "general";
+  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations","historique","notes","benchmark"] as Tab[]).includes(rawTab) ? rawTab : "general";
   const setTab = (next: Tab) => {
     const sp = new URLSearchParams(searchParams.toString());
     if (next === "general") sp.delete("tab"); else sp.set("tab", next);
     router.replace(`${pathname}${sp.toString() ? `?${sp.toString()}` : ""}`, { scroll: false });
   };
   const [auditTab, setAuditTab] = useState<"technique" | "editorial" | "netlinking">("technique");
-  const [seoTab, setSeoTab] = useState<"analytics" | "top-pages">("analytics");
   const [parametresOpen, setParametresOpen] = useState(false);
   const [urlModal, setUrlModal] = useState<"import-csv" | "add-url" | "new-brief" | null>(null);
   const [gscConnected, setGscConnected] = useState(true);
@@ -215,15 +215,38 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   };
   const healthScores = DOMAIN_HEALTH[decodedDomain] ?? { tech: 84 };
 
+  // Sous-onglets de la section courante (sections multi-onglets uniquement).
+  const sectionTabs = sectionForTab(tab)?.tabs ?? [];
+  const showSubTabs = sectionTabs.length > 1;
+
   return (
     <>
     <div className="flex flex-1 flex-col">
-      {/* Header projet retiré — le nom du projet et la subtitle sont intégrés au bloc
-          titre de l'onglet "Vue d'ensemble" plus bas. */}
-
-      {/* La nav entre onglets de la vue analyse se fait via la Sidebar (?tab=).
-          Pour Audit, la barre Technique/Éditorial/Netlinking est rendue inline dans le main,
-          juste sous le titre (cf. bloc `tab === "audit"` plus bas). */}
+      {/* Barre de sous-onglets — sections regroupées (Contenu, Performance, Suivi).
+          La nav principale (sections) reste dans la Sidebar. */}
+      {showSubTabs && (
+        <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/75 backdrop-blur-md">
+          <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
+            <div className="relative flex h-12 items-center gap-1">
+              {sectionTabs.map((t) => {
+                const active = tab === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`relative flex h-full cursor-pointer items-center px-4 text-[14px] font-semibold tracking-tight transition-colors ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                  >
+                    {TAB_TITLES[t]}
+                    {active && (
+                      <span className="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Tab content ── */}
       <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" && tab !== "historique" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
@@ -259,7 +282,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
             </div>
             {tab === "general" && (gscConnected || ga4Connected) ? (
               <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
-                Mis à jour aujourd'hui · 133 pages crawlées · 12 pages non indexées
+                Mis à jour aujourd&apos;hui · 133 pages crawlées · 12 pages non indexées
               </p>
             ) : TAB_SUBTITLES[tab] && (
               <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
@@ -502,27 +525,6 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {/* SEO tab */}
         {tab === "seo" && (
           <div className="flex flex-col gap-6">
-            {/* Sub-tab bar — inline sous le titre, même pattern qu'Audit */}
-            <div className="relative flex h-14 items-center gap-1 border-b border-[var(--border-subtle)]">
-              {(["analytics", "top-pages"] as const).map((t) => {
-                const isActive = seoTab === t;
-                const label = t === "analytics" ? "Analytics" : "Top pages SEO";
-                return (
-                  <button
-                    key={t}
-                    onClick={() => setSeoTab(t)}
-                    className={`relative flex h-full cursor-pointer items-center px-3 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
-                  >
-                    {label}
-                    {isActive && (
-                      <span className="pointer-events-none absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent-primary" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {seoTab === "analytics" && (
               <div className="flex flex-col gap-4">
                 {(() => {
                   const trendLabels = ["8 fév", "15 fév", "22 fév", "1 mar", "8 mar", "15 mar", "22 mar", "1 avr", "15 avr", "1 mai"];
@@ -585,9 +587,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   "Le taux d'indexation est excellent (98,4%)",
                 ]} />
               </div>
-            )}
 
-            {seoTab === "top-pages" && <TopPages />}
+            <TopPages />
           </div>
         )}
 
@@ -648,6 +649,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
         {/* Netlinking tab */}
         {tab === "netlinking" && <NetlinkingView />}
+
+        {tab === "benchmark" && <BenchmarkView />}
 
         {/* B2 — Historique tab : timeline d'actions livrées + impact agrégé par mois. */}
         {tab === "historique" && <HistoriqueView />}

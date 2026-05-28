@@ -39,37 +39,28 @@ import {
   LayoutDashboard,
   Link as LinkIcon,
   ChartLine,
-  Target,
-  Tags,
   Lightbulb,
   ClipboardList,
-  Copy as CopyIcon,
   Network,
   History as HistoryIcon,
-  StickyNote,
+  Swords,
 } from "lucide-react";
+import { NAV_SECTIONS } from "@/components/analyse/constants";
 
-/* ── Project nav items — toujours visibles, contextualisés par le projet courant ─── */
+/* ── Nav projet : sections regroupées (cf. NAV_SECTIONS) ─────────────────
+   Les sections multi-onglets ouvrent leur 1er onglet ; la barre de
+   sous-onglets de la page analyse gère le switch interne. */
 
-type ProjectNavItem = { icon: React.ElementType; label: string; tab: string };
-
-const projectNav: ProjectNavItem[] = [
-  { icon: LayoutDashboard,  label: "Vue d'ensemble",     tab: "general" },
-  { icon: LinkIcon,         label: "URLs",               tab: "briefs" },
-  // F4 — Études remonté juste après URLs : c'est la 1re chose qu'un consultant
-  // fait sur un nouveau client, pas un sous-onglet enterré en fin de liste.
-  { icon: Lightbulb,        label: "Études de mots-clés", tab: "recommandations" },
-  { icon: ClipboardList,    label: "Audit",              tab: "audit" },
-  { icon: ChartLine,        label: "Analytics SEO",      tab: "seo" },
-  { icon: Target,           label: "Tracking",           tab: "tracking" },
-  { icon: CopyIcon,         label: "Cannibalisation",    tab: "cannibal" },
-  { icon: Network,          label: "Netlinking",         tab: "netlinking" },
-  { icon: Tags,             label: "Univers sémantique", tab: "univers" },
-  // B2 — Historique : actions livrées par mois + impact agrégé. Source pour le rapport PDF (C1).
-  { icon: HistoryIcon,      label: "Historique",         tab: "historique" },
-  // E2 — Notes : journal de bord vivant du projet.
-  { icon: StickyNote,       label: "Notes",              tab: "notes" },
-];
+const SECTION_ICONS: Record<string, React.ElementType> = {
+  overview:    LayoutDashboard,
+  urls:        LinkIcon,
+  contenu:     Lightbulb,
+  netlinking:  Network,
+  performance: ChartLine,
+  benchmark:   Swords,
+  audit:       ClipboardList,
+  suivi:       HistoryIcon,
+};
 
 /* ── NavRow primitive ──────────────────────────────────────────────── */
 
@@ -239,14 +230,14 @@ export function Sidebar() {
               <div className="my-2 h-px w-full bg-[var(--border-subtle)]" />
             )}
             <div className={`flex flex-col gap-1 ${isExpanded ? "" : "items-center"}`}>
-              {projectNav.map((item) => {
-                const href = `/analyse/${encodeURIComponent(projectDomain)}?tab=${item.tab}`;
-                const isActive = isProjectPage && activeTab === item.tab;
+              {NAV_SECTIONS.map((section) => {
+                const href = `/analyse/${encodeURIComponent(projectDomain)}?tab=${section.tabs[0]}`;
+                const isActive = isProjectPage && (section.tabs as string[]).includes(activeTab);
                 return (
                   <NavRow
-                    key={item.tab}
-                    icon={item.icon}
-                    label={item.label}
+                    key={section.id}
+                    icon={SECTION_ICONS[section.id]}
+                    label={section.label}
                     href={href}
                     isActive={isActive}
                     isExpanded={isExpanded}
