@@ -1745,6 +1745,19 @@ function ActionsTab({
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<ActionSource | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<ActionPriorityLevel | "all">("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function markSelectedDone() {
+    selected.forEach((id) => setStatus(id, "done"));
+    setSelected(new Set());
+  }
 
   const filtered = actions.filter((a) =>
     (sourceFilter === "all" || a.source === sourceFilter) &&
@@ -1812,6 +1825,25 @@ function ActionsTab({
         )}
       </div>
 
+      {/* Barre d'action groupée */}
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-subtle)] px-4 py-2.5">
+          <span className="text-[13px] font-medium text-[var(--text-primary)]">
+            {selected.size} action{selected.size > 1 ? "s" : ""} sélectionnée{selected.size > 1 ? "s" : ""}
+          </span>
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={markSelectedDone}>Marquer comme fait</Button>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Liste — ActionCard expandable (cohérent avec les autres onglets) */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
@@ -1825,6 +1857,9 @@ function ActionsTab({
               priority={a.priority}
               title={a.title}
               commentTarget={{ id: a.id, label: a.title }}
+              selectable
+              selected={selected.has(a.id)}
+              onSelectChange={() => toggleSelect(a.id)}
               time={a.time}
               impact={a.impact}
               status={getStatus(a.id)}

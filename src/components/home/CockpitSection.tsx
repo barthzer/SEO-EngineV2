@@ -167,16 +167,17 @@ function ProjectCard({ a }: { a: AnalysisRow }) {
 
       {/* Domain + meta */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
-          {a.domain}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="min-w-0 truncate text-[15px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
+            {a.domain}
+          </p>
+          <TraficChip value={a.trafic} dir={a.traficDir} />
+        </div>
         <p className="mt-1.5 truncate text-[12px] text-[var(--text-muted)]">
           Mis à jour {relativeTime(a.updatedAt).toLowerCase()}
           {a.gscConnected && <span className="ml-2 text-[var(--color-success)]">· GSC</span>}
         </p>
       </div>
-
-      <TraficChip value={a.trafic} dir={a.traficDir} />
 
       <ScoreGauges
         technique={a.scoreTechnique}

@@ -246,6 +246,9 @@ export function ActionCard({
   timeSpentMinutes,
   onNarrativeChange,
   commentTarget,
+  selectable = false,
+  selected = false,
+  onSelectChange,
 }: {
   priority: ActionPriorityLevel;
   title: string;
@@ -268,6 +271,10 @@ export function ActionCard({
   onNarrativeChange?: (v: string) => void;
   /** Active un fil de commentaires contextuel dans la zone dépliée. */
   commentTarget?: { id: string; label: string };
+  /** Affiche une case à cocher de sélection multiple à gauche de la carte. */
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectChange?: (v: boolean) => void;
 }) {
   const { show: showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -314,6 +321,16 @@ export function ActionCard({
     >
       {/* ── COLLAPSED ROW ── */}
       <div className="flex items-center gap-3 px-4 py-3">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelectChange?.(e.target.checked)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Sélectionner l'action"
+            className="h-4 w-4 flex-shrink-0 cursor-pointer rounded border-[var(--border-medium)] accent-[var(--accent-primary)]"
+          />
+        )}
         {/* Priority */}
         <div className="w-[88px] flex-shrink-0">
           <PriorityBadge level={priority} />

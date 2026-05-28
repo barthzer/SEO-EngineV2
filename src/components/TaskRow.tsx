@@ -46,6 +46,10 @@ interface TaskRowProps {
   evidenceUrl?: string;
   /** Contenu additionnel rendu en bas de la zone dépliée (ex. commentaires). */
   footer?: ReactNode;
+  /** Case à cocher de sélection multiple (hors du bouton d'expand). */
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectChange?: (v: boolean) => void;
   /** Pas de border-bottom sur la dernière row du groupe. */
   isLast?: boolean;
 }
@@ -84,6 +88,9 @@ export function TaskRow({
   description,
   evidenceUrl,
   footer,
+  selectable = false,
+  selected = false,
+  onSelectChange,
   isLast = false,
 }: TaskRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -91,11 +98,21 @@ export function TaskRow({
 
   return (
     <div className={isLast ? "" : "border-b border-[var(--border-subtle)]"}>
+      <div className="flex items-center">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelectChange?.(e.target.checked)}
+            aria-label="Sélectionner la mission"
+            className="ml-5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-[var(--border-medium)] accent-[var(--accent-primary)]"
+          />
+        )}
       <button
         type="button"
         onClick={() => canExpand && setExpanded((v) => !v)}
         disabled={!canExpand}
-        className={`flex w-full items-center gap-3 px-5 py-3 text-left transition-colors ${canExpand ? "hover:bg-[var(--bg-card-hover)] cursor-pointer" : "cursor-default"}`}
+        className={`flex min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors ${selectable ? "pl-3 pr-5" : "px-5"} ${canExpand ? "hover:bg-[var(--bg-card-hover)] cursor-pointer" : "cursor-default"}`}
         aria-expanded={canExpand ? expanded : undefined}
       >
         <span
@@ -119,6 +136,7 @@ export function TaskRow({
           />
         )}
       </button>
+      </div>
 
       {expanded && canExpand && (
         <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-5 py-4">

@@ -78,6 +78,19 @@ const STATUS_COLORS: Record<SharedAction["status"], string> = {
 export function AvancementClient({ project }: { project: SharedProject }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+  function markSelectedDone() {
+    selected.forEach((id) => setTaskDone(project.domain, id, project.clientName));
+    setSelected(new Set());
+  }
 
   const q = search.trim().toLowerCase();
   const matches = (a: SharedAction) =>
@@ -135,6 +148,32 @@ export function AvancementClient({ project }: { project: SharedProject }) {
         />
       </div>
 
+      {/* Barre d'action groupée — missions assignées au client */}
+      {selected.size > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-subtle)] px-4 py-2.5">
+          <span className="text-[13px] font-medium text-[var(--text-primary)]">
+            {selected.size} mission{selected.size > 1 ? "s" : ""} sélectionnée{selected.size > 1 ? "s" : ""}
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={markSelectedDone}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "var(--color-success)" }}
+            >
+              <CheckCircleIcon className="h-4 w-4" /> Marquer comme fait
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
       {totalFiltered === 0 && (
         <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
@@ -163,6 +202,9 @@ export function AvancementClient({ project }: { project: SharedProject }) {
                 description={a.clientNarrative}
                 evidenceUrl={a.evidenceUrl}
                 footer={<ActionRowFooter action={a} domain={project.domain} clientName={project.clientName} />}
+                selectable={!!a.assignedToClient}
+                selected={selected.has(a.id)}
+                onSelectChange={() => toggleSelect(a.id)}
                 isLast={i === arr.length - 1}
               />
             ))}
@@ -186,6 +228,9 @@ export function AvancementClient({ project }: { project: SharedProject }) {
                 description={a.clientNarrative}
                 evidenceUrl={a.evidenceUrl}
                 footer={<ActionRowFooter action={a} domain={project.domain} clientName={project.clientName} />}
+                selectable={!!a.assignedToClient}
+                selected={selected.has(a.id)}
+                onSelectChange={() => toggleSelect(a.id)}
                 isLast={i === arr.length - 1}
               />
             ))}
@@ -210,6 +255,9 @@ export function AvancementClient({ project }: { project: SharedProject }) {
                 description={a.clientNarrative}
                 evidenceUrl={a.evidenceUrl}
                 footer={<ActionRowFooter action={a} domain={project.domain} clientName={project.clientName} />}
+                selectable={!!a.assignedToClient}
+                selected={selected.has(a.id)}
+                onSelectChange={() => toggleSelect(a.id)}
                 isLast={i === arr.length - 1}
               />
             ))}
