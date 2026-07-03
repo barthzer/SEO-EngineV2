@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, X } from "lucide-react";
+import { X } from "lucide-react";
 import { SeoEngineLogo } from "@/components/SeoEngineLogo";
 import { SeoEngineWordmark } from "@/components/SeoEngineWordmark";
 import { TOTAL_STEPS } from "@/types/onboarding";
@@ -80,30 +80,26 @@ export function OnboardingShell({
 
         {/* Contenu du step — scrollable, CTA inclus à la fin du contenu */}
         <div key={step} className="t-tab-enter flex flex-1 flex-col overflow-y-auto px-20 pb-12 pt-14">
-          {onBack && (
-            <button
-              onClick={onBack}
-              aria-label="Étape précédente"
-              className="mb-8 flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          )}
           {children}
 
-          {/* CTAs — ferrés à gauche, dans le flow du contenu */}
-          <div className="mt-10 flex items-center gap-3">
-            <Button onClick={onNext ?? undefined} disabled={!onNext}>
-              {nextLabel}
-            </Button>
-            {onSkipStep && (
-              <button
-                onClick={onSkipStep}
-                className="rounded-full bg-[var(--bg-card-hover)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-              >
-                {skipLabel}
-              </button>
-            )}
+          {/* CTAs — Retour à gauche, Continuer (+ skip) à droite */}
+          <div className="mt-10 flex items-center justify-between">
+            {onBack ? (
+              <Button variant="ghost" onClick={onBack}>Retour</Button>
+            ) : <span />}
+            <div className="flex items-center gap-3">
+              {onSkipStep && (
+                <button
+                  onClick={onSkipStep}
+                  className="rounded-full bg-[var(--bg-card-hover)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  {skipLabel}
+                </button>
+              )}
+              <Button onClick={onNext ?? undefined} disabled={!onNext}>
+                {nextLabel}
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -112,24 +108,12 @@ export function OnboardingShell({
       <aside
         className="relative w-1/2 flex-shrink-0 overflow-hidden"
         style={{
-          background:
-            "linear-gradient(to bottom, #0C0C0C 0%, #0C0C0C 25%, var(--accent-primary) 75%, color-mix(in oklab, var(--accent-primary) 55%, white) 100%)",
+          backgroundImage: "url('/bg.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       >
-        {/* Texture pointillés — seuls les points blancs ressortent
-            (mix-blend-mode: screen → le noir devient transparent). */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage: "url('/onboarding-dots.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-            mixBlendMode: "screen",
-            opacity: 0.5,
-          }}
-        />
         <div className="relative h-full">{preview}</div>
       </aside>
     </div>

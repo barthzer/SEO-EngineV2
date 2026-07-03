@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Figtree, Manrope, Space_Grotesk } from "next/font/google";
+import { Instrument_Sans, Manrope, Space_Grotesk } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
 import "./globals.css";
 
-const figtree = Figtree({
-  variable: "--font-figtree",
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
 });
 
@@ -32,7 +32,7 @@ export default function RootLayout({
     <html
       lang="fr"
       data-theme="light"
-      className={`${figtree.variable} ${manrope.variable} ${spaceGrotesk.variable}`}
+      className={`${instrumentSans.variable} ${manrope.variable} ${spaceGrotesk.variable}`}
     >
       <body className="min-h-[100dvh] antialiased">
         <ThemeProvider>{children}</ThemeProvider>

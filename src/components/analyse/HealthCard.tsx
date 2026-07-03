@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import { AIInsight } from "@/components/AIInsight";
+import { Sparkles } from "lucide-react";
+import { Tooltip } from "@/components/Tooltip";
 import { ScoreRing } from "./ProjectHeaderBits";
 
 export type HealthAction = { label: string; visits?: string };
@@ -28,33 +28,41 @@ export function HealthCard({
 }) {
   const inner = (
     <div className="group/health flex flex-1 flex-col min-w-0">
-      {/* Header */}
-      <div className="flex items-start gap-4 p-7 min-h-[128px]">
+      {/* Header condensé — titre + badges + score. Le diagnostic IA passe en
+          tooltip (icône Sparkles) pour gagner de la hauteur au-dessus du fold. */}
+      <div className="flex items-start gap-4 p-5">
         <div className="flex-1 min-w-0">
-          <p className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</p>
+            {quote && (
+              <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                <Tooltip
+                  side="top"
+                  rich
+                  portal
+                  label={<span className="block max-w-[260px] text-[12px] leading-relaxed text-white/90">{quote}</span>}
+                >
+                  <button
+                    type="button"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--accent-primary)]"
+                    aria-label="Diagnostic IA"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </button>
+                </Tooltip>
+              </span>
+            )}
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <SeverityBadge level="critique" count={critiques} />
             {importants !== undefined && <SeverityBadge level="important" count={importants} />}
             <span className="text-[11px] text-[var(--text-muted)]">~{visitesRisk} vis./mois à risque</span>
           </div>
+          {note && (
+            <p className="mt-2 text-[11px] text-[var(--text-muted)]">{note}</p>
+          )}
         </div>
         {score !== undefined && <ScoreRing score={score} md />}
-      </div>
-
-      {quote && (
-        <div className="mx-7 mb-4">
-          <AIInsight>{quote}</AIInsight>
-        </div>
-      )}
-
-      {/* Footer — note (optionnelle) à gauche, flèche bottom-right */}
-      <div className="mt-auto flex items-center justify-between gap-4 px-7 pb-5 pt-2">
-        {note ? (
-          <span className="text-[11px] text-[var(--text-muted)]">{note}</span>
-        ) : <span />}
-        {ctaHref && (
-          <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-[var(--text-secondary)] transition-colors duration-150 group-hover/health:text-[var(--accent-primary)]" />
-        )}
       </div>
     </div>
   );

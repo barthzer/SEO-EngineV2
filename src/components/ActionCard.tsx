@@ -51,6 +51,26 @@ const RECURRENCE_LABEL: Record<ActionRecurrence, string> = {
   quarterly: "Trimestriel",
 };
 
+/** Libellé pour le picker (none → "Ponctuelle" plus parlant qu'un tiret). */
+const RECURRENCE_PICKER_LABEL: Record<ActionRecurrence, string> = {
+  none: "Ponctuelle",
+  weekly: "Hebdomadaire",
+  monthly: "Mensuelle",
+  quarterly: "Trimestrielle",
+};
+
+const RECURRENCE_OPTIONS: ActionRecurrence[] = ["none", "weekly", "monthly", "quarterly"];
+
+/** Calcule la prochaine échéance d'une action récurrente (base = deadline ou aujourd'hui). */
+function nextRecurrenceDate(iso: string | undefined, rec: ActionRecurrence): string {
+  const base = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(base.getTime())) base.setTime(Date.now());
+  if (rec === "weekly") base.setDate(base.getDate() + 7);
+  else if (rec === "monthly") base.setMonth(base.getMonth() + 1);
+  else if (rec === "quarterly") base.setMonth(base.getMonth() + 3);
+  return base.toISOString().slice(0, 10);
+}
+
 export type ActionOwner = {
   /** Identifiant stable (slug ou id DB) — utilisé pour le picker. */
   id: string;
@@ -224,6 +244,50 @@ function DeadlinePicker({
   );
 }
 
+/* ── Recurrence picker — dropdown DS pour la récurrence ───────────────── */
+
+function RecurrencePicker({
+  recurrence,
+  onChange,
+}: {
+  recurrence: ActionRecurrence;
+  onChange?: (next: ActionRecurrence) => void;
+}) {
+  // Lecture seule (client / contextes sans handler) → badge discret.
+  if (!onChange) {
+    return recurrence !== "none" ? (
+      <span className="inline-flex items-center gap-1 text-[12px] text-[var(--text-muted)]">
+        <Repeat className="h-3 w-3" />
+        {RECURRENCE_LABEL[recurrence]}
+      </span>
+    ) : null;
+  }
+
+  const trigger = (
+    <button
+      type="button"
+      onClick={(e) => e.stopPropagation()}
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] ${
+        recurrence === "none" ? "text-[var(--text-muted)]" : "text-[var(--text-secondary)]"
+      }`}
+    >
+      <Repeat className="h-3 w-3" />
+      {recurrence === "none" ? "Ponctuelle" : RECURRENCE_LABEL[recurrence]}
+    </button>
+  );
+
+  return (
+    <DropdownMenu width={190} trigger={trigger}>
+      <DropdownHeader>Récurrence</DropdownHeader>
+      {RECURRENCE_OPTIONS.map((r) => (
+        <DropdownItem key={r} onClick={() => onChange(r)} selected={recurrence === r}>
+          <span className="text-[13px] text-[var(--text-primary)]">{RECURRENCE_PICKER_LABEL[r]}</span>
+        </DropdownItem>
+      ))}
+    </DropdownMenu>
+  );
+}
+
 /* ── Composant principal ──────────────────────────────────────────────── */
 
 export function ActionCard({
@@ -242,6 +306,7 @@ export function ActionCard({
   deadline,
   onDeadlineChange,
   recurrence = "none",
+  onRecurrenceChange,
   clientNarrative,
   timeSpentMinutes,
   onNarrativeChange,
@@ -266,6 +331,7 @@ export function ActionCard({
   deadline?: string;
   onDeadlineChange?: (next: string | undefined) => void;
   recurrence?: ActionRecurrence;
+  onRecurrenceChange?: (next: ActionRecurrence) => void;
   clientNarrative?: string;
   timeSpentMinutes?: number;
   onNarrativeChange?: (v: string) => void;
@@ -296,6 +362,15 @@ export function ActionCard({
     "Détaillez l'action ci-dessous. Cette section sera prochainement enrichie automatiquement par l'IA en fonction du contenu de la page et des recommandations EMC.";
 
   function handleStatusChange(next: Status) {
+    // Action récurrente complétée → on enregistre l'occurrence et on
+    // régénère la suivante (deadline avancée d'une période, statut remis à faire).
+    if (next === "done" && status !== "done" && recurrence !== "none") {
+      const nd = nextRecurrenceDate(deadline, recurrence);
+      onDeadlineChange?.(nd);
+      onStatusChange("todo");
+      showToast(`Occurrence enregistrée — prochaine échéance le ${formatDeadline(nd)}`);
+      return;
+    }
     onStatusChange(next);
     if (next === "done" && status !== "done") {
       showToast("Action livrée");
@@ -357,10 +432,12 @@ export function ActionCard({
               {impact && (
                 <span className="font-medium text-[var(--text-secondary)]">{impact}</span>
               )}
-              {(time || impact) && recurrence !== "none" && (
+              {/* Badge récurrence dans la meta uniquement en lecture seule
+                  (sinon le picker éditable de la barre de contrôles fait foi). */}
+              {!onRecurrenceChange && (time || impact) && recurrence !== "none" && (
                 <span className="text-[var(--border-medium)]">·</span>
               )}
-              {recurrence !== "none" && (
+              {!onRecurrenceChange && recurrence !== "none" && (
                 <span className="inline-flex items-center gap-1">
                   <Repeat className="h-3 w-3" />
                   {RECURRENCE_LABEL[recurrence]}
@@ -386,6 +463,13 @@ export function ActionCard({
         <div className="flex-shrink-0">
           <OwnerPicker owner={owner} candidates={ownerCandidates} onChange={onOwnerChange} />
         </div>
+
+        {/* Recurrence picker — éditable (none / hebdo / mensuel / trimestriel) */}
+        {onRecurrenceChange && (
+          <div className="hidden flex-shrink-0 md:block">
+            <RecurrencePicker recurrence={recurrence} onChange={onRecurrenceChange} />
+          </div>
+        )}
 
         {/* Deadline picker — éditable, neutre (pas de code couleur) */}
         <div className="hidden flex-shrink-0 sm:block">

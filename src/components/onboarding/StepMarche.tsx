@@ -1,17 +1,18 @@
 "use client";
 
+import { Flag } from "@/components/Flag";
 import type { OnboardingData, OnboardingLLM } from "@/types/onboarding";
 
-const COUNTRIES: { code: string; flag: string; label: string }[] = [
-  { code: "FR", flag: "🇫🇷", label: "France" },
-  { code: "BE", flag: "🇧🇪", label: "Belgique" },
-  { code: "CH", flag: "🇨🇭", label: "Suisse" },
-  { code: "CA", flag: "🇨🇦", label: "Canada" },
-  { code: "GB", flag: "🇬🇧", label: "Royaume-Uni" },
-  { code: "US", flag: "🇺🇸", label: "États-Unis" },
-  { code: "ES", flag: "🇪🇸", label: "Espagne" },
-  { code: "DE", flag: "🇩🇪", label: "Allemagne" },
-  { code: "IT", flag: "🇮🇹", label: "Italie" },
+const COUNTRIES: { code: string; label: string }[] = [
+  { code: "FR", label: "France" },
+  { code: "BE", label: "Belgique" },
+  { code: "CH", label: "Suisse" },
+  { code: "CA", label: "Canada" },
+  { code: "GB", label: "Royaume-Uni" },
+  { code: "US", label: "États-Unis" },
+  { code: "ES", label: "Espagne" },
+  { code: "DE", label: "Allemagne" },
+  { code: "IT", label: "Italie" },
 ];
 
 const LANGUAGES: { code: string; label: string }[] = [
@@ -56,7 +57,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
       <div className="flex flex-col gap-2.5">
         <label className="text-[13px] font-medium text-[var(--text-primary)]">Pays principal</label>
         <div className="flex flex-wrap gap-1.5">
-          {COUNTRIES.map(({ code, flag, label }) => {
+          {COUNTRIES.map(({ code, label }) => {
             const selected = data.primaryCountry === code;
             return (
               <button
@@ -69,7 +70,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
                     : "border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
                 }`}
               >
-                <span className="text-[14px] leading-none" aria-hidden="true">{flag}</span>
+                <Flag code={code} size={15} />
                 {label}
               </button>
             );

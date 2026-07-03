@@ -4,11 +4,12 @@ import { ToastProvider } from "@/context/ToastContext";
 import { PageMetaProvider } from "@/context/PageMetaContext";
 import { ProjectsProvider } from "@/context/ProjectsContext";
 import { ChatProvider } from "@/context/ChatContext";
+import { SidebarProvider } from "@/context/SidebarContext";
 import { Drawer } from "@/components/Drawer";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { CommandPalette } from "@/components/CommandPalette";
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import { ShellFrame } from "@/components/ShellFrame";
 import type { Project } from "@/data/projects";
 
 /**
@@ -32,23 +33,23 @@ export function AppShell({
         <PageMetaProvider>
           <ProjectsProvider value={projects}>
           <ChatProvider>
-          <div className="flex h-[100dvh] overflow-hidden bg-[var(--bg-primary)]">
+          <SidebarProvider>
+          <ShellFrame>
             {/* Sidebar lit useSearchParams (?tab=) — wrap dans Suspense pour permettre le static prerender. */}
             <Suspense fallback={<SidebarFallback />}>
               <Sidebar />
             </Suspense>
-            <main className="relative flex flex-1 flex-col overflow-hidden border-l border-[var(--border-subtle)] bg-[var(--bg-primary)]">
+            <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden border-l border-[var(--border-subtle)] bg-[var(--bg-primary)]">
               <Topbar />
               <div className="flex-1 overflow-y-auto">{children}</div>
             </main>
-          </div>
+          </ShellFrame>
           <Drawer />
           {/* Palette de commandes globale (⌘K) — lit useSearchParams → Suspense. */}
           <Suspense fallback={null}>
             <CommandPalette />
           </Suspense>
-          {/* Assistant conversationnel flottant (bulle bas-droite). */}
-          <ChatWidget />
+          </SidebarProvider>
           </ChatProvider>
           </ProjectsProvider>
         </PageMetaProvider>

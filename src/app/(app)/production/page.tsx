@@ -225,8 +225,8 @@ export default function ProductionPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
-      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
+    <div className="flex flex-1 flex-col overflow-y-auto py-5">
+      <div className="w-full px-5">
 
         {/* Header */}
         <div className="mb-8">
@@ -288,7 +288,7 @@ export default function ProductionPage() {
 
         {/* Liste */}
         {view === "liste" && (
-          <div className="rounded-3xl border border-[var(--border-subtle)]">
+          <div className="rounded-2xl border border-[var(--border-subtle)]">
             <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-6 border-b border-[var(--border-subtle)] px-5 py-3">
               {["Article", "Étape", "Assigné", "Échéance", ""].map((h) => (
                 <span key={h} className="text-[11px] font-medium text-[var(--text-muted)]">{h}</span>

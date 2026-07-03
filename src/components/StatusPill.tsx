@@ -64,9 +64,9 @@ export const STATUS_CONFIG: Record<
   },
   abandoned: {
     label: "Abandonné",
-    color: "var(--text-muted)",
-    bg: "var(--bg-secondary)",
-    text: "var(--text-muted)",
+    color: "var(--color-danger)",
+    bg: "var(--color-danger-bg)",
+    text: "var(--color-danger)",
   },
 };
 

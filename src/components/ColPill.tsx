@@ -17,6 +17,8 @@ interface ColPillProps {
   onChange?: (v: string) => void;
   /** Custom render mode — provide a children function that receives a close() */
   children?: (close: () => void) => ReactNode;
+  /** Largeur du panneau dropdown (défaut : 240 en mode custom, 200 en mode liste). */
+  width?: number;
 }
 
 /**
@@ -26,7 +28,7 @@ interface ColPillProps {
  * - État actif : bg-subtle + text-primary (filtre appliqué).
  * Délègue à `DropdownMenu` pour le panneau (bg blurry + shadow-floating, design unifié).
  */
-export function ColPill({ label, active, name, items, value, onChange, children }: ColPillProps) {
+export function ColPill({ label, active, name, items, value, onChange, children, width }: ColPillProps) {
   const titleName = (name ?? label).toLowerCase();
   const trigger = (
     <button
@@ -45,7 +47,7 @@ export function ColPill({ label, active, name, items, value, onChange, children 
   // Mode children custom (slider, range…) : on injecte close via le contexte DropdownMenu.
   if (children) {
     return (
-      <DropdownMenu trigger={trigger} width={240}>
+      <DropdownMenu trigger={trigger} width={width ?? 240}>
         <ColPillCustomBody>{children}</ColPillCustomBody>
       </DropdownMenu>
     );

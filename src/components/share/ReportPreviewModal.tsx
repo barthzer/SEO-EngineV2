@@ -82,7 +82,7 @@ export function ReportPreviewModal({
 
       {/* Container modale */}
       <div
-        className="relative z-10 flex max-h-full w-full max-w-[900px] flex-col overflow-hidden rounded-3xl bg-[var(--bg-primary)] shadow-2xl"
+        className="relative z-10 flex max-h-full w-full max-w-[900px] flex-col overflow-hidden rounded-2xl bg-[var(--bg-primary)] shadow-2xl"
         style={{ transitionTimingFunction: "var(--ease-expo)" }}
       >
         {/* Header */}

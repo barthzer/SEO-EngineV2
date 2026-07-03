@@ -12,8 +12,10 @@ import { Tooltip, ChartTooltip } from "@/components/Tooltip";
 import { AreaChart } from "@/components/AreaChart";
 import { DropdownMenu, DropdownItem, DropdownSeparator, DropdownHeader } from "@/components/DropdownMenu";
 import { ColPill } from "@/components/ColPill";
+import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { VariationPill } from "@/components/VariationPill";
-import { TableWide, type ColumnDef } from "@/components/TableWide";
+import { TableWide, STICKY_EDGE, type ColumnDef } from "@/components/TableWide";
+import { Checkbox } from "@/components/Checkbox";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -31,7 +33,6 @@ import {
   CursorArrowRaysIcon,
   EyeIcon,
   MagnifyingGlassIcon,
-  EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
 import { IconBadge } from "@/components/IconBadge";
@@ -71,11 +72,12 @@ import {
 import { LineDotChart } from "@/components/LineDotChart";
 import { Sparkline } from "@/components/Sparkline";
 import { DeltaBadge } from "@/components/DeltaBadge";
-import { ActionCard, type ActionPriorityLevel } from "@/components/ActionCard";
+import { ActionCard, type ActionPriorityLevel, type ActionRecurrence } from "@/components/ActionCard";
 import { PriorityBadge } from "@/components/PriorityBars";
 import { ValidateSwitch } from "@/components/ValidateSwitch";
 import { DeltaIndicator } from "@/components/DeltaIndicator";
-import { useToast } from "@/context/ToastContext";
+import { useRouter } from "next/navigation";
+import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { Stepper } from "@/components/Stepper";
 
 /* ── Column header helpers (vue URLs) ─────────────────────────────────── */
@@ -130,6 +132,28 @@ function SortHeader<K extends string>({
           />
         </span>
       </button>
+    </div>
+  );
+}
+
+/**
+ * Groupe de colonnes figées à gauche (check + page) de la table URLs — même style DS
+ * que TableWide `stickyLeft` : fond opaque, ombre de bord droit ([[STICKY_EDGE]]) visible
+ * au scroll horizontal, `self-stretch` → pleine hauteur (en-tête comprise). Cf. [[table-sticky-columns]].
+ */
+function StickyCols({ children, header, active, scrolled }: { children: ReactNode; header?: boolean; active?: boolean; scrolled: boolean }) {
+  return (
+    <div
+      className={`sticky left-0 z-[3] relative flex flex-shrink-0 items-center gap-3 self-stretch ${
+        header ? "bg-[var(--bg-card-static)]"
+          : active ? "bg-[var(--bg-card-hover-flat)]"
+            : "bg-[var(--bg-primary)] group-hover:bg-[var(--bg-card-hover-flat)]"
+      }`}
+      style={{ paddingLeft: "var(--page-px)", paddingRight: 12 }}
+    >
+      {children}
+      <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-6"
+        style={{ transform: "translateX(100%)", background: STICKY_EDGE, opacity: scrolled ? 1 : 0, transition: "opacity 140ms ease" }} />
     </div>
   );
 }
@@ -206,10 +230,10 @@ export const BRIEFS: Brief[] = [
   { id: 37, title: "Optimisation pour ChatGPT et Perplexity",  url: "/blog/seo-chatgpt",  type: "creer", priority: "basse",   keyword: "optimiser site pour chatgpt",volume: 660,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1600, h2s: ["Comment ChatGPT cite les sources", "Stratégie de citation", "Cas pratiques"], internalLinks: ["/blog/geo-seo"] },
   { id: 38, title: "Structured data pour les articles",         url: "/blog/article-schema", type: "creer", priority: "basse", keyword: "article schema structured data", volume: 540,          tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 900,  h2s: ["Article schema expliqué", "Implémenter NewsArticle", "Erreurs fréquentes"], internalLinks: ["/blog/schema-org"] },
 
-  // Sans tag
-  { id: 3,  title: "Création de liens (link building)", url: "/blog/link-building",  type: "optimiser", priority: "moyenne", keyword: "link building",    volume: 2900, position: 22, semanticScore: 55, wordCount: 2200, h2s: ["Qu'est-ce que le link building ?", "Les meilleures stratégies", "Mesurer son profil de liens"], internalLinks: ["/blog/netlinking"] },
-  { id: 6,  title: "Rédaction SEO : le guide",          url: "/blog/redaction-seo",  type: "combler",   priority: "moyenne", keyword: "rédaction seo",    volume: 1600, position: 44, semanticScore: 0,  wordCount: 2000, h2s: ["Les fondamentaux de la rédaction SEO", "Structure d'un article optimisé"], internalLinks: ["/blog/cocon-semantique"] },
-  { id: 9,  title: "Stratégie de contenu pilier",       url: "/blog/contenu-pilier", type: "creer",     priority: "basse",   keyword: "content hub seo",  volume: 880,              semanticScore: 0,  wordCount: 2600, h2s: ["La méthode Hub & Spoke", "Créer une page pilier efficace"], internalLinks: ["/blog/cocon-semantique"] },
+  // Lot Netlinking — Autorité
+  { id: 3,  title: "Création de liens (link building)", url: "/blog/link-building",  type: "optimiser", priority: "moyenne", keyword: "link building",    volume: 2900, position: 22, tag: "Lot Netlinking — Autorité", semanticScore: 55, wordCount: 2200, h2s: ["Qu'est-ce que le link building ?", "Les meilleures stratégies", "Mesurer son profil de liens"], internalLinks: ["/blog/netlinking"] },
+  { id: 6,  title: "Rédaction SEO : le guide",          url: "/blog/redaction-seo",  type: "combler",   priority: "moyenne", keyword: "rédaction seo",    volume: 1600, position: 44, tag: "Lot Netlinking — Autorité", semanticScore: 0,  wordCount: 2000, h2s: ["Les fondamentaux de la rédaction SEO", "Structure d'un article optimisé"], internalLinks: ["/blog/cocon-semantique"] },
+  { id: 9,  title: "Stratégie de contenu pilier",       url: "/blog/contenu-pilier", type: "creer",     priority: "basse",   keyword: "content hub seo",  volume: 880,              tag: "Lot Netlinking — Autorité", semanticScore: 0,  wordCount: 2600, h2s: ["La méthode Hub & Spoke", "Créer une page pilier efficace"], internalLinks: ["/blog/cocon-semantique"] },
 
   // Pages "agence" — utilisées comme cibles dans Univers sémantique (cannibalisation / couvert)
   { id: 100, title: "Accueil — Agence marketing digital",            url: "/",                                                       type: "optimiser", priority: "haute",   keyword: "agence marketing digital",     volume: 9800, position: 9,  semanticScore: 64, wordCount: 1400, h2s: ["Notre vision", "Nos expertises", "Nos secteurs"], internalLinks: ["/agence-marketing-digital-sante/", "/agence-marketing-digital-b2b/"] },
@@ -231,18 +255,23 @@ export const TAG_COUNTS = BRIEFS.reduce<Record<string, number>>((acc, b) => {
   return acc;
 }, {});
 
+// Couleurs de lots volontairement ternes / désaturées (tons sourds) pour ne
+// pas entrer en compétition avec les couleurs d'état punchies (succès, danger,
+// warning). Palette douce type lavande / sauge / taupe / ardoise.
 export const TAG_COLORS_DEFAULT: Record<string, string> = {
-  "Lot SEO — Optimisation Q2":  "#3B82F6",
-  "Lot Création — Blog expert": "var(--color-success)",
-  "Lot GEO — Structured data":  "#A855F7",
-  "Sans lot":                   "#64748B",
+  "Lot SEO — Optimisation Q2":  "#5B72E8",
+  "Lot Création — Blog expert": "#2BB3A3",
+  "Lot GEO — Structured data":  "#A06AE0",
+  "Lot Netlinking — Autorité":  "#C9974E",
+  "Sans lot":                   "#8A93A6",
 };
 
-// Nombre de briefs "terminés" par tag (mock : 6, 4, 2)
+// Nombre de briefs "terminés" par tag (mock : 6, 4, 2, 1)
 const TAG_DONE: Record<string, number> = {
   "Lot SEO — Optimisation Q2":  6,
   "Lot Création — Blog expert": 4,
   "Lot GEO — Structured data":  2,
+  "Lot Netlinking — Autorité":  1,
 };
 
 export function TagRow({
@@ -286,7 +315,7 @@ export function TagRow({
 
 type TagRowData = { tag: string; color: string; total: number; done: number };
 
-export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) {
+export function TagList({ onNavigate, columns = 4 }: { onNavigate?: (tag: string) => void; columns?: 1 | 2 | 3 | 4 }) {
   const allTags: TagRowData[] = Object.keys(TAG_COLORS_DEFAULT)
     .filter((l) => l !== "Sans lot")
     .map((tag) => ({
@@ -304,10 +333,12 @@ export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) 
     );
   }
 
-  const tags = allTags.slice(0, 3);
+  const tags = allTags.slice(0, columns);
+
+  const colClass = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-4" }[columns];
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className={`grid ${colClass} gap-3`}>
       {tags.map((r) => {
         const pct = Math.round((r.done / Math.max(r.total, 1)) * 100);
         // Nom court : retire le préfixe "Tag " pour l'affichage
@@ -319,26 +350,23 @@ export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) 
             onClick={() => onNavigate?.(r.tag)}
             className="group flex flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 text-left transition-colors hover:bg-[var(--bg-card-hover)]"
           >
-            {/* Header — icône tag colorée + menu 3-dots */}
-            <div className="flex items-start justify-between">
+            {/* Header — icône tag colorée */}
+            <div className="flex items-start">
               <span
                 className="flex h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: `color-mix(in oklab, ${r.color} 12%, transparent)`, color: r.color }}
               >
                 <TagIcon className="h-4 w-4" />
               </span>
-              <span className="text-[var(--text-muted)] opacity-60 transition-opacity group-hover:opacity-100">
-                <EllipsisVerticalIcon className="h-4 w-4" />
-              </span>
             </div>
 
             {/* Nom du tag */}
-            <p className="truncate text-[15px] font-semibold text-[var(--text-primary)]" title={shortName}>
+            <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]" title={shortName}>
               {shortName}
             </p>
 
             {/* Compteur URLs */}
-            <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
+            <div className="flex items-center gap-1.5 text-[14px] text-[var(--text-secondary)]">
               <GlobeIcon className="h-3.5 w-3.5" />
               <span className="tabular-nums">{r.total} URL{r.total > 1 ? "s" : ""}</span>
             </div>
@@ -351,27 +379,13 @@ export function TagList({ onNavigate }: { onNavigate?: (tag: string) => void }) 
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+              <div className="flex items-center text-[12px] text-[var(--text-muted)]">
                 <span className="tabular-nums">{r.done} / {r.total}</span>
-                <span className="tabular-nums font-medium text-[var(--accent-primary)]">{pct}%</span>
               </div>
             </div>
           </button>
         );
       })}
-
-      {/* 4e card — Voir tous les tags */}
-      <button
-        type="button"
-        onClick={() => onNavigate?.("")}
-        className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 text-center transition-colors hover:border-[var(--border-medium)] hover:bg-[var(--bg-subtle)]"
-      >
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-secondary)] transition-colors group-hover:bg-[var(--bg-card)] group-hover:text-[var(--text-primary)]">
-          <ChevronRightIcon className="h-4 w-4" />
-        </span>
-        <p className="text-[14px] font-semibold text-[var(--text-primary)]">Voir tous les tags</p>
-        <p className="text-[12px] text-[var(--text-muted)] tabular-nums">{allTags.length} au total</p>
-      </button>
     </div>
   );
 }
@@ -773,27 +787,6 @@ function StatusBadge({ status, onChange }: { status: BriefStatus; onChange: (s: 
 
 /* ── Checkbox ────────────────────────────────────────────────────────── */
 
-function Checkbox({ checked, indeterminate = false, onChange }: { checked: boolean; indeterminate?: boolean; onChange: () => void }) {
-  return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onChange(); }}
-      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[4px] border transition-all ${
-        checked || indeterminate
-          ? "border-[var(--text-primary)] bg-[var(--text-primary)]"
-          : "border-[var(--border-medium)] hover:border-[var(--text-primary)]"
-      }`}
-    >
-      {indeterminate && !checked ? (
-        <span className="block h-0.5 w-2 rounded-full bg-[var(--bg-primary)]" />
-      ) : checked ? (
-        <svg className="h-2.5 w-2.5 text-[var(--bg-primary)]" viewBox="0 0 10 10" fill="none">
-          <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ) : null}
-    </button>
-  );
-}
-
 /* ── Brief drawer (slide-in from right) ──────────────────────────────── */
 
 type DrawerTab = "synthese" | "contenu" | "autorite" | "technique" | "actions" | "comments";
@@ -885,9 +878,11 @@ type TabProps = {
   /** B1 — édition inline owner + deadline */
   setOwner: (id: string, owner: ActionOwner | undefined) => void;
   setDeadline: (id: string, deadline: string | undefined) => void;
+  /** B3 — édition inline récurrence */
+  setRecurrence: (id: string, rec: ActionRecurrence) => void;
 };
 
-function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
+function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline, setRecurrence }: TabProps) {
   const pos = brief.position;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
@@ -1070,6 +1065,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               deadline={a.deadline}
               onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
+              onRecurrenceChange={(r) => setRecurrence(a.id, r)}
             />
           ))}
         </div>
@@ -1078,7 +1074,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
   );
 }
 
-function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
+function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline, setRecurrence }: TabProps) {
   const seoScore = 78;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
@@ -1167,7 +1163,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
         <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
+              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
                 <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Sujet</th>
                 <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Description</th>
                 <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">Écart</th>
@@ -1211,6 +1207,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
               deadline={a.deadline}
               onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
+              onRecurrenceChange={(r) => setRecurrence(a.id, r)}
             />
           ))}
         </div>
@@ -1219,7 +1216,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
   );
 }
 
-function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
+function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline, setRecurrence }: TabProps) {
   void brief;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
@@ -1491,6 +1488,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               deadline={a.deadline}
               onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
+              onRecurrenceChange={(r) => setRecurrence(a.id, r)}
             />
           ))}
         </div>
@@ -1499,7 +1497,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
   );
 }
 
-function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline }: TabProps) {
+function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline, setRecurrence }: TabProps) {
   void brief;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -1670,7 +1668,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
               <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
+                    <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
                       <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Schema</th>
                       <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Statut</th>
                       <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Note</th>
@@ -1719,6 +1717,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
               deadline={a.deadline}
               onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
+              onRecurrenceChange={(r) => setRecurrence(a.id, r)}
             />
           ))}
         </div>
@@ -1735,12 +1734,14 @@ function ActionsTab({
   setStatus,
   setOwner,
   setDeadline,
+  setRecurrence,
 }: {
   actions: Action[];
   getStatus: (id: string) => BriefStatus;
   setStatus: (id: string, s: BriefStatus) => void;
   setOwner: (id: string, owner: ActionOwner | undefined) => void;
   setDeadline: (id: string, deadline: string | undefined) => void;
+  setRecurrence: (id: string, rec: ActionRecurrence) => void;
 }) {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<ActionSource | "all">("all");
@@ -1812,17 +1813,10 @@ function ActionsTab({
             { value: "low",  label: "Low" },
           ]}
         />
-        {hasActiveFilters && (
-          <Tooltip label="Réinitialiser les filtres" side="top" portal>
-            <button
-              onClick={() => { setSearch(""); setSourceFilter("all"); setPriorityFilter("all"); }}
-              aria-label="Réinitialiser les filtres"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        )}
+        <ResetFiltersButton
+          show={hasActiveFilters}
+          onReset={() => { setSearch(""); setSourceFilter("all"); setPriorityFilter("all"); }}
+        />
       </div>
 
       {/* Barre d'action groupée */}
@@ -1870,6 +1864,7 @@ function ActionsTab({
               deadline={a.deadline}
               onDeadlineChange={(d) => setDeadline(a.id, d)}
               recurrence={a.recurrence}
+              onRecurrenceChange={(r) => setRecurrence(a.id, r)}
             />
           ))}
         </div>
@@ -1901,6 +1896,8 @@ function BriefDrawerContent({
   onPriorityChange: (p: Priority) => void;
 }) {
   const [tab, setTab] = useState<DrawerTab>("synthese");
+  const router = useRouter();
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
   const idx = briefs.findIndex((b) => b.id === brief.id);
   const hasPrev = idx > 0;
   const hasNext = idx < briefs.length - 1;
@@ -1915,27 +1912,33 @@ function BriefDrawerContent({
   // B1 — édition inline owner + deadline (overrides locaux, persistance en B1b)
   const [actionOwners, setActionOwners] = useState<Record<string, ActionOwner | undefined>>({});
   const [actionDeadlines, setActionDeadlines] = useState<Record<string, string | undefined>>({});
+  const [actionRecurrences, setActionRecurrences] = useState<Record<string, ActionRecurrence>>({});
   const setActionOwner = (id: string, owner: ActionOwner | undefined) =>
     setActionOwners((prev) => ({ ...prev, [id]: owner }));
   const setActionDeadline = (id: string, deadline: string | undefined) =>
     setActionDeadlines((prev) => ({ ...prev, [id]: deadline }));
+  const setActionRecurrence = (id: string, rec: ActionRecurrence) =>
+    setActionRecurrences((prev) => ({ ...prev, [id]: rec }));
 
   // Merge des overrides dans les actions (overrides > données mock par défaut)
   const allActions: Action[] = rawActions.map((a) => ({
     ...a,
     owner: a.id in actionOwners ? actionOwners[a.id] : a.owner,
     deadline: a.id in actionDeadlines ? actionDeadlines[a.id] : a.deadline,
+    recurrence: a.id in actionRecurrences ? actionRecurrences[a.id] : a.recurrence,
   }));
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Le sélecteur de template gère ses propres raccourcis (ESC ferme la modale, pas le drawer).
+      if (templateSelectorOpen) return;
       if (e.key === "Escape") { onClose(); return; }
       if (e.key === "ArrowUp"   && hasPrev) onNavigate(briefs[idx - 1]);
       if (e.key === "ArrowDown" && hasNext) onNavigate(briefs[idx + 1]);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, onNavigate, briefs, idx, hasPrev, hasNext]);
+  }, [onClose, onNavigate, briefs, idx, hasPrev, hasNext, templateSelectorOpen]);
 
   return (
     <>
@@ -2013,6 +2016,13 @@ function BriefDrawerContent({
           </DropdownMenu>
           {/* Status — editable */}
           <StatusPillDropdown status={status} onChange={onStatusChange} />
+
+          {/* Applique les recommandations sémantiques de l'analyse et ouvre
+              directement le brief de contenu (Écran D), en sautant la configuration. */}
+          <Button variant="secondary" size="sm" className="ml-auto" onClick={() => setTemplateSelectorOpen(true)}>
+            Appliquer les recommandations en contenu
+            <ChevronRightIcon className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Tab switcher — pattern unifié avec audit / seo (h-14, underline statique).
@@ -2036,13 +2046,26 @@ function BriefDrawerContent({
         </div>
       </div>
 
+      {templateSelectorOpen && (
+        <TemplateSelector
+          context="from_url_analysis"
+          title="Appliquer les recommandations en contenu"
+          subtitle={`Les actions sémantiques de « ${brief.keyword} » seront reprises dans le brief`}
+          onSelect={(t) => {
+            setTemplateSelectorOpen(false);
+            router.push(`/templates/brief/${t.id}?titre=${encodeURIComponent(brief.keyword)}`);
+          }}
+          onClose={() => setTemplateSelectorOpen(false)}
+        />
+      )}
+
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-12 py-10">
-        {tab === "synthese"  && <SyntheseTab  brief={brief} actions={allActions.filter(a => a.source === "synthese")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
-        {tab === "contenu"   && <ContenuTab   brief={brief} actions={allActions.filter(a => a.source === "contenu")}   getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
-        {tab === "autorite"  && <AutoriteTab  brief={brief} actions={allActions.filter(a => a.source === "autorite")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
-        {tab === "technique" && <TechniqueTab brief={brief} actions={allActions.filter(a => a.source === "technique")} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
-        {tab === "actions"   && <ActionsTab   actions={allActions} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} />}
+        {tab === "synthese"  && <SyntheseTab  brief={brief} actions={allActions.filter(a => a.source === "synthese")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
+        {tab === "contenu"   && <ContenuTab   brief={brief} actions={allActions.filter(a => a.source === "contenu")}   getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
+        {tab === "autorite"  && <AutoriteTab  brief={brief} actions={allActions.filter(a => a.source === "autorite")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
+        {tab === "technique" && <TechniqueTab brief={brief} actions={allActions.filter(a => a.source === "technique")} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
+        {tab === "actions"   && <ActionsTab   actions={allActions} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
         {tab === "comments"  && (
           <div className="mx-auto max-w-[640px]">
             <CommentThread target={{ type: "analysis", id: String(brief.id), label: brief.keyword }} />
@@ -2139,7 +2162,7 @@ function AnalyseLaunchModal({
       onClick={requestClose}
     >
       <div
-        className={`t-modal ${modalClass} relative flex w-[560px] max-h-[80vh] flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl`}
+        className={`t-modal ${modalClass} relative flex w-[560px] max-h-[80vh] flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-primary)] shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         {step === 1 ? (
@@ -2334,7 +2357,7 @@ function PagePanelContent({
   onNavigatePage: (b: Brief) => void;
   onClose: () => void;
   onTagChange: (tag: string | null) => void;
-  onCreateTag: (name: string) => void;
+  onCreateTag: (name: string, color: string) => void;
 }) {
   const idx = briefs.findIndex((b) => b.id === brief.id);
   const hasPrev = idx > 0;
@@ -2567,7 +2590,7 @@ function PagePanelContent({
         <CreateTagModal
           existingTags={tags}
           onCancel={() => setTagModalOpen(false)}
-          onCreate={(name) => { onCreateTag(name); setTagModalOpen(false); }}
+          onCreate={(name, color) => { onCreateTag(name, color); setTagModalOpen(false); }}
         />
       )}
     </>
@@ -2583,9 +2606,10 @@ function CreateTagModal({
 }: {
   existingTags: string[];
   onCancel: () => void;
-  onCreate: (name: string) => void;
+  onCreate: (name: string, color: string) => void;
 }) {
   const [name, setName] = useState("");
+  const [color, setColor] = useState(TAG_COLOR_PALETTE[9]); // accent par défaut
   const trimmed = name.trim();
   const exists = existingTags.includes(trimmed);
   const canSubmit = trimmed.length > 0 && !exists;
@@ -2600,7 +2624,7 @@ function CreateTagModal({
       className={`t-modal-overlay ${overlayClass} fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
       onClick={(e) => e.target === e.currentTarget && requestClose()}
     >
-      <div className={`t-modal ${modalClass} relative w-full max-w-[420px] rounded-3xl bg-[var(--modal-bg)] p-7 shadow-[var(--shadow-floating)]`}>
+      <div className={`t-modal ${modalClass} relative w-full max-w-[420px] rounded-2xl bg-[var(--modal-bg)] p-7 shadow-[var(--shadow-floating)]`}>
         <button
           onClick={requestClose}
           className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
@@ -2612,7 +2636,7 @@ function CreateTagModal({
           Créer un nouveau tag
         </h3>
         <p className="mb-5 text-[13px] text-[var(--text-secondary)]">
-          Donnez un nom à votre lot — une couleur lui sera attribuée automatiquement.
+          Donnez un nom à votre lot et choisissez sa couleur.
         </p>
 
         <input
@@ -2620,7 +2644,7 @@ function CreateTagModal({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) onCreate(trimmed); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) onCreate(trimmed, color); }}
           placeholder="Ex. Lot Mai 2026 — Refonte"
           className="w-full rounded-full border border-[var(--border-medium)] bg-[var(--input-bg)] px-4 py-2.5 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-input)] focus:border-[var(--accent-primary)] focus:outline-none"
         />
@@ -2628,9 +2652,33 @@ function CreateTagModal({
           <p className="mt-2 text-[12px] text-[var(--color-danger)]">Ce lot existe déjà.</p>
         )}
 
+        {/* Sélecteur de couleur */}
+        <div className="mt-5">
+          <p className="mb-2.5 text-[12px] font-medium text-[var(--text-secondary)]">Couleur</p>
+          <div className="flex flex-wrap gap-2">
+            {TAG_COLOR_PALETTE.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className="flex h-8 w-8 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95"
+                aria-label={`Choisir la couleur ${c}`}
+              >
+                <span
+                  className="block h-5 w-5 rounded-full"
+                  style={{
+                    backgroundColor: c,
+                    boxShadow: c === color ? `0 0 0 2px var(--modal-bg), 0 0 0 3.5px ${c}` : undefined,
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" size="md" onClick={onCancel}>Annuler</Button>
-          <Button variant="primary" size="md" onClick={() => onCreate(trimmed)} disabled={!canSubmit}>
+          <Button variant="primary" size="md" onClick={() => onCreate(trimmed, color)} disabled={!canSubmit}>
             Créer le tag
           </Button>
         </div>
@@ -2677,7 +2725,7 @@ function SidePanel({
   onStatusChange: (s: BriefStatus) => void;
   onPriorityChange: (p: Priority) => void;
   onTagChange: (tag: string | null) => void;
-  onCreateTag: (name: string) => void;
+  onCreateTag: (name: string, color: string) => void;
 }) {
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -2762,20 +2810,30 @@ function SidePanel({
 export function BriefsView({
   initialBriefUrl,
   onPendingHandled,
+  initialTagFilter,
+  onTagFilterHandled,
 }: {
   /** When provided, opens the matching brief's SidePanel on mount/change */
   initialBriefUrl?: string | null;
   /** Called after the panel opens, so the parent can clear its pending state */
   onPendingHandled?: () => void;
+  /** When provided, pre-applies the lot filter (ex. clic sur un "Lot récent"). */
+  initialTagFilter?: string | null;
+  /** Called after the filter is applied, so the parent can clear its pending state */
+  onTagFilterHandled?: () => void;
 } = {}) {
 
-  // Refs for horizontal scroll sync between sticky column header and table body
-  const headerInnerRef = useRef<HTMLDivElement>(null);
-  const bodyScrollRef  = useRef<HTMLDivElement>(null);
+  // Synchro du scroll horizontal entre l'en-tête et le corps. On pilote l'en-tête via
+  // `scrollLeft` (et non un `transform`) pour que les colonnes check + page puissent
+  // rester `position: sticky` (un transform casserait le sticky). `scrolled` n'affiche
+  // l'ombre de bord qu'une fois défilé horizontalement.
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef   = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
   function handleBodyScroll() {
-    if (headerInnerRef.current && bodyScrollRef.current) {
-      headerInnerRef.current.style.transform = `translateX(-${bodyScrollRef.current.scrollLeft}px)`;
-    }
+    const sl = bodyScrollRef.current?.scrollLeft ?? 0;
+    if (headerScrollRef.current) headerScrollRef.current.scrollLeft = sl;
+    setScrolled(sl > 0);
   }
 
   const [briefs, setBriefs] = useState<Brief[]>(BRIEFS.map((b) => ({ ...b, ...BRIEF_EXTRA[b.id] })));
@@ -2809,12 +2867,9 @@ export function BriefsView({
     setBriefPriorities((prev) => ({ ...prev, [id]: next }));
   }
 
-  const [tagColors, setTagColors] = useState<Record<string, string>>({
-    "Lot SEO — Optimisation Q2":  "#3B82F6",
-    "Lot Création — Blog expert": "var(--color-success)",
-    "Lot GEO — Structured data":  "#A855F7",
-    "Sans lot":                   "#64748B",
-  });
+  // Source de couleurs unique — alignée sur TAG_COLORS_DEFAULT (utilisé aussi
+  // par la vue d'ensemble) pour que les pastilles de lot correspondent partout.
+  const [tagColors, setTagColors] = useState<Record<string, string>>({ ...TAG_COLORS_DEFAULT });
   function setTagColor(tag: string, color: string) {
     setTagColors((prev) => ({ ...prev, [tag]: color }));
   }
@@ -2825,21 +2880,32 @@ export function BriefsView({
   }
 
   const TAG_PALETTE = ["#3B82F6", "var(--color-success)", "#A855F7", "var(--color-warning)", "#EC4899", "#14B8A6", "#EAB308", "var(--accent-primary)"];
-  function createTagAndAssign(name: string, briefId: number) {
+  function createTagAndAssign(name: string, color: string, briefId: number) {
     const trimmed = name.trim();
     if (!trimmed) return;
     if (!tagColors[trimmed]) {
+      // Couleur choisie par l'utilisateur, sinon première couleur libre de la palette
       const used = new Set(Object.values(tagColors));
-      const color = TAG_PALETTE.find((c) => !used.has(c)) ?? TAG_PALETTE[Math.floor(Math.random() * TAG_PALETTE.length)];
-      setTagColors((prev) => ({ ...prev, [trimmed]: color }));
+      const fallback = TAG_PALETTE.find((c) => !used.has(c)) ?? TAG_PALETTE[Math.floor(Math.random() * TAG_PALETTE.length)];
+      setTagColors((prev) => ({ ...prev, [trimmed]: color || fallback }));
     }
     changeBriefTag(briefId, trimmed);
   }
 
-  const [colType,     setColType]     = useState<BriefType | "all">("all");
+  const [colType,     setColType]     = useState<BriefType[]>([]);   // multi-select ([] = toutes)
   const [colPriority, setColPriority] = useState<Priority | "all">("all");
   const [colStatut,   setColStatut]   = useState<BriefStatus | "all">("all");
-  const [colTag,      setColTag]      = useState("all");
+  const [colTag,      setColTag]      = useState<string[]>([]);        // multi-select ([] = tous)
+  const toggleTag  = (t: string)    => setColTag((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
+  const toggleType = (t: BriefType) => setColType((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
+
+  // Pré-applique le filtre de lot demandé par le parent (clic sur un "Lot récent").
+  useEffect(() => {
+    if (!initialTagFilter) return;
+    setColTag([initialTagFilter]);
+    onTagFilterHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTagFilter]);
 
   // Tri sur les colonnes chiffrables — clic sur header cycle asc → desc → off
   type SortKey = "position" | "volume" | "trafic" | "ctr" | "effort" | "score" | "analyse";
@@ -2852,13 +2918,13 @@ export function BriefsView({
   }
 
   const hasActiveFilters =
-    colType !== "all" || colPriority !== "all" || colStatut !== "all" || colTag !== "all";
+    colType.length > 0 || colPriority !== "all" || colStatut !== "all" || colTag.length > 0;
 
   function resetFilters() {
-    setColType("all");
+    setColType([]);
     setColPriority("all");
     setColStatut("all");
-    setColTag("all");
+    setColTag([]);
   }
 
   function assignTag(tag: string | null) {
@@ -2879,13 +2945,12 @@ export function BriefsView({
 
   const filtered = (() => {
     const base = briefs.filter((b) => {
-      if (colType !== "all" && b.type !== colType) return false;
+      if (colType.length > 0 && !colType.includes(b.type)) return false;
       if (search && !b.title.toLowerCase().includes(search.toLowerCase()) && !b.keyword.toLowerCase().includes(search.toLowerCase())) return false;
       if (colPriority !== "all" && b.priority !== colPriority) return false;
       const statut = briefStatuses[b.id] ?? "todo";
       if (colStatut !== "all" && statut !== colStatut) return false;
-      if (colTag === "__none__" && b.tag) return false;
-      if (colTag !== "all" && colTag !== "__none__" && b.tag !== colTag) return false;
+      if (colTag.length > 0 && !((b.tag && colTag.includes(b.tag)) || (!b.tag && colTag.includes("Sans lot")))) return false;
       return true;
     });
     if (!sortKey) return base;
@@ -2960,31 +3025,42 @@ export function BriefsView({
         <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un brief…" alwaysExpanded />
         <ColPill
           name="Lot"
-          label={colTag === "all" ? "Tag" : colTag === "__none__" ? "Sans lot" : colTag.replace(/^Tag\s+/, "")}
-          active={colTag !== "all"}
-          value={colTag}
-          onChange={setColTag}
-          items={[
-            { value: "all",                        label: "Tous les lots" },
-            { value: "Lot SEO — Optimisation Q2",  label: "SEO — Optimisation Q2" },
-            { value: "Lot Création — Blog expert", label: "Création — Blog expert" },
-            { value: "Lot GEO — Structured data",  label: "GEO — Structured data" },
-            { value: "__none__",                   label: "Sans lot" },
-          ]}
-        />
+          label={colTag.length === 0 ? "Tag" : colTag.length === 1 ? colTag[0].replace(/^Lot\s+/, "") : `${colTag.length} lots`}
+          active={colTag.length > 0}
+        >
+          {() => (
+            <>
+              <DropdownHeader>Filtrer par lot</DropdownHeader>
+              {Object.keys(tagColors).map((tag) => (
+                <DropdownItem key={tag} checkbox keepOpen selected={colTag.includes(tag)} onClick={() => toggleTag(tag)}>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[tag] }} />
+                    {tag.replace(/^Lot\s+/, "")}
+                  </span>
+                </DropdownItem>
+              ))}
+            </>
+          )}
+        </ColPill>
         <ColPill
           name="Origine"
-          label={colType === "all" ? "Origine" : TYPE_CONFIG[colType].label}
-          active={colType !== "all"}
-          value={colType}
-          onChange={(v) => setColType(v as BriefType | "all")}
-          items={[
-            { value: "all",       label: "Toutes les origines" },
-            { value: "optimiser", label: "Optimiser" },
-            { value: "combler",   label: "Gap GSC" },
-            { value: "creer",     label: "De zéro" },
-          ]}
-        />
+          label={colType.length === 0 ? "Origine" : colType.length === 1 ? TYPE_CONFIG[colType[0]].label : `${colType.length} origines`}
+          active={colType.length > 0}
+        >
+          {() => (
+            <>
+              <DropdownHeader>Filtrer par origine</DropdownHeader>
+              {(["optimiser", "combler", "creer"] as BriefType[]).map((t) => (
+                <DropdownItem key={t} checkbox keepOpen selected={colType.includes(t)} onClick={() => toggleType(t)}>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: TYPE_CONFIG[t].color }} />
+                    {TYPE_CONFIG[t].label}
+                  </span>
+                </DropdownItem>
+              ))}
+            </>
+          )}
+        </ColPill>
         <ColPill
           name="Priorité"
           label={colPriority === "all" ? "Priorité" : PRIORITY_CONFIG[colPriority].label}
@@ -3011,17 +3087,7 @@ export function BriefsView({
             { value: "done",  label: "Terminé" },
           ]}
         />
-        {hasActiveFilters && (
-          <Tooltip label="Réinitialiser les filtres" side="top" portal>
-            <button
-              onClick={resetFilters}
-              aria-label="Réinitialiser les filtres"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        )}
+        <ResetFiltersButton show={hasActiveFilters} onReset={resetFilters} />
       </div>
 
       {/* Bulk action bar */}
@@ -3113,25 +3179,29 @@ export function BriefsView({
         document.body
       )}
 
-      {/* ── Sticky column header — labels statiques + tri sur colonnes chiffrables ── */}
-      <div className="sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]">
-        <div ref={headerInnerRef} style={{ minWidth: 2150 }} className="flex h-10 items-center gap-3 pl-[var(--page-px)] pr-4">
-            <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} />
-            <ColHeader width={200}>Page</ColHeader>
-            <ColHeader width={130}>Mot-clé</ColHeader>
-            <ColHeader width={110}>Origine</ColHeader>
-            <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="position" onClick={() => toggleSort("position")}>Position</SortHeader>
-            <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="volume"   onClick={() => toggleSort("volume")}>Volume</SortHeader>
-            <SortHeader width={200} sortKey={sortKey} sortDir={sortDir} k="trafic"   onClick={() => toggleSort("trafic")}>Trafic</SortHeader>
-            <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="ctr"      onClick={() => toggleSort("ctr")}>CTR</SortHeader>
-            <ColHeader width={110}>Priorité</ColHeader>
-            <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="effort"   onClick={() => toggleSort("effort")}>Effort</SortHeader>
-            <ColHeader width={200}>Lot</ColHeader>
-            <SortHeader width={130} sortKey={sortKey} sortDir={sortDir} k="analyse"  onClick={() => toggleSort("analyse")}>Analyse</SortHeader>
-            <ColHeader width={100}>Statut</ColHeader>
-            <div className="w-12 flex-shrink-0 min-w-0" />
-            <SortHeader width={64}  sortKey={sortKey} sortDir={sortDir} k="score"    onClick={() => toggleSort("score")}>Score</SortHeader>
-            <div className="sticky right-0 w-16 flex-shrink-0 min-w-0 bg-[var(--bg-subtle)]" />
+      {/* ── Sticky column header — check + page figées à gauche, reste défilant (sync scrollLeft) ── */}
+      <div ref={headerScrollRef} className="sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+        <div style={{ minWidth: 2150 }} className="flex h-10 items-stretch">
+            <StickyCols header scrolled={scrolled}>
+              <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} />
+              <ColHeader width={200}>Page</ColHeader>
+            </StickyCols>
+            <div className="flex items-center gap-3 pr-4">
+              <ColHeader width={130}>Mot-clé</ColHeader>
+              <ColHeader width={110}>Origine</ColHeader>
+              <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="position" onClick={() => toggleSort("position")}>Position</SortHeader>
+              <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="volume"   onClick={() => toggleSort("volume")}>Volume</SortHeader>
+              <SortHeader width={200} sortKey={sortKey} sortDir={sortDir} k="trafic"   onClick={() => toggleSort("trafic")}>Trafic</SortHeader>
+              <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="ctr"      onClick={() => toggleSort("ctr")}>CTR</SortHeader>
+              <ColHeader width={110}>Priorité</ColHeader>
+              <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="effort"   onClick={() => toggleSort("effort")}>Effort</SortHeader>
+              <ColHeader width={200}>Lot</ColHeader>
+              <SortHeader width={130} sortKey={sortKey} sortDir={sortDir} k="analyse"  onClick={() => toggleSort("analyse")}>Analyse</SortHeader>
+              <ColHeader width={100}>Statut</ColHeader>
+              <SortHeader width={64}  sortKey={sortKey} sortDir={sortDir} k="score"    onClick={() => toggleSort("score")}>Score</SortHeader>
+              <div className="w-[130px] flex-shrink-0 min-w-0" />
+              <div className="sticky right-0 w-16 flex-shrink-0 min-w-0 bg-[var(--bg-subtle)]" />
+            </div>
         </div>
       </div>
 
@@ -3163,19 +3233,37 @@ export function BriefsView({
                 })();
 
                 return (
-                  <button
+                  <div
                     key={brief.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setActiveBrief(isActive ? null : brief)}
-                    className={`group relative w-full text-left transition-colors ${i < pageBriefs.length - 1 ? "border-b border-[var(--border-subtle)]" : ""} ${isActive ? "bg-[var(--bg-card-hover)]" : "hover:bg-[var(--bg-card-hover)]"}`}
+                    onKeyDown={(e) => {
+                      // N'ouvrir la row que si le focus est sur la row elle-même —
+                      // sinon une touche Espace/Entrée dans le champ mot-clé ou un
+                      // bouton imbriqué déclencherait l'ouverture (et bloquerait la
+                      // saisie d'espaces dans l'input).
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setActiveBrief(isActive ? null : brief);
+                      }
+                    }}
+                    className={`group relative w-full cursor-pointer text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent-primary)] ${i < pageBriefs.length - 1 ? "border-b border-[var(--border-subtle)]" : ""} ${isActive ? "bg-[var(--bg-card-hover)]" : "hover:bg-[var(--bg-card-hover)]"}`}
                   >
-                  <div className="flex items-center gap-3 pl-[var(--page-px)] pr-4 py-3">
-                    <Checkbox checked={isSelected} onChange={() => toggleOne(brief.id)} />
+                  <div className="flex items-stretch">
+                    {/* Colonnes figées : check + page (sticky au scroll horizontal, ombre de bord) */}
+                    <StickyCols active={isActive} scrolled={scrolled}>
+                      <Checkbox checked={isSelected} onChange={() => toggleOne(brief.id)} />
+                      {/* Page */}
+                      <div className="w-[200px] flex-shrink-0 min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{brief.title}</p>
+                        <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
+                      </div>
+                    </StickyCols>
 
-                    {/* Page */}
-                    <div className="w-[200px] flex-shrink-0 min-w-0">
-                      <p className="truncate text-[13px] text-[var(--text-primary)]">{brief.title}</p>
-                      <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
-                    </div>
+                    {/* Reste des colonnes (défilantes) */}
+                    <div className="flex items-center gap-3 pr-4 py-3">
 
                     {/* Mot-clé */}
                     <div className="w-[130px] flex-shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -3445,7 +3533,9 @@ export function BriefsView({
                       </div>
                     </div>
 
-                    {/* Actions — lancer / relancer l'analyse — CTA principal du DS */}
+                    <div className="w-16 flex-shrink-0 min-w-0"><SemanticPill score={brief.semanticScore} /></div>
+
+                    {/* Actions — lancer / relancer l'analyse — CTA principal du DS, à droite du score */}
                     <div className="w-[130px] flex-shrink-0 min-w-0" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="primary"
@@ -3455,8 +3545,6 @@ export function BriefsView({
                         {analyseLabel ? "Relancer" : "Lancer"}
                       </Button>
                     </div>
-
-                    <div className="w-16 flex-shrink-0 min-w-0"><SemanticPill score={brief.semanticScore} /></div>
 
                     {/* Chevron overlay — sticky à droite. `self-stretch` étend l'élément
                         sur toute la hauteur de la row (au lieu de h-7 qui laissait passer
@@ -3473,8 +3561,9 @@ export function BriefsView({
                       />
                       <ChevronRightIcon className="relative h-4 w-4 text-[var(--text-muted)]" />
                     </div>
+                    </div>{/* fin colonnes défilantes */}
                   </div>
-                  </button>
+                  </div>
                 );
               })}
           </div>
@@ -3549,7 +3638,7 @@ export function BriefsView({
           onStatusChange={(next) => toggleStatus(activeBrief.id, next)}
           onPriorityChange={(next) => setPriority(activeBrief.id, next)}
           onTagChange={(tag) => changeBriefTag(activeBrief.id, tag)}
-          onCreateTag={(name) => createTagAndAssign(name, activeBrief.id)}
+          onCreateTag={(name, color) => createTagAndAssign(name, color, activeBrief.id)}
         />
       )}
 

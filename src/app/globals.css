@@ -42,7 +42,7 @@
   --color-warning:          var(--color-warning);
 
   /* Fonts */
-  --font-sans:              var(--font-figtree);
+  --font-sans:              var(--font-instrument-sans);
   --font-display:           var(--font-space-grotesk);
   --font-mono:              var(--font-space-grotesk);
 
@@ -234,6 +234,13 @@
   animation: t-tab-enter var(--page-slide-dur) var(--page-slide-ease) both;
   will-change: opacity, transform, filter;
 }
+/* Entrée « page / sous-vue » : même mouvement que .t-tab-enter mais fill
+   `backwards` (aucun transform résiduel après l'animation) → ne casse pas les
+   enfants position:sticky / fixed. À poser sur les racines de page ou, avec un
+   `key`, sur un conteneur de sous-vue pour rejouer au changement. */
+.page-enter {
+  animation: t-tab-enter var(--page-slide-dur) var(--page-slide-ease) backwards;
+}
 .t-page {
   opacity: 1;
   transform: translateX(0);
@@ -309,7 +316,7 @@
 @media (prefers-reduced-motion: reduce) {
   .t-dropdown, .t-modal, .t-modal-overlay, .t-page, .t-icon-swap .t-icon,
   .t-success-check, .t-success-check path,
-  .t-tab-enter {
+  .t-tab-enter, .page-enter {
     transition: none !important;
     animation: none !important;
   }
@@ -360,6 +367,27 @@
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Flottement doux des tuiles de logos (onboarding Visibilité IA). */
+@keyframes geo-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+
+/* Drill-in nav (sidebar) : on entre dans le détail → entrée depuis la droite ;
+   retour au menu principal → entrée depuis la gauche. */
+@keyframes sidebar-drill-in  { from { opacity: 0; transform: translateX(12px);  } to { opacity: 1; transform: translateX(0); } }
+@keyframes sidebar-drill-out { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+.sidebar-drill-in  { animation: sidebar-drill-in  0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sidebar-drill-out { animation: sidebar-drill-out 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Révélation des éléments générés par l'IA (en attente de validation utilisateur).
+   Pattern DS : appliquer `.ai-reveal` + un `animation-delay` échelonné par index. */
+@keyframes ai-reveal {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ai-reveal { animation: ai-reveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(6px); }
@@ -434,12 +462,12 @@ svg[stroke="currentColor"][fill="none"] {
    Le contour = affordance d'action. */
 .card-static {
   background-color: var(--bg-card);
-  border-radius: 24px;
+  border-radius: 16px;
 }
 .card-action {
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 24px;
+  border-radius: 16px;
   transition: border-color 200ms var(--ease-out), background-color 200ms var(--ease-out);
 }
 .card-action:hover {
@@ -456,8 +484,7 @@ h1, h2, h3 {
 }
 h1 {
   letter-spacing: var(--tracking-display);
-  /* 20px (mobile) → 30px (XL) — palier desktop ≈ 26px */
-  font-size: clamp(20px, 1rem + 0.7vw, 30px);
+  font-size: 24px;
   line-height: 1.2;
 }
 h2 {
@@ -588,3 +615,10 @@ body {
     background-color var(--motion-base) var(--ease-out),
     color var(--motion-base) var(--ease-out);
 }
+
+/* ──────────────── Illustrations blocs stratégiques (BlocCard) ────────────────
+   Swap clair / sombre piloté par [data-theme] (l'app ne branche pas la variante
+   Tailwind `dark:`). Par défaut : variante claire visible, variante sombre masquée. */
+.bloc-illu-dark { display: none; }
+[data-theme="dark"] .bloc-illu-light { display: none; }
+[data-theme="dark"] .bloc-illu-dark { display: block; }

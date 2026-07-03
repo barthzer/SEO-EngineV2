@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDownIcon, ArrowPathIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ArrowPathIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { Tooltip } from "@/components/Tooltip";
 import { Button } from "@/components/Button";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { ColPill } from "@/components/ColPill";
+import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { SearchInput } from "@/components/SearchInput";
 import { Layers, CircleCheck, TriangleAlert, Sparkles, Clock } from "lucide-react";
 
@@ -422,17 +423,10 @@ export function UniversSemantiqueView({
             { value: "opportunite",     label: "Opportunité" },
           ]}
         />
-        {hasActiveFilters && (
-          <Tooltip label="Réinitialiser les filtres" side="top" portal>
-            <button
-              onClick={() => { setSemStatus("all"); setSemSource("all"); setSemSearch(""); }}
-              aria-label="Réinitialiser les filtres"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        )}
+        <ResetFiltersButton
+          show={hasActiveFilters}
+          onReset={() => { setSemStatus("all"); setSemSource("all"); setSemSearch(""); }}
+        />
         <span className="ml-auto text-[12px] tabular-nums text-[var(--text-muted)]">{filteredKws.length} / {SEMANTIC_KWS.length}</span>
       </div>
 

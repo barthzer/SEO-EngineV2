@@ -67,10 +67,10 @@ export function PreviewPane({ data, signedInName }: { data: OnboardingData; step
       </div>
 
       {/* ─── Card principale : performance par module ─── */}
-      <div className="mt-4 rounded-2xl bg-white p-6 border border-[var(--border-subtle)]">
+      <div className="mt-4 rounded-2xl bg-[var(--modal-bg)] p-6 border border-[var(--border-subtle)]">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold text-[#0C0C0C]">Performance par module</h3>
-          <ChevronRight className="h-4 w-4 text-[#A1A1AA]" />
+          <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Performance par module</h3>
+          <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
         </div>
 
         {data.goals.length > 0 ? (
@@ -80,12 +80,12 @@ export function PreviewPane({ data, signedInName }: { data: OnboardingData; step
               const positive = delta >= 0;
               return (
                 <div key={g} className="flex items-center gap-3">
-                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5] text-[#0C0C0C]">
+                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--bg-subtle)] text-[var(--text-primary)]">
                     <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-[#0C0C0C]">{label}</p>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F4F4F5]">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)]">{label}</p>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--bg-subtle)]">
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
                         style={{
@@ -97,8 +97,8 @@ export function PreviewPane({ data, signedInName }: { data: OnboardingData; step
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-[14px] font-semibold tabular-nums text-[#0C0C0C]">{score}</span>
-                    <span className={`text-[10.5px] font-semibold tabular-nums ${positive ? "text-[#059669]" : "text-[#DC2626]"}`}>
+                    <span className="text-[14px] font-semibold tabular-nums text-[var(--text-primary)]">{score}</span>
+                    <span className={`text-[10.5px] font-semibold tabular-nums ${positive ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>
                       {positive ? "+" : ""}{delta}
                     </span>
                   </div>
@@ -107,29 +107,29 @@ export function PreviewPane({ data, signedInName }: { data: OnboardingData; step
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[#E4E4E7] py-8 text-center">
-            <LayoutDashboard className="h-5 w-5 text-[#A1A1AA]" />
-            <p className="text-[12px] text-[#71717a]">Sélectionnez vos objectifs pour voir vos modules</p>
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[var(--border-subtle)] py-8 text-center">
+            <LayoutDashboard className="h-5 w-5 text-[var(--text-muted)]" />
+            <p className="text-[12px] text-[var(--text-muted)]">Sélectionnez vos objectifs pour voir vos modules</p>
           </div>
         )}
       </div>
 
       {/* ─── Card secondaire : projet (dès domain valide) ─── */}
       {isProjectValid && (
-        <div className="mt-2 rounded-2xl bg-white p-5 border border-[var(--border-subtle)]">
+        <div className="mt-2 rounded-2xl bg-[var(--modal-bg)] p-5 border border-[var(--border-subtle)]">
           <div className="flex items-center gap-3">
             <img
               src={`https://www.google.com/s2/favicons?domain=${data.firstProjectDomain}&sz=64`}
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8 flex-shrink-0 rounded-lg border border-[#E4E4E7]"
+              className="h-8 w-8 flex-shrink-0 rounded-lg border border-[var(--border-subtle)]"
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-[#0C0C0C]">{data.firstProjectDomain}</p>
-              <p className="text-[11px] text-[#71717a]">Analyse {data.analysisFrequency}</p>
+              <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{data.firstProjectDomain}</p>
+              <p className="text-[11px] text-[var(--text-muted)]">Analyse {data.analysisFrequency}</p>
             </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-semibold tabular-nums text-[#059669]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 text-[11px] font-semibold tabular-nums text-[var(--color-success)]">
               <TrendingUp className="h-3 w-3" />
               +12%
             </span>
@@ -145,13 +145,13 @@ export function PreviewPane({ data, signedInName }: { data: OnboardingData; step
 
 function KpiCard({ label, value, delta, up }: { label: string; value: string; delta: string; up: boolean }) {
   return (
-    <div className="flex-shrink-0 rounded-2xl bg-white p-4 border border-[var(--border-subtle)]" style={{ minWidth: 180 }}>
-      <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#71717a]">{label}</p>
+    <div className="flex-shrink-0 rounded-2xl p-4 border border-[var(--border-subtle)]" style={{ minWidth: 180 }}>
+      <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]">{label}</p>
       <div className="mt-1.5 flex items-baseline gap-2">
-        <span className="text-[26px] font-semibold tabular-nums leading-none text-[#0C0C0C]">{value}</span>
+        <span className="text-[26px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">{value}</span>
         <span
           className="text-[11px] font-semibold tabular-nums"
-          style={{ color: delta === "—" ? "#A1A1AA" : up ? "#059669" : "#DC2626" }}
+          style={{ color: delta === "—" ? "var(--text-muted)" : up ? "var(--color-success)" : "var(--color-danger)" }}
         >
           {delta}
         </span>

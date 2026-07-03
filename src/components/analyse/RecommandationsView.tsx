@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckIcon } from "@heroicons/react/24/outline";
-import { SparklesIcon } from "@heroicons/react/24/solid";
+import { CheckIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import {
   Sparkles as LSparkles,
   Target as LTarget,
@@ -254,7 +253,7 @@ export function RecommandationsView({
 
       {/* ── State : empty ── */}
       {studyState === "empty" && (
-        <div className="rounded-3xl bg-[var(--bg-card)]">
+        <div className="rounded-2xl bg-[var(--bg-card)]">
           <EmptyState
             icon={<LSparkles className="h-7 w-7" />}
             title="Aucune étude de mots-clés"
@@ -271,7 +270,7 @@ export function RecommandationsView({
 
       {/* ── State : loading ── */}
       {studyState === "loading" && (
-        <div className="rounded-3xl bg-[var(--bg-card)] p-10">
+        <div className="rounded-2xl bg-[var(--bg-card)] p-10">
           <div className="mx-auto flex max-w-[420px] flex-col items-center">
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-primary-soft)]">
               <Loader2 className="h-7 w-7 animate-spin text-[var(--accent-primary)]" />
@@ -377,8 +376,8 @@ export function RecommandationsView({
             edgePadding="24px"
             trailingAction={(r) => (
               <Button size="sm" onClick={(e) => { e.stopPropagation(); setBriefKeyword(r.keyword); }}>
-                <SparklesIcon className="h-3.5 w-3.5" />
                 Analyser
+                <ChevronRightIcon className="h-3.5 w-3.5" />
               </Button>
             )}
             trailingActionWidth={120}

@@ -9,7 +9,6 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   XMarkIcon,
   ArrowRightIcon,
@@ -18,10 +17,12 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { Tooltip } from "@/components/Tooltip";
+import { SeoEngineLogo } from "@/components/SeoEngineLogo";
+import { ChatRichBlock } from "@/components/chat/ChatRichBlock";
 import { useChat, type ChatMessage, type Conversation } from "@/context/ChatContext";
 
 /** Icône chat IA (bulle + sparkle) — couleur via currentColor, taille via className. */
-function ChatAiIcon({ className }: { className?: string }) {
+export function ChatAiIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
       <path d="M13.4937 2.79004L13.0291 1.58215C12.9714 1.4322 12.8273 1.33325 12.6667 1.33325C12.506 1.33325 12.3619 1.4322 12.3043 1.58215L11.8397 2.79004C11.772 2.9661 11.6329 3.10523 11.4568 3.17295L10.2489 3.63753C10.0989 3.6952 10 3.83926 10 3.99992C10 4.16058 10.0989 4.30464 10.2489 4.36231L11.4568 4.82689C11.6329 4.89461 11.772 5.03374 11.8397 5.2098L12.3043 6.41769C12.3619 6.56764 12.506 6.66659 12.6667 6.66659C12.8273 6.66659 12.9714 6.56764 13.0291 6.41769L13.4937 5.2098C13.5613 5.03374 13.7005 4.89461 13.8765 4.82689L15.0845 4.36231C15.2344 4.30464 15.3333 4.16058 15.3333 3.99992C15.3333 3.83926 15.2344 3.6952 15.0845 3.63753L13.8765 3.17295C13.7005 3.10523 13.5613 2.9661 13.4937 2.79004Z" fill="currentColor" />
@@ -37,7 +38,7 @@ function lastPreview(c: Conversation): string {
 
 export function ChatWidget() {
   const {
-    isOpen, toggle, close,
+    isOpen, close,
     conversations, activeId, activeName,
     messages, isThinking,
     send, navigate,
@@ -51,7 +52,8 @@ export function ChatWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Montage côté client uniquement (portail SSR-safe).
+  // Contenu rendu côté client uniquement : les conversations ont des IDs
+  // non-déterministes (Date.now) → éviter tout mismatch d'hydratation SSR.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
@@ -92,49 +94,23 @@ export function ChatWidget() {
     }
   }
 
-  if (!mounted) return null;
   const canSend = draft.trim().length > 0;
 
-  return createPortal(
-    <>
-      {/* Bulle flottante — lanceur (fond neutre, icône chat IA) */}
-      {!isOpen && (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label="Ouvrir l'assistant"
-          className="fixed bottom-6 right-6 z-[1100] flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card-static)] shadow-[var(--shadow-floating)] transition-transform duration-200 hover:scale-105 active:scale-95"
-        >
-          <ChatAiIcon className="h-5 w-5 text-[var(--accent-primary)]" />
-        </button>
-      )}
-
-      {/* Click-catcher transparent (clic extérieur → ferme), sans voile ni blur */}
-      <div
-        aria-hidden="true"
-        onClick={close}
-        className="fixed inset-0 z-[1095]"
-        style={{ pointerEvents: isOpen ? "auto" : "none" }}
-      />
-
-      {/* Drawer assistant */}
-      <aside
-        role="dialog"
-        aria-modal="true"
-        aria-label="Assistant SEO Engine"
-        className="fixed bottom-4 right-4 top-4 z-[1100] flex w-[460px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] shadow-2xl transition-[opacity,transform] duration-200"
-        style={{
-          transformOrigin: "bottom right",
-          transform: isOpen ? "scale(1)" : "scale(0.96)",
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? "auto" : "none",
-          transitionTimingFunction: "var(--ease-expo)",
-        }}
-      >
+  /* Panneau docké à droite : il occupe une largeur dans le flux flex de
+     l'AppShell, donc le `main` se décale au lieu d'être recouvert. */
+  return (
+    <aside
+      aria-label="Assistant GlobalSearch"
+      aria-hidden={!isOpen}
+      className={`flex-shrink-0 overflow-hidden bg-[var(--modal-bg)] transition-[width] duration-300 ${isOpen ? "rounded-2xl border border-[var(--border-subtle)]" : ""}`}
+      style={{ width: isOpen ? "min(440px, 92vw)" : 0, transitionTimingFunction: "var(--ease-expo)" }}
+    >
+      <div className="flex h-full w-[440px] max-w-[92vw] flex-col overflow-hidden">
+        {mounted && (<>
         {/* Header */}
         <header className="relative flex h-14 flex-shrink-0 items-center gap-2 px-4">
           <GradientDivider position="bottom" />
-          <ChatAiIcon className="h-5 w-5 flex-shrink-0 text-[var(--accent-primary)]" />
+          <SeoEngineLogo className="h-5 w-5 flex-shrink-0 text-[var(--accent-primary)]" />
           {showHistory ? (
             <span className="min-w-0 flex-1 truncate px-1.5 py-1 text-[14px] font-semibold text-[var(--text-primary)]">
               Historique du chat
@@ -245,9 +221,9 @@ export function ChatWidget() {
           </>
         )}
         </div>
-      </aside>
-    </>,
-    document.body,
+        </>)}
+      </div>
+    </aside>
   );
 }
 
@@ -272,6 +248,13 @@ function MessageBubble({
       ) : (
         <div className="max-w-full whitespace-pre-line text-[13.5px] leading-relaxed text-[var(--text-primary)]">
           {message.text}
+        </div>
+      )}
+
+      {/* Bloc riche (scorecards / barres / table) — analyses Ahrefs inline */}
+      {message.card && (
+        <div className="mt-1 w-full">
+          <ChatRichBlock block={message.card} />
         </div>
       )}
 

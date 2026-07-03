@@ -6,19 +6,18 @@ interface ScoreRingProps {
   strokeWidth?: number;
   /** Override de la couleur. Par défaut, suit l'heuristique : rouge < 40, ambre < 70, vert >= 70. */
   color?: string;
-  /** Cache le total "/100" sous le chiffre — utile pour les indicateurs de progression. */
+  /** @deprecated le "/100" n'est plus rendu — conservé pour compat des callsites. */
   hideTotal?: boolean;
 }
 
 const defaultColor = (s: number) => s >= 70 ? "var(--color-success)" : s >= 40 ? "var(--color-warning)" : "var(--color-danger)";
 
-export function ScoreRing({ score, size = 80, strokeWidth = 8, color, hideTotal = false }: ScoreRingProps) {
+export function ScoreRing({ score, size = 80, strokeWidth = 5, color }: ScoreRingProps) {
   const r = (size - strokeWidth) / 2;
   const cx = size / 2;
   const circumference = 2 * Math.PI * r;
   const dash = score > 0 ? (score / 100) * circumference : 0;
-  const fontSize = Math.round(size * 0.24);
-  const subSize = Math.round(size * 0.13);
+  const fontSize = Math.round(size * 0.26);
   const c = color ?? defaultColor(score);
 
   return (
@@ -29,14 +28,11 @@ export function ScoreRing({ score, size = 80, strokeWidth = 8, color, hideTotal 
           strokeDasharray={`${dash} ${circumference}`} strokeLinecap="round"
           transform={`rotate(-90 ${cx} ${cx})`} />
       )}
-      <text x={cx} y={cx + fontSize * 0.35} textAnchor="middle" fontSize={fontSize} fontWeight={700}
-        fill={score > 0 ? c : "var(--text-muted)"}>
+      {/* Chiffre en main (text-primary), jamais teinté par la couleur du score. */}
+      <text x={cx} y={cx} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700}
+        fill={score > 0 ? "var(--text-primary)" : "var(--text-muted)"}>
         {score > 0 ? score : "—"}
       </text>
-      {!hideTotal && (
-        <text x={cx} y={cx + fontSize * 0.35 + subSize + 2} textAnchor="middle" fontSize={subSize}
-          fill="var(--text-muted)">/100</text>
-      )}
     </svg>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDownIcon, CheckIcon, ArrowPathIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { Button } from "@/components/Button";
-import { Tooltip } from "@/components/Tooltip";
+import {
+  ChevronDownIcon, XMarkIcon,
+  ExclamationTriangleIcon, ChartBarIcon, TableCellsIcon,
+} from "@heroicons/react/24/outline";
 import { FilterTabs } from "@/components/FilterTabs";
-import { StatusPill, StatusPillDropdown, type Status } from "@/components/StatusPill";
+import { StatusPillDropdown, type Status } from "@/components/StatusPill";
+import { Pill } from "@/components/Pill";
 import { ScoreRing } from "@/components/ScoreRing";
-import { SectionHead } from "@/components/SectionHead";
+import { AuditSection } from "@/components/AuditSection";
 import { Callout } from "@/components/Callout";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -238,69 +240,51 @@ const DIMENSION_CONFIG: { key: Dimension; label: string; meta: string }[] = [
 ];
 
 const SEVERITY_CONFIG: Record<Severity, { label: string; color: string; bg: string }> = {
-  critique:  { label: "Critique",  color: "var(--color-danger)", bg: "var(--color-danger-bg)"  },
-  important: { label: "Important", color: "var(--color-warning)", bg: "rgba(245,158,11,0.1)"  },
-  moyen:     { label: "Moyen",     color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
+  critique:  { label: "Critique",  color: "var(--color-danger)",  bg: "var(--color-danger-bg)"  },
+  important: { label: "Important", color: "var(--color-warning)", bg: "var(--color-warning-bg)" },
+  moyen:     { label: "Moyen",     color: "var(--text-muted)",    bg: "var(--bg-subtle)"        },
 };
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
-
-const STATUS_CYCLE: Status[] = ["todo", "in_progress", "done"];
-
-function nextStatus(s: Status): Status {
-  return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
-}
 
 function scoreColor(n: number) {
   return n >= 70 ? "var(--color-success)" : n >= 50 ? "var(--color-warning)" : "var(--color-danger)";
 }
 
-/* ── Micro-components ─────────────────────────────────────────────────── */
-
-function StatusDot({ status, onClick }: { status: Status; onClick: () => void }) {
-  return (
-    <button onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all ${
-        status === "done"  ? "border-[var(--color-success)] bg-[var(--color-success)]" :
-        status === "in_progress" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
-        "border-[var(--text-muted)]"
-      }`}>
-      {status === "done"  && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-      {status === "in_progress" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
-    </button>
-  );
-}
-
+/* Carte d'audit générique — contour, sans fond (convention DS). */
+const CARD = "rounded-2xl border border-[var(--border-subtle)]";
+const CARD_SM = "rounded-2xl border border-[var(--border-subtle)]";
 
 /* ── Issue accordion ──────────────────────────────────────────────────── */
 
 function IssueCard({ issue, status, onStatusChange }: {
-  issue: Issue; status: Status; onStatusChange: () => void;
+  issue: Issue; status: Status; onStatusChange: (s: Status) => void;
 }) {
   const [open, setOpen] = useState(false);
   const c = SEVERITY_CONFIG[issue.severity];
 
   return (
-    <div className={`border-b border-[var(--border-subtle)] last:border-0 ${status === "done" ? "opacity-50" : ""}`}
-      style={{ borderLeftColor: c.color, borderLeftWidth: 3, borderLeftStyle: "solid" }}>
-      <button onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-6 py-4 text-left cursor-pointer">
-        <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold flex-shrink-0"
-          style={{ color: c.color, backgroundColor: c.bg }}>{c.label}</span>
-        <StatusDot status={status} onClick={onStatusChange} />
-        <span className={`flex-1 text-[14px] font-medium min-w-0 ${status === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
-          {issue.label}
-        </span>
+    <div className={`border-b border-[var(--border-subtle)] last:border-0 ${status === "done" ? "opacity-50" : ""}`}>
+      <div className="flex w-full items-center gap-3 px-6 py-4">
+        <Pill color={c.color} bg={c.bg}>{c.label}</Pill>
+        <button onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center text-left cursor-pointer">
+          <span className={`flex-1 truncate text-[14px] font-medium ${status === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
+            {issue.label}
+          </span>
+        </button>
         <div className="flex flex-shrink-0 items-center gap-3">
           <span className="text-[13px] text-[var(--text-muted)]">{issue.pages} pages</span>
           {issue.visits && (
             <span className="text-[13px] font-medium" style={{ color: c.color }}>{issue.visits} visites</span>
           )}
-          <StatusPill status={status} />
-          <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)] transition-transform"
-            style={{ transform: open ? "rotate(180deg)" : "none" }} />
+          <StatusPillDropdown status={status} onChange={onStatusChange} />
+          <button onClick={() => setOpen((v) => !v)} aria-label="Détails" className="cursor-pointer">
+            <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)] transition-transform"
+              style={{ transform: open ? "rotate(180deg)" : "none" }} />
+          </button>
         </div>
-      </button>
+      </div>
 
       {open && (
         <div className="border-t border-[var(--border-subtle)] px-6 py-5">
@@ -321,8 +305,7 @@ function IssueCard({ issue, status, onStatusChange }: {
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="truncate font-mono text-[var(--text-muted)]">{u.url}</span>
                     {u.tag && (
-                      <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                        style={{ backgroundColor: "rgba(62,80,245,0.1)", color: "var(--accent-primary)" }}>{u.tag}</span>
+                      <Pill color="var(--accent-primary)" bg="var(--accent-primary-soft)" className="flex-shrink-0">{u.tag}</Pill>
                     )}
                   </div>
                   <span className="text-right font-medium text-[var(--text-primary)]">{u.clicks != null ? u.clicks : "—"}</span>
@@ -339,7 +322,7 @@ function IssueCard({ issue, status, onStatusChange }: {
 
 /* ── Main ─────────────────────────────────────────────────────────────── */
 
-export function AuditEditorialTab({ domain }: { domain: string }) {
+export function AuditEditorialTab(_props: { domain: string }) {
   const [activeTag, setActiveTag]       = useState<string>("all");
   const [activeDim, setActiveDim]       = useState<Dimension | null>(null);
   const [issueStatuses, setIssueStatuses] = useState<Record<string, Status>>({});
@@ -354,42 +337,29 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
 
   const countBySeverity = (sev: Severity) => visibleIssues.filter((i) => i.severity === sev).length;
   const getStatus = (id: string): Status => issueStatuses[id] ?? "todo";
-  const toggleStatus = (id: string) =>
-    setIssueStatuses((prev) => ({ ...prev, [id]: nextStatus(getStatus(id)) }));
+  const setStatus = (id: string, s: Status) =>
+    setIssueStatuses((prev) => ({ ...prev, [id]: s }));
 
   const scoreColor62 = scoreColor(tag.score);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
 
       {/* ── HERO ────────────────────────────────────────────────────── */}
-      <div id="edi-synthese" className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-8">
+      <div id="edi-synthese" className={`${CARD} p-8`}>
         <div className="grid grid-cols-[2fr_1fr] items-center gap-8">
           <div className="min-w-0">
-            <div className="mb-3 flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-success)]">GSC connecté</span>
-              <span className="rounded-full bg-[var(--accent-primary-soft)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-primary)]">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Pill color="var(--color-success)" bg="var(--color-success-bg)">GSC connecté</Pill>
+              <Pill color="var(--accent-primary)" bg="var(--accent-primary-soft)">
                 {tag.count} pages éditoriales · {tag.pct}% du site
-              </span>
-              <span className="text-[13px] text-[var(--text-muted)]">27 avril 2026</span>
+              </Pill>
+              <span className="text-[13px] text-[var(--text-muted)]">il y a 3 jours</span>
             </div>
-            <h1 className="font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
-              <span style={{ color: "var(--color-danger)" }}>{tag.headlineEm}</span>
-              {" "}{tag.headlineTail.split("\n")[0]}
-              <br />{tag.headlineTail.split("\n")[1]}
-            </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">{tag.sub}</p>
-            <div className="mt-5 flex flex-wrap gap-6 text-[13px] text-[var(--text-muted)]">
-              <span><strong className="text-[15px] text-[var(--text-primary)]">{tag.count}</strong> pages analysées / 133 crawlées</span>
-              <span><strong className="text-[15px] text-[var(--text-primary)]">{visibleIssues.length}</strong> issues détectées</span>
-              <span>Snapshot GSC <strong className="text-[var(--text-primary)]">27/04</strong></span>
-            </div>
-            <div className="mt-6">
-              <Button size="sm" variant="secondary">
-                <ArrowPathIcon className="h-4 w-4" />
-                Relancer l'audit
-              </Button>
-            </div>
+            <p className="text-[15px] font-semibold leading-relaxed tracking-tight text-[var(--text-primary)]">
+              {tag.headlineEm} {tag.headlineTail.replace("\n", " ")}
+            </p>
+            <p className="mt-0 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">{tag.sub}</p>
           </div>
           <div className="flex flex-col items-center gap-3">
             <ScoreRing score={tag.score} size={160} strokeWidth={7} />
@@ -401,32 +371,45 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         </div>
       </div>
 
-      {/* Verdict cards */}
+      {/* Chiffres clés */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Pages analysées",  val: `${tag.count}`,             bench: "/ 133 crawlées" },
+          { label: "Issues détectées", val: `${visibleIssues.length}`, bench: `${countBySeverity("critique")} critiques · ${countBySeverity("important")} importantes` },
+          { label: "Visites à risque", val: tag.visitsAtRisk,          bench: `sur ${tag.label}` },
+          { label: "Snapshot GSC",     val: "27/04",                   bench: "246 clics/mois" },
+        ].map((kpi) => (
+          <div key={kpi.label} className={`${CARD_SM} px-5 py-4`}>
+            <p className="text-[12px] text-[var(--text-muted)]">{kpi.label}</p>
+            <p className="mt-1 text-[28px] font-semibold leading-none text-[var(--text-primary)]">{kpi.val}</p>
+            <p className="mt-2 text-[11px] text-[var(--text-muted)]">{kpi.bench}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Verdict cards — contour */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { color: "var(--color-danger)", label: "Bloqueur",    text: tag.verdictBlocker },
+          { color: "var(--color-danger)",   label: "Bloqueur",    text: tag.verdictBlocker },
           { color: "var(--accent-primary)", label: "Opportunité", text: tag.verdictOpp },
-          { color: "#B888FF", label: "Couverture",  text: tag.verdictCov },
+          { color: "var(--color-success)",  label: "Couverture",  text: tag.verdictCov },
         ].map((v) => (
-          <div key={v.label} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
-            style={{ background: `linear-gradient(to bottom, color-mix(in oklab, ${v.color} 7%, transparent) 0%, var(--bg-card) 60%)` }}>
-            <div className="px-5 pt-5 pb-6">
-              <div className="mb-3 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
-                <p className="text-[13px] font-semibold" style={{ color: v.color }}>{v.label}</p>
-              </div>
-              <p className="text-[14px] leading-snug text-[var(--text-secondary)]">{v.text}</p>
+          <div key={v.label} className={`${CARD_SM} px-5 pt-5 pb-6`}>
+            <div className="mb-3 flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
+              <p className="text-[13px] font-semibold" style={{ color: v.color }}>{v.label}</p>
             </div>
+            <p className="text-[14px] leading-snug text-[var(--text-secondary)]">{v.text}</p>
           </div>
         ))}
       </div>
 
       {/* ── FILTRES PAR LOT ─────────────────────────────────────────── */}
-      <div id="edi-tags" className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
+      <div id="edi-tags" className={`${CARD} p-6`}>
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-[13px] font-semibold text-[var(--text-primary)]">Filtrer par tag</p>
+          <p className="text-[13px] font-semibold text-[var(--text-primary)]">Filtrer par lot</p>
           <p className="text-[12px] text-[var(--text-muted)]">
-            Tags définis dans <span className="text-[var(--text-secondary)]">Recommandation de page</span> · synchronisés il y a 2 jours
+            Lots définis dans <span className="text-[var(--text-secondary)]">Recommandation de page</span> · synchronisés il y a 2 jours
           </p>
         </div>
         <FilterTabs
@@ -437,11 +420,10 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
       </div>
 
       {/* ── 01. DIAGNOSTIC PAR IMPACT BUSINESS ─────────────────────── */}
-      <div id="edi-diagnostic">
-        <SectionHead
-          num="01." title="Diagnostic" em="par impact business"
-          meta={`${visibleIssues.length} issues · ${countBySeverity("critique")} critiques · ${countBySeverity("important")} importantes · ${countBySeverity("moyen")} moyennes`}
-        />
+      <AuditSection id="edi-diagnostic"
+        icon={ExclamationTriangleIcon} title="Diagnostic" em="par impact business"
+        meta={`${visibleIssues.length} issues · ${countBySeverity("critique")} critiques · ${countBySeverity("important")} importantes · ${countBySeverity("moyen")} moyennes`}
+      >
 
         <Callout variant="error" className="mb-5">
           <strong>~{tag.visitsAtRisk} visites/mois à risque</strong>{" "}
@@ -451,7 +433,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
 
         {/* Active dimension filter banner */}
         {activeDim && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[rgba(62,80,245,0.3)] bg-[var(--accent-primary-soft)] px-5 py-3">
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[var(--accent-primary-mid)] bg-[var(--accent-primary-soft)] px-5 py-3">
             <p className="text-[14px] text-[var(--text-secondary)]">
               Filtre actif sur la dimension <strong className="text-[var(--accent-primary)]">{DIMENSION_CONFIG.find((d) => d.key === activeDim)?.label}</strong> · {visibleIssues.length} issue(s) affichée(s)
             </p>
@@ -463,7 +445,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
           </div>
         )}
 
-        <div className="bg-[var(--bg-card)]">
+        <div className={`overflow-hidden ${CARD_SM}`}>
           {/* Critiques */}
           {countBySeverity("critique") > 0 && (
             <>
@@ -471,7 +453,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
                 Impact critique · {countBySeverity("critique")} issue{countBySeverity("critique") > 1 ? "s" : ""}
               </div>
               {visibleIssues.filter((i) => i.severity === "critique").map((iss) => (
-                <IssueCard key={iss.id} issue={iss} status={getStatus(iss.id)} onStatusChange={() => toggleStatus(iss.id)} />
+                <IssueCard key={iss.id} issue={iss} status={getStatus(iss.id)} onStatusChange={(s) => setStatus(iss.id, s)} />
               ))}
             </>
           )}
@@ -483,7 +465,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
                 Impact important · {countBySeverity("important")} issue{countBySeverity("important") > 1 ? "s" : ""}
               </div>
               {visibleIssues.filter((i) => i.severity === "important").map((iss) => (
-                <IssueCard key={iss.id} issue={iss} status={getStatus(iss.id)} onStatusChange={() => toggleStatus(iss.id)} />
+                <IssueCard key={iss.id} issue={iss} status={getStatus(iss.id)} onStatusChange={(s) => setStatus(iss.id, s)} />
               ))}
             </>
           )}
@@ -495,7 +477,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
                 Impact moyen · {countBySeverity("moyen")} issue{countBySeverity("moyen") > 1 ? "s" : ""}
               </div>
               {visibleIssues.filter((i) => i.severity === "moyen").map((iss) => (
-                <IssueCard key={iss.id} issue={iss} status={getStatus(iss.id)} onStatusChange={() => toggleStatus(iss.id)} />
+                <IssueCard key={iss.id} issue={iss} status={getStatus(iss.id)} onStatusChange={(s) => setStatus(iss.id, s)} />
               ))}
             </>
           )}
@@ -508,8 +490,8 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         </div>
 
         {/* Detector note */}
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-5 py-4">
-          <span className="text-[var(--color-warning)] text-[16px]">⚠</span>
+        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-dashed border-[var(--border-subtle)] px-5 py-4">
+          <span className="text-[16px] text-[var(--color-warning)]">⚠</span>
           <p className="text-[13px] text-[var(--text-secondary)]">
             <strong className="text-[var(--color-warning)]">3 détecteurs n'ont pas pu tourner</strong> — certaines données sont manquantes pour{" "}
             <span className="font-mono text-[12px]">detector_freshness</span>,{" "}
@@ -517,11 +499,10 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
             <span className="font-mono text-[12px]">brand_mentions</span>. Reconnecter les sources pour activer ces analyses.
           </p>
         </div>
-      </div>
+      </AuditSection>
 
       {/* ── 02. DIAGNOSTIC PAR DIMENSION ────────────────────────────── */}
-      <div id="edi-dimensions">
-        <SectionHead num="02." title="Diagnostic" em="par dimension" meta={`Score moyen sur ${tag.count} pages éditoriales`} />
+      <AuditSection id="edi-dimensions" icon={ChartBarIcon} title="Diagnostic" em="par dimension" meta={`Score moyen sur ${tag.count} pages éditoriales`}>
 
         <div className="grid grid-cols-6 gap-3">
           {DIMENSION_CONFIG.map((dim) => {
@@ -533,9 +514,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
                 className="relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-200 cursor-pointer"
                 style={{
                   borderColor: isActive ? "var(--accent-primary)" : "var(--border-subtle)",
-                  background: isActive
-                    ? "linear-gradient(to bottom, rgba(62,80,245,0.08) 0%, var(--bg-card) 100%)"
-                    : "var(--bg-card)",
+                  backgroundColor: isActive ? "var(--accent-primary-soft)" : undefined,
                 }}>
                 <p className="mb-2 text-[11px] font-semibold text-[var(--text-muted)]">{dim.label}</p>
                 <p className="text-[26px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
@@ -548,13 +527,12 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
             );
           })}
         </div>
-      </div>
+      </AuditSection>
 
       {/* ── 03. DONNÉES BRUTES ──────────────────────────────────────── */}
-      <div id="edi-donnees">
-        <SectionHead num="03." title="Données" em="brutes" meta="Pour aller plus loin" />
+      <AuditSection id="edi-donnees" icon={TableCellsIcon} title="Données" em="brutes" meta="Pour aller plus loin">
 
-        <div className="flex flex-col divide-y divide-[var(--border-subtle)]">
+        <div className={`overflow-hidden ${CARD_SM}`}>
           {[
             {
               id: "perimetre", title: "Couverture du périmètre éditorial", sub: `${tag.count} / 133 pages`,
@@ -565,8 +543,8 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
               body: "11 détecteurs ont tourné sur ce périmètre. 3 inactifs : detector_freshness (date manquante), knowledge_graph_match (pas de schema Organization), brand_mentions (Ahrefs non connecté).",
             },
             {
-              id: "tags-detail", title: "Tags éditoriaux", sub: "5 tags définis",
-              body: "Catégorie Jean (3) · Top trafic (5) · YMYL (2) · Formation & services (4) · Case studies (3). Les tags sont définis dans l'onglet Recommandation de page et synchronisés à chaque audit.",
+              id: "tags-detail", title: "Lots éditoriaux", sub: "5 lots définis",
+              body: "Catégorie Jean (3) · Top trafic (5) · YMYL (2) · Formation & services (4) · Case studies (3). Les lots sont définis dans l'onglet Recommandation de page et synchronisés à chaque audit.",
             },
             {
               id: "snapshot", title: "Snapshot GSC", sub: "27 avril 2026",
@@ -580,7 +558,7 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
         <p className="mt-3 text-[12px] text-[var(--text-muted)]">
           Dernière analyse éditoriale : 27 avril 2026 · prochaine analyse : 30 avril 2026
         </p>
-      </div>
+      </AuditSection>
 
     </div>
   );
@@ -589,9 +567,9 @@ export function AuditEditorialTab({ domain }: { domain: string }) {
 function SimpleAccordion({ title, sub, body }: { title: string; sub: string; body: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div>
+    <div className="border-b border-[var(--border-subtle)] last:border-0">
       <button onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between py-4 text-left cursor-pointer">
+        className="flex w-full items-center justify-between px-6 py-4 text-left cursor-pointer">
         <div>
           <p className="text-[15px] font-semibold text-[var(--text-primary)]">{title}</p>
           <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">{sub}</p>
@@ -600,7 +578,7 @@ function SimpleAccordion({ title, sub, body }: { title: string; sub: string; bod
           style={{ transform: open ? "rotate(180deg)" : "none" }} />
       </button>
       {open && (
-        <div className="pb-4 text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <div className="px-6 pb-4 text-[14px] leading-relaxed text-[var(--text-secondary)]">
           {body}
         </div>
       )}

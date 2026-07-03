@@ -22,6 +22,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { useProjects } from "@/context/ProjectsContext";
 import { respond, type ChatAction } from "@/lib/chat/engine";
+import type { RichBlock } from "@/lib/chat/richBlocks";
 
 export type ChatMessage = {
   id: string;
@@ -29,6 +30,7 @@ export type ChatMessage = {
   text: string;
   action?: ChatAction;
   suggestions?: string[];
+  card?: RichBlock;
 };
 
 export type Conversation = {
@@ -44,7 +46,7 @@ export const DEFAULT_CONVERSATION_NAME = "Nouvelle discussion";
 const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Bonjour 👋 Je suis votre assistant SEO Engine. Demandez-moi d'ouvrir une page ou posez une question sur vos projets.",
+  text: "Bonjour 👋 Je suis votre assistant GlobalSearch. Demandez-moi d'ouvrir une page ou posez une question sur vos projets.",
   suggestions: ["Ouvre les paramètres", "Liste mes projets", "Que peux-tu faire ?"],
 };
 
@@ -104,7 +106,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // présent (vide) dans une conversation. L'action / les suggestions ne sont
   // révélées qu'une fois le texte entièrement écrit.
   const streamMessage = useCallback(
-    (convId: string, msgId: string, reply: { text: string; action?: ChatAction; suggestions?: string[] }) => {
+    (convId: string, msgId: string, reply: { text: string; action?: ChatAction; suggestions?: string[]; card?: RichBlock }) => {
       if (streamRef.current) clearInterval(streamRef.current);
       const tokens = reply.text.split(/(\s+)/); // conserve les espaces
       let i = 0;
@@ -126,6 +128,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                           text: partial,
                           action: done ? reply.action : undefined,
                           suggestions: done ? reply.suggestions : undefined,
+                          card: done ? reply.card : undefined,
                         },
                   ),
                 },

@@ -9,6 +9,14 @@
  */
 
 import type { Project } from "@/data/projects";
+import {
+  type RichBlock,
+  backlinksBlock,
+  anchorsBlock,
+  trafficBlock,
+  keywordsBlock,
+  compareBlock,
+} from "@/lib/chat/richBlocks";
 
 export type ChatAction = { label: string; href: string };
 
@@ -18,6 +26,8 @@ export type BotReply = {
   action?: ChatAction;
   /** Relances cliquables affichées sous le message. */
   suggestions?: string[];
+  /** Bloc riche (scorecards / barres / table) rendu sous le texte. */
+  card?: RichBlock;
 };
 
 export type ChatContext = {
@@ -81,6 +91,26 @@ function analyseHref(domain: string): string {
   return `/analyse/${encodeURIComponent(domain)}`;
 }
 
+/** Tous les projets mentionnés dans le texte (pour les comparatifs). */
+function findProjects(text: string, projects: Project[]): Project[] {
+  const found: Project[] = [];
+  for (const p of projects) {
+    const domain = normalize(p.domain);
+    const name = domain.split(".")[0];
+    if (name.length >= 3 && (text.includes(domain) || text.includes(name)) && !found.includes(p)) {
+      found.push(p);
+    }
+  }
+  return found;
+}
+
+const ANALYSIS_INTENT = {
+  backlinks: ["backlink", "lien retour", "netlinking", "domaines referents", "domaine referent", "referring", "profil de lien", "domain rating", "dr "],
+  anchors: ["ancre", "anchor", "texte de lien"],
+  traffic: ["trafic", "traffic", "visite", "visiteur", "audience organique"],
+  keywords: ["mot-cle", "mot cle", "mots-cles", "mots cles", "keyword", "requete", "positionnement"],
+};
+
 /* ── Réponse ─────────────────────────────────────────────────────────── */
 
 export function respond(input: string, ctx: ChatContext): BotReply {
@@ -96,7 +126,7 @@ export function respond(input: string, ctx: ChatContext): BotReply {
   // 1. Salutations
   if (has(q, ...GREETINGS) && q.length < 25) {
     return {
-      text: "Bonjour 👋 Je suis l'assistant SEO Engine. Je peux vous aider à naviguer dans l'app et répondre à vos questions sur vos projets.",
+      text: "Bonjour 👋 Je suis l'assistant GlobalSearch. Je peux vous aider à naviguer dans l'app et répondre à vos questions sur vos projets.",
       suggestions: DEFAULT_SUGGESTIONS,
     };
   }
@@ -105,11 +135,13 @@ export function respond(input: string, ctx: ChatContext): BotReply {
   if (has(q, "aide", "que peux-tu", "que peux tu", "que sais-tu", "que sais tu", "capacit", "comment ca marche", "comment tu marche", "a quoi tu sers", "help")) {
     return {
       text:
-        "Voici ce que je sais faire pour l'instant :\n" +
+        "Voici ce que je sais faire :\n" +
         "• Naviguer — « ouvre les paramètres », « va sur l'équipe », « ouvre leboncoin.fr »\n" +
         "• Vos projets — « liste mes projets », « combien de projets actifs », « score de sephora.fr »\n" +
-        "Bientôt : analyses Ahrefs et rédaction de briefs directement ici.",
-      suggestions: DEFAULT_SUGGESTIONS,
+        "• Analyses Ahrefs — « backlinks de leboncoin.fr », « trafic de sephora.fr », « mots-clés de doctolib.fr », « ancres de leboncoin.fr »\n" +
+        "• Comparatifs — « compare leboncoin.fr et sephora.fr »\n" +
+        "Bientôt : rédaction de briefs directement ici.",
+      suggestions: ["Backlinks de leboncoin.fr", "Trafic de sephora.fr", "Compare leboncoin.fr et sephora.fr"],
     };
   }
 
@@ -135,9 +167,53 @@ export function respond(input: string, ctx: ChatContext): BotReply {
     };
   }
 
+  // 3b. Comparatif entre deux projets (Ahrefs)
+  if (has(q, "compare", "comparer", "comparaison", "versus", " vs ", "vs.", "face a", "contre", "difference entre")) {
+    const matches = findProjects(q, ctx.projects);
+    if (matches.length >= 2) {
+      const [a, b] = matches;
+      return {
+        text: `Voici le comparatif entre ${a.domain} et ${b.domain} :`,
+        card: compareBlock(a, b),
+        suggestions: [`Backlinks de ${a.domain}`, `Trafic de ${b.domain}`],
+      };
+    }
+  }
+
   // 4. Question/navigation ciblant un projet précis
   const project = findProject(q, ctx.projects);
   if (project) {
+    // 4a. Analyses Ahrefs inline (blocs riches)
+    if (has(q, ...ANALYSIS_INTENT.backlinks)) {
+      return {
+        text: `Profil de liens de ${project.domain} (source Ahrefs) :`,
+        card: backlinksBlock(project),
+        suggestions: [`Ancres de ${project.domain}`, `Trafic de ${project.domain}`],
+        action: { label: `Ouvrir le netlinking`, href: `${analyseHref(project.domain)}?tab=netlinking` },
+      };
+    }
+    if (has(q, ...ANALYSIS_INTENT.anchors)) {
+      return {
+        text: `Répartition des ancres de ${project.domain} :`,
+        card: anchorsBlock(project),
+        action: { label: `Ouvrir le netlinking`, href: `${analyseHref(project.domain)}?tab=netlinking` },
+      };
+    }
+    if (has(q, ...ANALYSIS_INTENT.traffic)) {
+      return {
+        text: `Trafic organique de ${project.domain} (source Ahrefs) :`,
+        card: trafficBlock(project),
+        suggestions: [`Mots-clés de ${project.domain}`, `Backlinks de ${project.domain}`],
+        action: { label: `Ouvrir l'analyse SEO`, href: `${analyseHref(project.domain)}?tab=seo` },
+      };
+    }
+    if (has(q, ...ANALYSIS_INTENT.keywords)) {
+      return {
+        text: `Top mots-clés de ${project.domain} :`,
+        card: keywordsBlock(project),
+        action: { label: `Ouvrir l'analyse SEO`, href: `${analyseHref(project.domain)}?tab=seo` },
+      };
+    }
     if (has(q, "score", "note", "performance")) {
       return {
         text: `Le score global de ${project.domain} est de ${project.score}/100 (projet ${project.status}).`,

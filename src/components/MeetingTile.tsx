@@ -95,7 +95,7 @@ export function MeetingTile({
   // Vertical (centré) — surface autonome avec petit bg + grid décorative.
   return (
     <div
-      className="relative flex h-full flex-col items-center gap-5 overflow-hidden rounded-3xl bg-[var(--bg-card-static)] px-6 py-7 text-center"
+      className="relative flex h-full flex-col items-center gap-5 overflow-hidden rounded-2xl bg-[var(--bg-card-static)] px-6 py-7 text-center"
     >
       {/* Grid pattern décoratif — fondu radial pour éviter l'effet "papier quadrillé" */}
       <div

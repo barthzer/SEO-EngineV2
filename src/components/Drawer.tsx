@@ -44,7 +44,7 @@ export function Drawer() {
           <button
             onClick={close}
             aria-label="Fermer"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--dropdown-hover)] hover:text-[var(--text-primary)]"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>

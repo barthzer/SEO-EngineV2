@@ -250,7 +250,7 @@ function AnalysisCard({
   return (
     <Link
       href={`/analyse/${a.domain}`}
-      className="group flex flex-col rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5 transition-colors hover:border-[var(--border-medium)] hover:bg-[var(--bg-card-hover)]"
+      className="group flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5 transition-colors hover:border-[var(--border-medium)] hover:bg-[var(--bg-card-hover)]"
     >
       {/* Logo + domain + score */}
       <div className="flex items-center gap-3">
@@ -358,7 +358,7 @@ function AnalyseModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`t-modal ${modalClass} w-full max-w-lg rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
+        className={`t-modal ${modalClass} w-full max-w-lg rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
       >
         <Stepper steps={2} current={step} onClose={requestClose} />
 
@@ -469,8 +469,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col pt-10">
-      <div className="mx-auto flex w-full max-w-[var(--page-max-w)] flex-col px-10">
+    <div className="page-enter flex flex-col pt-5">
+      <div className="flex w-full flex-col px-5">
 
         {/* Greeting + toolbar — sticky en haut (ne défile pas) */}
         <div className="mb-6 flex-shrink-0">

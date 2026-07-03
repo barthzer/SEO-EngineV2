@@ -152,7 +152,7 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
       <div
         role="dialog"
         aria-modal="true"
-        className="t-modal ${modalClass} relative flex w-full max-w-[520px] max-h-[85vh] flex-col overflow-hidden rounded-3xl bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]"
+        className="t-modal ${modalClass} relative flex w-full max-w-[520px] max-h-[85vh] flex-col overflow-hidden rounded-2xl bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]"
       >
         <button
           onClick={requestClose}

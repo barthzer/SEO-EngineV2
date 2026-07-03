@@ -41,7 +41,7 @@ export default async function ClientContactPage({
       </div>
 
       {/* Carte consultant */}
-      <section className="mb-10 rounded-3xl border border-[var(--border-subtle)] p-7">
+      <section className="mb-10 rounded-2xl border border-[var(--border-subtle)] p-7">
         <div className="flex items-center gap-5">
           <OwnerAvatar photoSeed={c.photoSeed} name={c.name} size={72} />
           <div>

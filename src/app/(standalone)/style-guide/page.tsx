@@ -9,6 +9,7 @@ import { Callout } from "@/components/Callout";
 import { AIInsight } from "@/components/AIInsight";
 import { KpiCard } from "@/components/KpiCard";
 import { ScoreRing } from "@/components/ScoreRing";
+import { ScoreArc } from "@/components/ScoreArc";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { FilterTabs } from "@/components/FilterTabs";
 import { Pill } from "@/components/Pill";
@@ -31,6 +32,7 @@ import { DonutChart } from "@/components/DonutChart";
 import { VerticalBarChart } from "@/components/VerticalBarChart";
 import { Sparkline } from "@/components/Sparkline";
 import { ColPill } from "@/components/ColPill";
+import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { Kbd } from "@/components/Kbd";
 import { KpiGroup } from "@/components/KpiGroup";
 import { BlocCard, type BlocDef } from "@/components/BlocCard";
@@ -847,7 +849,7 @@ function ViewMolecules() {
       </Section>
 
       <Section id="softpanel" title="SoftPanel">
-        <Block title="Encart léger — p-2 (8px) · bg-subtle · rounded-3xl" note="SoftPanel.tsx · usage typique : grouper un set de KpiCard">
+        <Block title="Encart léger — p-2 (8px) · bg-subtle · rounded-2xl" note="SoftPanel.tsx · usage typique : grouper un set de KpiCard">
           <SoftPanel>
             <div className="grid grid-cols-3 gap-3">
               <KpiCard icon={Trophy}     label="Score global"   value="72"   sub="/ 100"    valueColor="var(--accent-primary)" />
@@ -908,7 +910,7 @@ function ViewMolecules() {
       </Section>
 
       <Section id="scorering" title="ScoreRing">
-        <Block title="Anneau SVG de score — dynamique couleur selon seuils" note="ScoreRing.tsx">
+        <Block title="Anneau SVG de score — arc teinté par seuil, chiffre en main, stroke 5, sans /100" note="ScoreRing.tsx">
           <div className="flex flex-wrap items-center gap-8">
             <div className="flex flex-col items-center gap-2">
               <ScoreRing score={82} size={96} />
@@ -927,9 +929,32 @@ function ViewMolecules() {
               <span className="text-[12px] text-[var(--text-muted)]">Non calculé</span>
             </div>
             <div className="flex items-end gap-4">
-              <ScoreRing score={72} size={56} strokeWidth={5} />
-              <ScoreRing score={72} size={80} strokeWidth={7} />
-              <ScoreRing score={72} size={120} strokeWidth={10} />
+              <ScoreRing score={72} size={56} />
+              <ScoreRing score={72} size={80} />
+              <ScoreRing score={72} size={120} />
+            </div>
+          </div>
+        </Block>
+      </Section>
+
+      <Section id="scorearc" title="ScoreArc">
+        <Block title="Jauge demi-cercle (180°) — piste --arc-bg, remplissage par seuil ou couleur fournie" note="ScoreArc.tsx">
+          <div className="flex flex-wrap items-end gap-10">
+            <div className="flex flex-col items-center gap-2">
+              <ScoreArc score={100} color="var(--accent-primary)" valueColor="var(--accent-primary)" />
+              <span className="text-[12px] text-[var(--text-muted)]">Accent</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <ScoreArc score={84} />
+              <span className="text-[12px] text-[var(--text-muted)]">Bon (≥70)</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <ScoreArc score={55} />
+              <span className="text-[12px] text-[var(--text-muted)]">Moyen</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <ScoreArc score={28} width={120} />
+              <span className="text-[12px] text-[var(--text-muted)]">Critique · compact</span>
             </div>
           </div>
         </Block>
@@ -1292,6 +1317,9 @@ function ViewMolecules() {
         <Block title="Mode custom — children = (close) => contenu (slider, range, etc.)" note="ColPill.tsx · prop `children`">
           <ColPillCustomDemo />
         </Block>
+        <Block title="Réinitialiser les filtres — fixture de toolbar multi-filtres" note="ResetFiltersButton.tsx · affiché quand `show` (au moins un filtre actif), après le dernier ColPill">
+          <ResetFiltersDemo />
+        </Block>
       </Section>
 
       <Section id="tablewide" title="TableWide">
@@ -1401,6 +1429,25 @@ function ColPillListDemo() {
         items={[{ value: "all", label: "Toutes" }, { value: "haute", label: "Haute" }, { value: "moyenne", label: "Moyenne" }, { value: "basse", label: "Basse" }]} />
       <ColPill label="Source" active={false} value="all" onChange={() => {}}
         items={[{ value: "all", label: "Toutes" }, { value: "PAA", label: "PAA" }, { value: "Related", label: "Related" }]} />
+    </div>
+  );
+}
+
+function ResetFiltersDemo() {
+  const [search, setSearch] = useState("");
+  const [prio, setPrio] = useState("all");
+  const hasActive = search !== "" || prio !== "all";
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="w-full max-w-[240px]">
+        <SearchInput value={search} onChange={setSearch} placeholder="Rechercher…" alwaysExpanded />
+      </div>
+      <ColPill label={prio === "all" ? "Priorité" : prio} active={prio !== "all"} value={prio} onChange={setPrio}
+        items={[{ value: "all", label: "Toutes" }, { value: "haute", label: "Haute" }, { value: "basse", label: "Basse" }]} />
+      <ResetFiltersButton show={hasActive} onReset={() => { setSearch(""); setPrio("all"); }} />
+      <span className="text-[12px] text-[var(--text-muted)]">
+        {hasActive ? "Filtres actifs → bouton visible" : "Aucun filtre → bouton masqué"}
+      </span>
     </div>
   );
 }

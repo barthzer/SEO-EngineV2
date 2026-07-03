@@ -15,10 +15,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
 import { pravatarUrl } from "@/lib/avatar";
 import { ColPill } from "@/components/ColPill";
+import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { Button } from "@/components/Button";
 import { DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
@@ -326,6 +326,7 @@ export function HistoriqueView() {
                   selected={activeTypes.has(t)}
                   onClick={() => toggleType(t)}
                   keepOpen
+                  checkbox
                 >
                   {TYPE_LABEL[t]}
                 </DropdownItem>
@@ -345,6 +346,7 @@ export function HistoriqueView() {
                   selected={activeOwners.has(k)}
                   onClick={() => toggleOwner(k)}
                   keepOpen
+                  checkbox
                 >
                   <span className="flex items-center gap-2">
                     <OwnerAvatar owner={OWNERS[k]} size={18} />
@@ -371,17 +373,7 @@ export function HistoriqueView() {
           ]}
         />
 
-        {hasActiveFilters && (
-          <Tooltip label="Réinitialiser les filtres" side="top" portal>
-            <button
-              onClick={resetFilters}
-              aria-label="Réinitialiser les filtres"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        )}
+        <ResetFiltersButton show={hasActiveFilters} onReset={resetFilters} />
 
         <div className="ml-auto">
           <Button variant="primary" size="sm" onClick={() => {/* C1 hook */}}>

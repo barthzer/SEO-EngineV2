@@ -54,7 +54,7 @@ function PosTag({ pos }: { pos: number }) {
   );
 }
 
-export function TopPages() {
+export function TopPages({ onUrlClick }: { onUrlClick?: (url: string) => void } = {}) {
   const [search, setSearch] = useState("");
   const [urlFilter, setUrlFilter] = useState<"all" | "/blog" | "/services" | "/">("all");
 
@@ -132,6 +132,7 @@ export function TopPages() {
         columns={columns}
         data={filtered}
         rowKey={(p) => p.url}
+        onRowClick={onUrlClick ? (p) => onUrlClick(p.url) : undefined}
         emptyState="Aucune page pour ces filtres."
         minWidth={900}
         pageSize={25}

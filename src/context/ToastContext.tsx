@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface ToastOptions {
@@ -21,7 +21,11 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [opts, setOpts] = useState<ToastOptions>({ message: "" });
   const [visible, setVisible] = useState(false);
-  const timerRef = { current: null as ReturnType<typeof setTimeout> | null };
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Le portail n'est monté qu'après hydratation (évite le mismatch SSR/CSR
+  // du `typeof window` — le serveur et le 1er rendu client ne rendent rien).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const show = useCallback((message: string, icon?: ReactNode) => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -33,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      {typeof window !== "undefined" && createPortal(
+      {mounted && createPortal(
         <div
           aria-live="polite"
           className="pointer-events-none fixed inset-x-0 bottom-8 z-[500] flex justify-center"

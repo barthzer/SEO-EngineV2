@@ -1,19 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShieldCheck, Globe, Trophy, Scale, TrendingUp, TrendingDown, MapPin, Languages, Network, ChevronDown } from "lucide-react";
-import { ShieldExclamationIcon } from "@heroicons/react/24/outline";
+import { useSearchParams } from "next/navigation";
+import { NET_VIEWS, type NetView } from "@/components/analyse/constants";
+import { ShieldCheck, Globe, Trophy, Scale, TrendingUp, TrendingDown, MapPin, Languages, Network, ExternalLink } from "lucide-react";
+import { ShieldExclamationIcon, PencilSquareIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
+import { Flag } from "@/components/Flag";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { RadarChart } from "@/components/RadarChart";
 import { Pill } from "@/components/Pill";
 import { VariationPill } from "@/components/VariationPill";
-import { Callout } from "@/components/Callout";
-import { AIInsight } from "@/components/AIInsight";
-import { LineDotChart } from "@/components/LineDotChart";
+import { InfoNote } from "@/components/InfoNote";
+import { ScoreRing } from "@/components/ScoreRing";
+import { GeoLineChart } from "@/components/geo/GeoLineChart";
+import { Favicon } from "@/components/geo/views/OverviewView";
+import { SegmentedBar } from "@/components/SegmentedBar";
 import { SearchInput } from "@/components/SearchInput";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
+import { Button } from "@/components/Button";
+import { ModalShell, fieldCls } from "@/components/analyse/modals/shared";
 
 /* ════════════════════════════════════════════════════════════════════════
    MOCK DATA — issu du contenu fourni par le dev (prod aw-i.com)
@@ -225,6 +232,16 @@ function buildBenchmarkColumns(): ColumnDef<BenchmarkRow>[] {
             {r.domain}
             {r.isYou && <span className="ml-2 text-[11px] font-medium text-[var(--text-muted)]">Vous</span>}
           </span>
+          <a
+            href={`https://${r.domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Ouvrir ${r.domain} dans un nouvel onglet`}
+            className="ml-1 flex-shrink-0 text-[var(--text-muted)] opacity-0 transition-opacity hover:text-[var(--accent-primary)] group-hover:opacity-100"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
       ),
     },
@@ -261,85 +278,18 @@ function buildBenchmarkColumns(): ColumnDef<BenchmarkRow>[] {
   ];
 }
 
-/** Barre stackée 2 segments — Vous vs Concurrents */
-function CompareBar({
-  label,
-  rows,
-  legend,
-}: {
-  label: string;
-  rows: { who: string; segments: { color: string; pct: number; label: string }[]; suffix: string }[];
-  legend: { color: string; label: string }[];
-}) {
-  return (
-    <div className="flex flex-col gap-5">
-      <p className="text-[15px] font-semibold tracking-subheading text-[var(--text-primary)]">{label}</p>
-      <div className="flex flex-col gap-4">
-        {rows.map((r) => (
-          <div key={r.who} className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[13px] text-[var(--text-secondary)]">{r.who}</span>
-              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
-                {r.segments[0].pct.toFixed(1)}% {r.suffix}
-              </span>
-            </div>
-            <div className="flex h-2 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)]">
-              {r.segments.map((seg, i) => (
-                <div
-                  key={i}
-                  style={{ width: `${seg.pct}%`, backgroundColor: seg.color }}
-                  aria-label={`${seg.label} ${seg.pct.toFixed(1)}%`}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-3">
-        {legend.map((l) => (
-          <span key={l.label} className="flex items-center gap-1.5 text-[12px] text-[var(--text-secondary)]">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
-            {l.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /** Convertit un code pays ISO-2 en emoji drapeau (regional indicator symbols) */
-function countryFlag(code: string): string {
-  if (!code || code.length !== 2) return "";
-  return code
-    .toUpperCase()
-    .split("")
-    .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
-    .join("");
-}
-
-/** Map d'une langue ISO vers code pays pour récupérer un drapeau associé */
-const LANGUAGE_TO_COUNTRY: Record<string, string> = {
-  fr: "FR", en: "GB", de: "DE", es: "ES", it: "IT", pt: "PT", nl: "NL",
-  pl: "PL", sv: "SE", da: "DK", no: "NO", fi: "FI", ja: "JP", zh: "CN",
-  ru: "RU", ar: "SA", ko: "KR",
-};
-
-/** Ligne pour distribution géographique (drapeau + code + label + barre + % + delta) */
-function GeoRowItem({ row, max, kind }: { row: GeoRow; max: number; kind: "country" | "language" }) {
+/** Ligne pour distribution géographique (drapeau DS + code + label + barre + % + delta) */
+function GeoRowItem({ row, max }: { row: GeoRow; max: number }) {
   const positive = row.delta >= 0;
-  const flag = (() => {
-    if (!row.code || row.code === "–") return null;
-    if (kind === "country") return countryFlag(row.code);
-    const c = LANGUAGE_TO_COUNTRY[row.code.toLowerCase()];
-    return c ? countryFlag(c) : null;
-  })();
+  const hasFlag = !!row.code && row.code !== "–";
   return (
     <div className="grid grid-cols-[100px_1fr_60px_70px] items-center gap-3 py-2.5">
       <div className="flex items-center gap-2">
-        {flag ? (
-          <span className="text-[16px] leading-none" aria-hidden="true">{flag}</span>
+        {hasFlag ? (
+          <Flag code={row.code} size={16} />
         ) : (
-          <span className="inline-block h-4 w-5 rounded-sm bg-[var(--bg-subtle)]" aria-hidden="true" />
+          <span className="inline-block h-4 w-4 rounded-full bg-[var(--bg-subtle)]" aria-hidden="true" />
         )}
         <span className="font-mono text-[11px] font-semibold text-[var(--text-muted)]">{row.code}</span>
         <span className="text-[12px] text-[var(--text-secondary)] truncate">{row.label}</span>
@@ -392,7 +342,6 @@ function AnchorStack({ marque, generique, autre }: { marque: number; generique: 
 
 /** Métriques disponibles dans le graphique d'évolution historique */
 type EvoMetric = "tf" | "cf" | "refdom" | "backlinks";
-type EvoRange = "3m" | "6m" | "12m";
 
 const EVO_METRIC_CONFIG: Record<EvoMetric, { label: string; yMax: number; transform: (tfVal: number) => number; format: (v: number) => string }> = {
   tf:        { label: "Trust Flow",       yMax: 20,   transform: (v) => v,                       format: (v) => v.toString() },
@@ -401,29 +350,76 @@ const EVO_METRIC_CONFIG: Record<EvoMetric, { label: string; yMax: number; transf
   backlinks: { label: "Backlinks",        yMax: 3000, transform: (v) => Math.round(v * 145 + 200), format: (v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toString() },
 };
 
-const EVO_RANGE_CONFIG: Record<EvoRange, { label: string; pointCount: number }> = {
-  "3m":  { label: "3 mois",  pointCount: 12 },
-  "6m":  { label: "6 mois",  pointCount: 20 },
-  "12m": { label: "12 mois", pointCount: 28 },
+/* ── Autorité média (onglet dédié) ────────────────────────────────────── */
+const MEDIA_AUTHORITY = {
+  score: 74,
+  backlinksTotal: 1284,
+  backlinksDeltaPct: 18,
+  medias: 126,
+  domaines: 87,
+  majorMedias: 9,
+  articles: 42,
+  bigNames: ["Le Figaro", "BFM Business", "Le Point", "Les Échos", "L'Usine Digitale"],
+  rank: 3,
+  rankTotal: 4,
+};
+
+type MediaBenchRow = { company: string; backlinks: number; medias: number; presence: string; score: number; isYou?: boolean };
+const MEDIA_BENCHMARK: MediaBenchRow[] = [
+  { company: "Pennylane",    backlinks: 2430, medias: 14, presence: "Les Échos, Le Figaro, BFM Business",   score: 82 },
+  { company: "Sage France",  backlinks: 1760, medias: 11, presence: "La Tribune, Les Échos, L'Usine Digitale", score: 77 },
+  { company: "Uplify Group", backlinks: 1284, medias:  9, presence: "Le Figaro, BFM Business, La Tribune",   score: 74, isYou: true },
+  { company: "Qonto",        backlinks:  890, medias:  5, presence: "BFM Business, Le Point, Capital",        score: 61 },
+];
+
+/* ── Opportunités : sites les plus influents du secteur (link gap) ──────── */
+type OppoRow = { domain: string; category: string; authority: number; competitorsLinked: number; youLinked: boolean };
+const NET_OPPORTUNITIES: OppoRow[] = [
+  { domain: "lesechos.fr",        category: "Média",     authority: 91, competitorsLinked: 3, youLinked: false },
+  { domain: "journaldunet.com",   category: "Média",     authority: 84, competitorsLinked: 3, youLinked: false },
+  { domain: "blogdumoderateur.com", category: "Blog",    authority: 78, competitorsLinked: 2, youLinked: true },
+  { domain: "usine-digitale.fr",  category: "Média",     authority: 82, competitorsLinked: 2, youLinked: false },
+  { domain: "codeur.com",         category: "Annuaire",  authority: 66, competitorsLinked: 3, youLinked: false },
+  { domain: "webmarketing-com.com", category: "Blog",    authority: 61, competitorsLinked: 2, youLinked: true },
+  { domain: "frenchweb.fr",       category: "Média",     authority: 72, competitorsLinked: 2, youLinked: false },
+  { domain: "e-marketing.fr",     category: "Média",     authority: 74, competitorsLinked: 1, youLinked: false },
+];
+
+const OPPO_CAT_COLOR: Record<string, string> = {
+  "Média": "#3D4FFF",
+  "Blog": "#10B981",
+  "Annuaire": "#F59E0B",
 };
 
 export function NetlinkingView() {
-  /* ── Evolution chart state ── */
-  const [evoMetric, setEvoMetric] = useState<EvoMetric>("tf");
-  const [evoRange, setEvoRange]   = useState<EvoRange>("12m");
+  /* ── Evolution : une série par métrique (grille 2×2), agrégée par mois ── */
+  const metricSeries = useMemo(() => {
+    const MONTHS_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+    // 1 point / mois (dernière valeur du mois) → labels courts + tooltip lisible.
+    const byMonth = new Map<string, number>();
+    for (const d of TF_HISTORY) byMonth.set(d.date.slice(0, 7), d.val);
+    const months = [...byMonth.entries()].map(([k, val]) => ({ label: MONTHS_FR[parseInt(k.slice(5, 7), 10) - 1], val }));
+    return (Object.entries(EVO_METRIC_CONFIG) as [EvoMetric, typeof EVO_METRIC_CONFIG[EvoMetric]][]).map(([key, cfg]) => {
+      const points = months.map((m) => ({ label: m.label, value: cfg.transform(m.val) }));
+      const first = points[0]?.value ?? 0;
+      const last = points[points.length - 1]?.value ?? 0;
+      const delta = last - first;
+      const deltaPct = first !== 0 ? Math.round((delta / first) * 100) : 0;
+      return { key, cfg, points, last, delta, deltaPct };
+    });
+  }, []);
 
-  const evoCfg = EVO_METRIC_CONFIG[evoMetric];
-  const evoRangeCfg = EVO_RANGE_CONFIG[evoRange];
+  /* ── Benchmark concurrents : liste éditable (modale « Modifier ») ── */
+  const [benchRows, setBenchRows] = useState<BenchmarkRow[]>(BENCHMARK);
+  const [compModalOpen, setCompModalOpen] = useState(false);
 
-  /** Données filtrées + transformées selon métrique + range */
-  const evoData = TF_HISTORY
-    .slice(-evoRangeCfg.pointCount)
-    .map((d) => ({ date: d.date, val: evoCfg.transform(d.val) }));
-
-  const evoFirst = evoData[0]?.val ?? 0;
-  const evoLast = evoData[evoData.length - 1]?.val ?? 0;
-  const evoDelta = evoLast - evoFirst;
-  const evoDeltaPct = evoFirst !== 0 ? Math.round((evoDelta / evoFirst) * 100) : 0;
+  /** Classement Trust Flow (top 5) — « vous » toujours visible même hors top. */
+  const benchRanking = useMemo(() => {
+    const sorted = [...benchRows].sort((a, b) => b.tf - a.tf);
+    const youIdx = sorted.findIndex((r) => r.isYou);
+    if (youIdx >= 5) return [...sorted.slice(0, 4).map((r, i) => ({ r, pos: i + 1 })), { r: sorted[youIdx], pos: youIdx + 1 }];
+    return sorted.slice(0, 5).map((r, i) => ({ r, pos: i + 1 }));
+  }, [benchRows]);
 
   /* ── Backlinks filters ── */
   const [blQuery, setBlQuery] = useState("");
@@ -439,34 +435,12 @@ export function NetlinkingView() {
     });
   }, [blQuery, blStatus, blType]);
 
-  const [netTab, setNetTab] = useState<"overview" | "benchmark" | "profil" | "backlinks">("overview");
-  const NET_SUBTABS = [
-    { key: "overview" as const,  label: "Vue d'ensemble" },
-    { key: "benchmark" as const, label: "Concurrents" },
-    { key: "profil" as const,    label: "Profil & ancres" },
-    { key: "backlinks" as const, label: "Backlinks" },
-  ];
+  // Sous-vue active pilotée par l'URL (?view=) — la sidebar (drill-in) la contrôle.
+  const viewParam = useSearchParams().get("view");
+  const netTab: NetView = NET_VIEWS.some((v) => v.key === viewParam) ? (viewParam as NetView) : "overview";
 
   return (
-    <div className="flex flex-col gap-6">
-
-      {/* Sous-onglets internes — évite le scroll-fleuve */}
-      <div className="relative flex h-11 items-center gap-1 border-b border-[var(--border-subtle)]">
-        {NET_SUBTABS.map(({ key, label }) => {
-          const active = netTab === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setNetTab(key)}
-              className={`relative flex h-full items-center px-3 text-[13px] font-semibold transition-colors ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
-            >
-              {label}
-              {active && <span className="pointer-events-none absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-accent-primary" />}
-            </button>
-          );
-        })}
-      </div>
+    <div key={netTab} className="page-enter flex flex-col gap-6">
 
       {netTab === "overview" && (
       <>
@@ -506,34 +480,54 @@ export function NetlinkingView() {
         />
       </KpiGroup>
 
-      {/* ════════════════ 03. Benchmark Radar + Évolution Trust Flow (côte à côte) ════════════════ */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* ════════════════ Évolution du profil de liens — 2×2 de graphes ════════════════ */}
+      <section className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Évolution du profil de liens</h2>
+          <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Trust Flow, Citation Flow, domaines référents et backlinks</p>
+        </div>
 
-        {/* Left — Benchmark Radar */}
-        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {metricSeries.map((m) => (
+            <section key={m.key} className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-5">
+              <p className="text-[13px] text-[var(--text-muted)]">{m.cfg.label}</p>
+              <div className="mb-4 mt-1 flex items-baseline gap-2">
+                <span className="text-[26px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.cfg.format(m.last)}</span>
+                <span className="text-[13px] font-medium tabular-nums" style={{ color: m.delta >= 0 ? "var(--color-success)" : "var(--color-danger)" }}>
+                  {m.delta >= 0 ? "+" : "−"}{m.cfg.format(Math.abs(m.delta))} ({m.delta >= 0 ? "+" : ""}{m.deltaPct}%)
+                </span>
+              </div>
+              <GeoLineChart
+                key={m.key}
+                series={[{ name: "Vous", color: "var(--accent-primary)", isYou: true, points: m.points }]}
+                height={150}
+                suffix=""
+                interactive
+              />
+            </section>
+          ))}
+        </div>
+      </section>
+
+      {/* ════════════════ Benchmark : Radar (2/3) + Classement (1/3) ════════════════ */}
+      <section className="grid grid-cols-1 overflow-hidden rounded-2xl border border-[var(--border-subtle)] lg:grid-cols-[2fr_1fr]">
+        {/* Gauche — Radar */}
+        <div className="p-7">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
-              <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
-                Benchmark Radar
-              </h2>
-              <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
-                Comparaison multi-métriques vs concurrents
-              </p>
+              <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Benchmark Radar</h2>
+              <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Comparaison multi-métriques vs concurrents</p>
             </div>
             <div className="flex items-center gap-2">
               <Pill bg="var(--color-danger-bg)" color="var(--color-danger)">
                 <ShieldExclamationIcon className="h-3.5 w-3.5" />
                 Risque spam
               </Pill>
-              <span
-                className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums"
-                style={{ backgroundColor: "var(--color-danger)", color: "white" }}
-              >
+              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold tabular-nums" style={{ backgroundColor: "var(--color-danger)", color: "white" }}>
                 {SPAM_RISK_DELTA}%
               </span>
             </div>
           </div>
-
           <div className="flex items-center justify-center">
             <RadarChart
               axes={RADAR_AXES}
@@ -541,97 +535,123 @@ export function NetlinkingView() {
                 { label: "Concurrents", values: RADAR_COMPETITORS, color: "var(--color-danger)", dashed: true },
                 { label: "Vous",        values: RADAR_YOU,         color: "var(--accent-primary)" },
               ]}
-              size={280}
+              size={260}
             />
           </div>
-
           <div className="mt-2 flex items-center justify-center gap-6">
-            <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-              <span className="h-2 w-4 rounded-full" style={{ background: "var(--color-danger)" }} />
-              Concurrents
-            </span>
-            <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-              <span className="h-2 w-4 rounded-full" style={{ background: "var(--accent-primary)" }} />
-              Vous
-            </span>
+            <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]"><span className="h-2 w-4 rounded-full" style={{ background: "var(--color-danger)" }} />Concurrents</span>
+            <span className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]"><span className="h-2 w-4 rounded-full" style={{ background: "var(--accent-primary)" }} />Vous</span>
           </div>
+        </div>
 
-          <div className="mt-6 flex items-center justify-between border-t border-[var(--border-subtle)] pt-4">
-            <span className="text-[12px] text-[var(--text-muted)]">
-              Score global : <span className="font-semibold text-[var(--text-primary)]">48%</span>
-            </span>
-            <span className="text-[12px] text-[var(--text-muted)]">
-              Moyenne concurrents : <span className="font-semibold text-[var(--text-primary)]">94%</span>
-            </span>
+        {/* Droite — Classement Trust Flow (top 5) */}
+        <div className="flex flex-col border-t border-[var(--border-subtle)] p-6 lg:border-l lg:border-t-0">
+          <div className="mb-4">
+            <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Classement Trust Flow</h2>
+            <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Top domaines du secteur · source Majestic</p>
           </div>
-        </section>
-
-        {/* Right — Évolution historique (métrique + range configurables) */}
-        <section className="rounded-3xl border border-[var(--border-subtle)] p-7 flex flex-col">
-          <div className="mb-4 flex items-start justify-between gap-4">
-            {/* Left — Title + valeur courante immédiatement dessous */}
-            <div>
-              <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
-                Évolution historique
-              </h2>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-[24px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">{evoCfg.format(evoLast)}</span>
-                <VariationPill direction={evoDelta >= 0 ? "up" : "down"}>
-                  {evoDelta >= 0 ? "+" : "−"}{evoCfg.format(Math.abs(evoDelta))} ({evoDelta >= 0 ? "+" : ""}{evoDeltaPct}%)
-                </VariationPill>
+          <div className="flex items-center justify-between pb-1 text-[12px] text-[var(--text-muted)]">
+            <span>Domaine</span>
+            <span>Trust Flow</span>
+          </div>
+          <div className="flex flex-col">
+            {benchRanking.map(({ r, pos }) => (
+              <div key={r.domain} className="flex items-center gap-2.5 border-t border-[var(--border-subtle)] py-2.5 first:border-t-0">
+                <span className="w-5 flex-shrink-0 text-[13px] tabular-nums text-[var(--text-muted)]">{pos}.</span>
+                <Favicon domain={r.domain} size={18} />
+                <span className={`min-w-0 flex-1 truncate text-[13px] ${r.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{r.domain}</span>
+                {r.isYou && <span className="flex-shrink-0 rounded-md bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">Vous</span>}
+                <span className="flex-shrink-0 text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{r.tf}</span>
               </div>
-            </div>
-
-            {/* Right — dropdowns alignés top */}
-            <div className="flex items-center gap-2">
-              {/* Dropdown métrique */}
-              <DropdownMenu
-                width={200}
-                trigger={
-                  <button className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
-                    {evoCfg.label}
-                    <ChevronDown className="h-3 w-3 text-[var(--text-muted)]" />
-                  </button>
-                }
-              >
-                {(Object.entries(EVO_METRIC_CONFIG) as [EvoMetric, typeof EVO_METRIC_CONFIG[EvoMetric]][]).map(([k, c]) => (
-                  <DropdownItem key={k} onClick={() => setEvoMetric(k)}>
-                    <span className={evoMetric === k ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-              {/* Dropdown range */}
-              <DropdownMenu
-                width={140}
-                trigger={
-                  <button className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
-                    {evoRangeCfg.label}
-                    <ChevronDown className="h-3 w-3 text-[var(--text-muted)]" />
-                  </button>
-                }
-              >
-                {(Object.entries(EVO_RANGE_CONFIG) as [EvoRange, typeof EVO_RANGE_CONFIG[EvoRange]][]).map(([k, c]) => (
-                  <DropdownItem key={k} onClick={() => setEvoRange(k)}>
-                    <span className={evoRange === k ? "font-semibold text-[var(--text-primary)]" : ""}>{c.label}</span>
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </div>
+            ))}
           </div>
+        </div>
+      </section>
 
-          <div className="flex-1 min-h-[220px]">
-            <LineDotChart
-              key={`${evoMetric}-${evoRange}`}
-              data={evoData}
-              fillHeight
-              yTicks={5}
-              yMin={0}
-              yMax={evoCfg.yMax}
-              formatValue={evoCfg.format}
-            />
+      </>
+      )}
+
+      {netTab === "autorite" && (
+      <>
+      {/* ════════════════ Autorité média ════════════════ */}
+      {/* Grands médias + Position benchmark */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Grands médias */}
+        <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
+          <h2 className="mb-4 font-semibold tracking-subheading text-[var(--text-primary)]">Grands médias</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div><p className="text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]">Médias majeurs</p><p className="mt-1 text-[22px] font-semibold tabular-nums text-[var(--text-primary)]">{MEDIA_AUTHORITY.majorMedias}</p></div>
+            <div><p className="text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]">Articles</p><p className="mt-1 text-[22px] font-semibold tabular-nums text-[var(--text-primary)]">{MEDIA_AUTHORITY.articles}</p></div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {MEDIA_AUTHORITY.bigNames.map((n) => (
+              <span key={n} className="inline-flex items-center rounded-lg border border-[var(--border-subtle)] px-2 py-1 text-[12px] font-medium text-[var(--text-secondary)]">{n}</span>
+            ))}
           </div>
         </section>
 
+        {/* Position benchmark */}
+        <section className="flex flex-col gap-4 rounded-2xl border border-[var(--border-subtle)] p-7">
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Position benchmark</h2>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-warning-bg)] text-[var(--color-warning)]"><Trophy className="h-5 w-5" /></span>
+            <span className="text-[26px] font-bold tabular-nums text-[var(--text-primary)]">{MEDIA_AUTHORITY.rank}<span className="text-[16px] font-semibold text-[var(--text-muted)]"> / {MEDIA_AUTHORITY.rankTotal}</span></span>
+          </div>
+          <InfoNote>8 points sous Pennylane. Cible top 2 atteignable avec 3 émissions business + 2 tribunes d&apos;expert d&apos;ici 6 mois.</InfoNote>
+        </section>
+      </div>
+
+      {/* Benchmark concurrents (pleine largeur) */}
+      <section className="flex flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] p-7">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Benchmark concurrents</h2>
+          <span className="text-[11px] text-[var(--text-muted)]">Données 12 mois</span>
+        </div>
+        <TableWide<MediaBenchRow>
+            columns={[
+              { key: "company", header: "Entreprise", width: 160, flex: true, render: (r) => <span className={`text-[13px] ${r.isYou ? "font-semibold text-[var(--accent-primary)]" : "font-medium text-[var(--text-primary)]"}`}>{r.company}</span> },
+              { key: "backlinks", header: "Backlinks", width: 110, render: (r) => <span className="block text-[13px] tabular-nums text-[var(--text-primary)]">{r.backlinks.toLocaleString("fr-FR")}</span> },
+              { key: "medias", header: "Médias", width: 90, render: (r) => <span className="block text-[13px] tabular-nums text-[var(--text-primary)]">{r.medias}</span> },
+              { key: "presence", header: "Présence principale", width: 240, flex: true, render: (r) => <span className="block truncate text-[13px] text-[var(--text-muted)]" title={r.presence}>{r.presence}</span> },
+              { key: "score", header: "Score", width: 90, render: (r) => <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums" style={{ color: r.score >= 75 ? "var(--color-success)" : "var(--color-warning)", backgroundColor: r.score >= 75 ? "var(--color-success-bg)" : "var(--color-warning-bg)" }}>{r.score}</span> },
+            ]}
+            data={MEDIA_BENCHMARK}
+            rowKey={(r) => r.company}
+            isRowActive={(r) => !!r.isYou}
+            minWidth={640}
+            bordered
+            hidePagination
+          />
+        </section>
+
+      </>
+      )}
+
+      {netTab === "opportunites" && (
+      <>
+      {/* ════════════════ Opportunités de netlinking (link gap) ════════════════ */}
+      <div className="flex flex-col gap-3">
+        <div>
+          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Opportunités de netlinking</h2>
+          <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Sites les plus influents du secteur qui lient vos concurrents — cibles prioritaires.</p>
+        </div>
+        <TableWide<OppoRow>
+          columns={[
+            { key: "rank", header: "#", width: 48, render: (_r, i) => <span className="text-[13px] tabular-nums text-[var(--text-muted)]">{i + 1}.</span> },
+            { key: "domain", header: "Domaine", width: 240, flex: true, render: (r) => <span className="flex min-w-0 items-center gap-2"><Favicon domain={r.domain} size={16} /><span className="truncate text-[13px] font-medium text-[var(--text-primary)]">{r.domain}</span></span> },
+            { key: "category", header: "Catégorie", width: 130, render: (r) => <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium" style={{ color: OPPO_CAT_COLOR[r.category] ?? "var(--text-secondary)", backgroundColor: `color-mix(in oklab, ${OPPO_CAT_COLOR[r.category] ?? "var(--text-muted)"} 12%, transparent)` }}>{r.category}</span> },
+            { key: "authority", header: "Autorité", width: 170, flex: true, sortable: true, sortValue: (r) => r.authority, render: (r) => <div className="flex items-center gap-2"><span className="w-7 text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{r.authority}</span><span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-subtle)]"><span className="block h-full rounded-full" style={{ width: `${r.authority}%`, backgroundColor: "var(--accent-primary)" }} /></span></div> },
+            { key: "competitorsLinked", header: "Concurrents liés", width: 150, render: (r) => <span className="block text-[13px] tabular-nums text-[var(--text-primary)]">{r.competitorsLinked} / 4</span> },
+            { key: "youLinked", header: "Vous", width: 120, render: (r) => r.youLinked
+                ? <span className="inline-flex items-center rounded-full bg-[var(--color-success-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-success)]">Lié</span>
+                : <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">À conquérir</span> },
+          ]}
+          data={NET_OPPORTUNITIES}
+          rowKey={(r) => r.domain}
+          minWidth={840}
+          bordered
+          hidePagination
+        />
       </div>
 
       </>
@@ -641,17 +661,23 @@ export function NetlinkingView() {
       <>
       {/* ════════════════ Benchmark concurrents (Majestic / SEObserver) ════════════════ */}
       <div className="flex flex-col gap-3">
-        <div>
-          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
-            Benchmark concurrents
-          </h2>
-          <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
-            Comparaison TF / CF / Domaines référents · source Majestic
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
+              Benchmark concurrents
+            </h2>
+            <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
+              Comparaison TF / CF / Domaines référents · source Majestic
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setCompModalOpen(true)}>
+            <PencilSquareIcon className="h-4 w-4" />
+            Modifier
+          </Button>
         </div>
         <TableWide<BenchmarkRow>
           columns={buildBenchmarkColumns()}
-          data={BENCHMARK}
+          data={benchRows}
           rowKey={(r) => r.domain}
           isRowActive={(r) => !!r.isYou}
           minWidth={900}
@@ -661,6 +687,10 @@ export function NetlinkingView() {
         />
       </div>
 
+      {compModalOpen && (
+        <NetCompetitorModal rows={benchRows} onChange={setBenchRows} onClose={() => setCompModalOpen(false)} />
+      )}
+
       </>
       )}
 
@@ -668,71 +698,41 @@ export function NetlinkingView() {
       <>
       {/* ════════════════ 03. Profil des liens (Follow + Texte) ════════════════ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
-          <CompareBar
-            label="Distribution Follow / Nofollow"
-            rows={[
-              {
-                who: "Vous",
-                suffix: "follow",
-                segments: [
-                  { color: "var(--color-success)", pct: FOLLOW_NOFOLLOW.vous.follow,   label: "Follow" },
-                  { color: "var(--color-warning)", pct: FOLLOW_NOFOLLOW.vous.nofollow, label: "Nofollow" },
-                ],
-              },
-              {
-                who: "Concurrents (moy.)",
-                suffix: "follow",
-                segments: [
-                  { color: "color-mix(in oklab, var(--color-success) 55%, white)", pct: FOLLOW_NOFOLLOW.competitors.follow,   label: "Follow" },
-                  { color: "color-mix(in oklab, var(--color-warning) 55%, white)", pct: FOLLOW_NOFOLLOW.competitors.nofollow, label: "Nofollow" },
-                ],
-              },
-            ]}
-            legend={[
-              { color: "var(--color-success)", label: "Follow" },
-              { color: "var(--color-warning)", label: "Nofollow" },
+        <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
+          <h3 className="mb-4 font-semibold tracking-subheading text-[var(--text-primary)]">Distribution Follow / Nofollow</h3>
+          <SegmentedBar
+            data={[
+              { label: "Follow",   pct: Math.round(FOLLOW_NOFOLLOW.vous.follow),   color: "var(--color-success)" },
+              { label: "Nofollow", pct: Math.round(FOLLOW_NOFOLLOW.vous.nofollow), color: "var(--color-warning)" },
             ]}
           />
+          <p className="mt-4 text-[12px] text-[var(--text-muted)]">
+            Concurrents (moy.) : <span className="font-medium text-[var(--text-secondary)]">{Math.round(FOLLOW_NOFOLLOW.competitors.follow)}% follow</span> · {Math.round(FOLLOW_NOFOLLOW.competitors.nofollow)}% nofollow
+          </p>
         </section>
 
-        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
-          <CompareBar
-            label="Distribution Texte / Image"
-            rows={[
-              {
-                who: "Vous",
-                suffix: "texte",
-                segments: [
-                  { color: "var(--accent-primary)", pct: TEXT_IMAGE.vous.texte, label: "Texte" },
-                  { color: "color-mix(in oklab, var(--accent-primary) 45%, white)", pct: TEXT_IMAGE.vous.image, label: "Image" },
-                ],
-              },
-              {
-                who: "Concurrents (moy.)",
-                suffix: "texte",
-                segments: [
-                  { color: "color-mix(in oklab, var(--accent-primary) 55%, white)", pct: TEXT_IMAGE.competitors.texte, label: "Texte" },
-                  { color: "color-mix(in oklab, var(--accent-primary) 25%, white)", pct: TEXT_IMAGE.competitors.image, label: "Image" },
-                ],
-              },
-            ]}
-            legend={[
-              { color: "var(--accent-primary)", label: "Texte" },
-              { color: "color-mix(in oklab, var(--accent-primary) 45%, white)", label: "Image" },
+        <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
+          <h3 className="mb-4 font-semibold tracking-subheading text-[var(--text-primary)]">Distribution Texte / Image</h3>
+          <SegmentedBar
+            data={[
+              { label: "Texte", pct: Math.round(TEXT_IMAGE.vous.texte), color: "var(--accent-primary)" },
+              { label: "Image", pct: Math.round(TEXT_IMAGE.vous.image), color: "color-mix(in oklab, var(--accent-primary) 40%, white)" },
             ]}
           />
+          <p className="mt-4 text-[12px] text-[var(--text-muted)]">
+            Concurrents (moy.) : <span className="font-medium text-[var(--text-secondary)]">{Math.round(TEXT_IMAGE.competitors.texte)}% texte</span> · {Math.round(TEXT_IMAGE.competitors.image)}% image
+          </p>
         </section>
       </div>
 
       {/* ════════════════ 04. Insights (Profil) ════════════════ */}
-      <Callout variant="warning">
+      <InfoNote>
         Votre ratio de liens follow est inférieur à la moyenne des concurrents.
-      </Callout>
+      </InfoNote>
 
       {/* ════════════════ 05. Distribution géographique ════════════════ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
+        <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
           <div className="mb-5 flex items-baseline justify-between">
             <h3 className="font-semibold tracking-subheading text-[var(--text-primary)]">
               Distribution par pays
@@ -741,25 +741,25 @@ export function NetlinkingView() {
           </div>
           <div className="divide-y divide-[var(--border-subtle)]">
             {COUNTRIES.map((c) => (
-              <GeoRowItem key={c.code + c.label} row={c} max={100} kind="country" />
+              <GeoRowItem key={c.code + c.label} row={c} max={100} />
             ))}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
+        <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
           <h3 className="mb-5 font-semibold tracking-subheading text-[var(--text-primary)]">
             Distribution par langue
           </h3>
           <div className="divide-y divide-[var(--border-subtle)]">
             {LANGUAGES.map((l) => (
-              <GeoRowItem key={l.code + l.label} row={l} max={100} kind="language" />
+              <GeoRowItem key={l.code + l.label} row={l} max={100} />
             ))}
           </div>
         </section>
       </div>
 
       {/* ════════════════ 06. Insights géographiques ════════════════ */}
-      <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
         <h3 className="mb-5 font-semibold tracking-subheading text-[var(--text-primary)]">
           Insights géographiques
         </h3>
@@ -770,7 +770,7 @@ export function NetlinkingView() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">
                 <MapPin className="h-4 w-4" />
               </div>
-              <span className="text-[26px] leading-none" aria-hidden="true">🇺🇸</span>
+              <Flag code="us" size={26} />
             </div>
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Pays source #1</p>
             <p className="mt-1 text-[20px] font-semibold leading-tight text-[var(--text-primary)]">États-Unis</p>
@@ -785,7 +785,7 @@ export function NetlinkingView() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">
                 <Languages className="h-4 w-4" />
               </div>
-              <span className="text-[26px] leading-none" aria-hidden="true">🇫🇷</span>
+              <Flag code="fr" size={26} />
             </div>
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Langue dominante</p>
             <p className="mt-1 text-[20px] font-semibold leading-tight text-[var(--text-primary)]">Français</p>
@@ -812,7 +812,7 @@ export function NetlinkingView() {
       </section>
 
       {/* ════════════════ 08. Topical Trust Flow ════════════════ */}
-      <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
         <div className="mb-6">
           <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
             Topical Trust Flow
@@ -868,17 +868,17 @@ export function NetlinkingView() {
         </div>
 
         <div className="mt-6 flex flex-col gap-2 border-t border-[var(--border-subtle)] pt-5">
-          <AIInsight>
-            <strong>Thématique non partagée</strong> — vous êtes positionné sur <em>Business/Publishing and Printing</em>, <em>Business/Opportunities</em> +1. Vos concurrents ne sont pas sur ce topic. Vérifiez si c&apos;est un avantage ou un décalage thématique.
-          </AIInsight>
-          <AIInsight>
-            <strong>Opportunité</strong> — 50 % des concurrents ont des backlinks <em>Computers/Internet/Web Design and Development</em>, 40 % sur <em>Business</em>.
-          </AIInsight>
+          <InfoNote>
+            <strong className="font-semibold">Thématique non partagée</strong> — vous êtes positionné sur <em>Business/Publishing and Printing</em>, <em>Business/Opportunities</em> +1. Vos concurrents ne sont pas sur ce topic. Vérifiez si c&apos;est un avantage ou un décalage thématique.
+          </InfoNote>
+          <InfoNote>
+            <strong className="font-semibold">Opportunité</strong> — 50 % des concurrents ont des backlinks <em>Computers/Internet/Web Design and Development</em>, 40 % sur <em>Business</em>.
+          </InfoNote>
         </div>
       </section>
 
       {/* ════════════════ 09. Distribution des ancres ════════════════ */}
-      <section className="rounded-3xl border border-[var(--border-subtle)] p-7">
+      <section className="rounded-2xl border border-[var(--border-subtle)] p-7">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
@@ -896,35 +896,32 @@ export function NetlinkingView() {
 
         <AnchorStack marque={ANCHOR_TYPES.marque} generique={ANCHOR_TYPES.generique} autre={ANCHOR_TYPES.autre} />
 
-        <div className="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
-          <div>
-            <h3 className="mb-3 font-semibold text-[var(--text-primary)]">Top ancres</h3>
-            <ul className="divide-y divide-[var(--border-subtle)]">
-              {TOP_ANCHORS.map((a, i) => (
-                <li key={i} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="truncate text-[12.5px] font-mono text-[var(--text-secondary)]" title={a.text}>
-                    {a.text}
-                  </span>
-                  <span className="flex-shrink-0 text-[12px] font-semibold tabular-nums text-[var(--text-primary)]">
-                    {a.count}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-[11px] text-[var(--text-muted)]">
-              Total : <span className="font-semibold tabular-nums text-[var(--text-primary)]">{ANCHOR_TOTAL}</span> ancres
-            </p>
+        <div className="mt-7 grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+          {/* Gauche — score circulaire */}
+          <div className="flex flex-col items-center justify-center gap-3 p-6">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Score de distribution</p>
+            <ScoreRing score={ANCHOR_SCORE} size={124} strokeWidth={8} />
+            <p className="text-center text-[11px] text-[var(--text-muted)]">Diversité d&apos;ancres faible</p>
           </div>
 
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-[var(--bg-subtle)] p-6">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Score</p>
-            <p className="mt-2 text-[40px] font-bold leading-none tabular-nums tracking-heading text-[var(--color-danger)]">
-              {ANCHOR_SCORE}
-              <span className="text-[18px] font-semibold text-[var(--text-muted)]">/100</span>
-            </p>
-            <p className="mt-2 text-center text-[11px] text-[var(--text-muted)]">
-              Diversité d&apos;ancres faible
-            </p>
+          {/* Droite — tableau top ancres */}
+          <div className="min-w-0">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h3 className="font-semibold text-[var(--text-primary)]">Top ancres</h3>
+              <span className="text-[11px] text-[var(--text-muted)]">
+                Total : <span className="font-semibold tabular-nums text-[var(--text-primary)]">{ANCHOR_TOTAL}</span> ancres
+              </span>
+            </div>
+            <TableWide<typeof TOP_ANCHORS[number]>
+              columns={[
+                { key: "text", header: "Ancre", width: 300, flex: true, render: (a) => <span className="block truncate font-mono text-[13px] text-[var(--text-secondary)]" title={a.text}>{a.text}</span> },
+                { key: "count", header: "Occurrences", width: 130, render: (a) => <span className="block text-right text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{a.count}</span> },
+              ]}
+              data={TOP_ANCHORS}
+              rowKey={(a) => a.text}
+              bordered
+              hidePagination
+            />
           </div>
         </div>
       </section>
@@ -1067,5 +1064,72 @@ export function NetlinkingView() {
       )}
 
     </div>
+  );
+}
+
+/* ── Modale « Modifier » : ajout / retrait des concurrents suivis ────────── */
+function NetCompetitorModal({
+  rows,
+  onChange,
+  onClose,
+}: {
+  rows: BenchmarkRow[];
+  onChange: (rows: BenchmarkRow[]) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const competitors = rows.filter((r) => !r.isYou);
+
+  const remove = (domain: string) => onChange(rows.filter((r) => r.domain !== domain));
+  const add = () => {
+    const d = draft.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (!d || rows.some((r) => r.domain === d)) return;
+    // Métriques placeholder — remplacées par la vraie donnée Majestic au crawl.
+    onChange([...rows, { domain: d, tf: 0, cf: 0, refDomains: 0, backlinks: 0 }]);
+    setDraft("");
+  };
+
+  return (
+    <ModalShell onClose={onClose} maxWidth={520}>
+      <h2 className="pr-10 font-semibold tracking-tight text-[var(--text-primary)]">Concurrents suivis</h2>
+      <p className="mt-1 text-[13px] text-[var(--text-muted)]">Ajoutez ou retirez les domaines comparés dans le benchmark netlinking.</p>
+
+      <div className="mt-5 flex max-h-[280px] flex-col gap-2 overflow-y-auto">
+        {competitors.map((c) => (
+          <div key={c.domain} className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] px-3.5 py-2.5">
+            <span className="flex-1 truncate font-mono text-[13px] text-[var(--text-primary)]">{c.domain}</span>
+            <button
+              type="button"
+              onClick={() => remove(c.domain)}
+              aria-label={`Retirer ${c.domain}`}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--color-danger)]"
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+        {competitors.length === 0 && (
+          <p className="rounded-xl border border-dashed border-[var(--border-subtle)] px-3.5 py-4 text-center text-[13px] text-[var(--text-muted)]">Aucun concurrent suivi.</p>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") add(); }}
+          placeholder="domaine-concurrent.com"
+          className={`${fieldCls} flex-1 font-mono`}
+        />
+        <Button variant="secondary" onClick={add} disabled={!draft.trim()}>
+          <PlusIcon className="h-4 w-4" />
+          Ajouter
+        </Button>
+      </div>
+
+      <div className="mt-6 flex items-center justify-end">
+        <Button variant="primary" onClick={onClose}>Terminé</Button>
+      </div>
+    </ModalShell>
   );
 }

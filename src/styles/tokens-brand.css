@@ -34,6 +34,8 @@
   --card-inner-border: rgba(15, 23, 42, 0.07);
   --modal-bg:          #ffffff;
   --dropdown-bg:       #ffffff;
+  /* Hover des items de dropdown — distinct de --dropdown-bg pour garder du contraste. */
+  --dropdown-hover:    #F2F2F2;
   --input-bg:          #ffffff;
 
   /* Bordures — slate cool undertone */
@@ -112,6 +114,8 @@
   --card-inner-border: rgba(255, 255, 255, 0.06);
   --modal-bg:          #1d1c1a;
   --dropdown-bg:       #1d1c1a;
+  /* Hover des items de dropdown — plus clair que --dropdown-bg (#1d1c1a) pour le contraste. */
+  --dropdown-hover:    #2c2b29;
   --input-bg:          #3a3a38;
   /* Card non-cliquables + pills — équivalents dark des tokens light */
   --bg-card-static:        #1d1c1a;
@@ -174,7 +178,7 @@
 
 /* ──────────────── Fonts ──────────────── */
 :root {
-  --font-sans:    var(--font-figtree);
+  --font-sans:    var(--font-instrument-sans);
   --font-display: var(--font-space-grotesk);
   --font-mono:    var(--font-space-grotesk);
 }

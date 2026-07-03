@@ -2,19 +2,22 @@
 
 import { useState } from "react";
 import {
-  ChevronDownIcon, SparklesIcon, ArrowPathIcon, CheckCircleIcon,
+  ChevronDownIcon, CheckCircleIcon,
   GlobeAltIcon, MagnifyingGlassIcon, DocumentTextIcon, BoltIcon,
   PhotoIcon, CodeBracketIcon, CpuChipIcon, ChatBubbleBottomCenterTextIcon,
-  TagIcon, ExclamationTriangleIcon, CheckIcon, ArrowsRightLeftIcon,
-  LinkIcon, ServerIcon,
+  TagIcon, ArrowsRightLeftIcon, LinkIcon, ServerIcon,
+  ExclamationTriangleIcon, ChartBarIcon, TableCellsIcon,
 } from "@heroicons/react/24/outline";
-import { Button } from "@/components/Button";
 import { Tooltip } from "@/components/Tooltip";
-import { StatusPill, StatusPillDropdown, type Status } from "@/components/StatusPill";
+import { StatusPillDropdown, type Status } from "@/components/StatusPill";
+import { Pill } from "@/components/Pill";
 import { ScoreRing } from "@/components/ScoreRing";
+import { ScoreArc } from "@/components/ScoreArc";
 import { DonutChart } from "@/components/DonutChart";
-import { SectionHead } from "@/components/SectionHead";
+import { AuditSection } from "@/components/AuditSection";
 import { Callout } from "@/components/Callout";
+import { TableWide } from "@/components/TableWide";
+import { ActionCard, type ActionPriorityLevel } from "@/components/ActionCard";
 import type { ElementType } from "react";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -67,14 +70,14 @@ const SCHEMA_ITEMS = [
   { id: "article",    name: "Article",        detail: "",          status: "suggest" as const },
 ];
 
-const CRAWLERS = [
-  { name: "GPTBot",        ok: true },
-  { name: "OAI-SearchBot", ok: true },
-  { name: "ChatGPT-User",  ok: true },
-  { name: "ClaudeBot",     ok: true },
-  { name: "PerplexityBot", ok: true },
-  { name: "Bytespider",    ok: null },
-  { name: "CCBot",         ok: null },
+const CRAWLERS: { name: string; ok: boolean | null; domain: string }[] = [
+  { name: "GPTBot",        ok: true,  domain: "openai.com" },
+  { name: "OAI-SearchBot", ok: true,  domain: "openai.com" },
+  { name: "ChatGPT-User",  ok: true,  domain: "openai.com" },
+  { name: "ClaudeBot",     ok: true,  domain: "anthropic.com" },
+  { name: "PerplexityBot", ok: true,  domain: "perplexity.ai" },
+  { name: "Bytespider",    ok: null,  domain: "bytedance.com" },
+  { name: "CCBot",         ok: null,  domain: "commoncrawl.org" },
 ];
 
 const PILOT_DATA: { id: number; count: number; label: string; pct: string; impact: string; diff: string; defaultStatus: Status; date: string }[] = [
@@ -215,12 +218,6 @@ const EXTRA_ACCORDIONS = [
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
-const STATUS_CYCLE: Status[] = ["todo", "in_progress", "done"];
-
-function nextStatus(s: Status): Status {
-  return STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
-}
-
 function scoreColor(n: number) {
   return n >= 70 ? "var(--color-success)" : n >= 50 ? "var(--color-warning)" : "var(--color-danger)";
 }
@@ -230,6 +227,28 @@ function impactColor(impact: string) {
   if (impact === "moyen") return "var(--color-warning)";
   return "var(--text-muted)";
 }
+
+/** Mapping priorité interne → niveau de l'ActionCard DS. */
+const PRIORITY_LEVEL: Record<string, ActionPriorityLevel> = {
+  high: "high",
+  medium: "mid",
+  low: "low",
+};
+
+/** Mapping état d'un schema → libellé + tokens couleur DS */
+const SCHEMA_CFG: Record<"ok" | "missing" | "suggest", { label: string; color: string; bg: string }> = {
+  ok:      { label: "Détecté",    color: "var(--color-success)", bg: "var(--color-success-bg)" },
+  missing: { label: "Critique",   color: "var(--color-danger)",  bg: "var(--color-danger-bg)" },
+  suggest: { label: "Recommandé", color: "var(--color-warning)", bg: "var(--color-warning-bg)" },
+};
+
+/** Libellé court d'un lien/contexte pour la pastille (adresse complète en tooltip). */
+function shortLink(u: string): string {
+  const head = u.split(" · ")[0].split(" → ")[0].trim();
+  return head.length > 34 ? head.slice(0, 33) + "…" : head;
+}
+
+type ExtraRow = { url: string; target: string; type: string; note: string };
 
 /* ── Micro components ─────────────────────────────────────────────────── */
 
@@ -252,21 +271,9 @@ function InfoTip({ headline, detail }: { headline: string; detail: string }) {
   );
 }
 
-function StatusDot({ status, onClick }: { status: Status; onClick: () => void }) {
-  return (
-    <button onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all ${
-        status === "done"  ? "border-[var(--color-success)] bg-[var(--color-success)]" :
-        status === "in_progress" ? "border-[var(--color-warning)] bg-[var(--color-warning-bg)]" :
-        "border-[var(--text-muted)]"
-      }`}>
-      {status === "done"  && <CheckIcon className="h-2.5 w-2.5 text-white" />}
-      {status === "in_progress" && <span className="h-2 w-2 rounded-full bg-[var(--color-warning)]" />}
-    </button>
-  );
-}
-
-
+/* Carte d'audit générique — contour, sans fond (convention DS). */
+const CARD = "rounded-2xl border border-[var(--border-subtle)]";
+const CARD_SM = "rounded-2xl border border-[var(--border-subtle)]";
 
 /* ── Main component ───────────────────────────────────────────────────── */
 
@@ -278,8 +285,6 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
     Object.fromEntries(PILOT_DATA.map((p) => [p.id, p.defaultStatus]))
   );
   const [pilotFilter,   setPilotFilter]   = useState<PilotFilter>("all");
-  const [expandedAction, setExpandedAction] = useState<number | null>(null);
-  const [rawOpen,       setRawOpen]       = useState(false);
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({});
 
   const getU = (id: string): Status => urgentStatus[id] ?? "todo";
@@ -303,43 +308,24 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
     setOpenAccordions((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
 
       {/* ── HERO ────────────────────────────────────────────────────── */}
-      <div id="tec-synthese" className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-8">
+      <div className={`${CARD} p-8`}>
         <div className="grid grid-cols-[2fr_1fr] gap-8 items-center">
           <div className="min-w-0">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-[rgba(16,185,129,0.1)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-success)]">Audit terminé</span>
-              <span className="text-[13px] text-[var(--text-muted)]">31 mars 2026</span>
-              <span className="text-[13px] text-[var(--text-muted)]">·</span>
-              <span className="text-[13px] text-[var(--text-muted)]">{domain}</span>
+              <Pill color="var(--color-success)" bg="var(--color-success-bg)">Audit terminé</Pill>
+              <span className="text-[13px] text-[var(--text-muted)]">il y a 3 jours</span>
             </div>
-            <h1 className="font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
-              Site sain mais{" "}
-              <span style={{ color: "var(--color-danger)" }}>~99 visites/mois</span>
-              <br />menacées par 5 urgences techniques.
-            </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
+            <p className="text-[15px] font-semibold leading-relaxed tracking-tight text-[var(--text-primary)]">
+              Site sain mais ~99 visites/mois menacées par 5 urgences techniques.
+            </p>
+            <p className="mt-0 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
               Score 84/100, performance solide (0.16s moyen), excellente indexation. Mais{" "}
               67% des pages ont des problèmes on-page critiques{" "}
               qui dégradent le CTR sur 246K impressions/mois. Trois urgences exigent une intervention dans les 7 jours.
             </p>
-            <div className="mt-5 flex flex-wrap gap-6 text-[13px] text-[var(--text-muted)]">
-              {[
-                { v: "133",  l: "pages crawlées" },
-                { v: "246K", l: "impressions/mois" },
-                { v: "1620", l: "mots/page" },
-              ].map((m) => (
-                <span key={m.l}><strong className="text-[15px] text-[var(--text-primary)]">{m.v}</strong> {m.l}</span>
-              ))}
-            </div>
-            <div className="mt-6">
-              <Button size="sm" variant="secondary">
-                <ArrowPathIcon className="h-4 w-4" />
-                Relancer l'audit
-              </Button>
-            </div>
           </div>
           <div className="flex flex-col items-center gap-3">
             <ScoreRing score={84} size={160} strokeWidth={7} />
@@ -349,29 +335,41 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         </div>
       </div>
 
-      {/* Verdict cards — hors du hero */}
+      {/* Chiffres clés */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Pages crawlées",   val: "133",   bench: "profondeur moyenne 1.5" },
+          { label: "Couverture GSC",   val: "89%",   bench: "118 / 133 avec impressions" },
+          { label: "Impressions/mois", val: "246K",  bench: "214.1K sur le périmètre" },
+          { label: "Temps de réponse", val: "0.16s", bench: "96% des pages < 0.5s" },
+        ].map((kpi) => (
+          <div key={kpi.label} className={`${CARD_SM} px-5 py-4`}>
+            <p className="text-[12px] text-[var(--text-muted)]">{kpi.label}</p>
+            <p className="mt-1 text-[28px] font-semibold leading-none text-[var(--text-primary)]">{kpi.val}</p>
+            <p className="mt-2 text-[11px] text-[var(--text-muted)]">{kpi.bench}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Verdict cards — contour, accent par dot + label */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { key: "blocker",     color: "var(--color-danger)", label: "Bloqueur",     text: "67% des pages (88/133) ont des problèmes de titres ou méta — les snippets Google sont tronqués, le CTR est en baisse sur 246K impressions/mois." },
           { key: "opportunity", color: "var(--accent-primary)", label: "Opportunité",  text: "Corriger les 45 titres mal dimensionnés — ratio impact/effort optimal car 88% des pages crawlées ont des impressions GSC." },
           { key: "crawl",       color: "var(--color-success)", label: "Crawl budget", text: "Profondeur idéale (1.5), 0 erreur HTTP, 1 seule orpheline, sitemap correct. Le crawl budget est optimisé sur ce site de 133 pages." },
         ].map((v) => (
-          <div key={v.key} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
-            style={{ background: `linear-gradient(to bottom, color-mix(in oklab, ${v.color} 7%, transparent) 0%, var(--bg-card) 60%)` }}>
-            <div className="px-5 pt-5 pb-6">
-              <div className="mb-3 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
-                <p className="text-[13px] font-semibold" style={{ color: v.color }}>{v.label}</p>
-              </div>
-              <p className="text-[14px] leading-snug text-[var(--text-secondary)]">{v.text}</p>
+          <div key={v.key} className={`${CARD_SM} px-5 pt-5 pb-6`}>
+            <div className="mb-3 flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
+              <p className="text-[13px] font-semibold" style={{ color: v.color }}>{v.label}</p>
             </div>
+            <p className="text-[14px] leading-snug text-[var(--text-secondary)]">{v.text}</p>
           </div>
         ))}
       </div>
 
       {/* ── 01. URGENCES BUSINESS ───────────────────────────────────── */}
-      <div id="tec-urgences">
-        <SectionHead num="01." title="Urgences" em="business" meta="À traiter sous 7 jours" />
+      <AuditSection id="tec-urgences" icon={ExclamationTriangleIcon} title="Urgences" em="business" meta="À traiter sous 7 jours">
 
         <Callout variant="error" className="mb-5">
           <strong>~99 visites/mois à risque</strong>{" "}
@@ -384,17 +382,13 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
             const isCritique = iss.severity === "critique";
             const accentColor = isCritique ? "var(--color-danger)" : "var(--color-warning)";
             return (
-              <div key={iss.id} className={`overflow-hidden rounded-2xl border bg-[var(--bg-card)] ${status === "done" ? "opacity-50" : ""}`}
-                style={{ borderColor: "var(--border-subtle)", borderLeftColor: accentColor, borderLeftWidth: 3 }}>
+              <div key={iss.id} className={`overflow-hidden ${CARD_SM} ${status === "done" ? "opacity-50" : ""}`}>
                 <div className="p-6">
                   <div className="mb-3 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold"
-                        style={{ color: accentColor, backgroundColor: isCritique ? "var(--color-danger-bg)" : "rgba(245,158,11,0.1)" }}>
-                        {iss.tag}
-                      </span>
-                    </div>
-                    <StatusDot status={status} onClick={() => setUrgentStatus((p) => ({ ...p, [iss.id]: nextStatus(getU(iss.id)) }))} />
+                    <Pill color={accentColor} bg={isCritique ? "var(--color-danger-bg)" : "var(--color-warning-bg)"}>
+                      {iss.tag}
+                    </Pill>
+                    <StatusPillDropdown status={status} onChange={(s) => setUrgentStatus((p) => ({ ...p, [iss.id]: s }))} />
                   </div>
                   <p className="mb-1 text-[12px] font-medium text-[var(--text-muted)]">
                     Impact · <span style={{ color: accentColor }}>{iss.impactLabel}</span>
@@ -403,159 +397,106 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                     {iss.title}
                   </p>
                   <p className="mb-4 text-[13px] leading-snug text-[var(--text-secondary)]">{iss.detail}</p>
-                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-3 py-2 font-mono text-[12px] text-[var(--text-muted)]">
-                    {iss.url}
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <StatusPill status={status} />
-                    <span className="text-[12px] text-[var(--text-muted)]">détecté {iss.date}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <Tooltip portal side="top" label={<span className="font-mono text-[12px]">{iss.url}</span>}>
+                      <Pill color="var(--text-secondary)" bg="var(--bg-subtle)" className="cursor-default font-mono">
+                        <LinkIcon className="h-3 w-3 flex-shrink-0" />
+                        {shortLink(iss.url)}
+                      </Pill>
+                    </Tooltip>
+                    <span className="flex-shrink-0 text-[12px] text-[var(--text-muted)]">détecté {iss.date}</span>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-      </div>
+      </AuditSection>
 
       {/* ── 02. OPTIMISATIONS PRIORITAIRES ──────────────────────────── */}
-      <div id="tec-optimisations">
-        <SectionHead num="02." title="Optimisations" em="prioritaires" meta="8 actions · 58% du backlog" />
+      <AuditSection id="tec-optimisations" icon={BoltIcon} title="Optimisations" em="prioritaires" meta="8 actions · 58% du backlog">
 
-        {/* GSC × Crawl */}
-        <div className="mb-4 overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-7">
-          <div className="mb-5 flex items-baseline justify-between">
-            <h3 className="font-semibold tracking-tight text-[var(--text-primary)]">
-              Croisement <span className="text-[var(--accent-primary)]">Crawl × GSC</span>
-            </h3>
-            <span className="text-[12px] text-[var(--text-muted)]">Snapshot · 27 avril 2026</span>
-          </div>
-
-          {/* Couverture headline */}
-          <div className="mb-5 flex items-start gap-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6">
-            <span className="text-[52px] font-semibold leading-none tracking-tight" style={{ color: "var(--color-success)" }}>89<span className="text-[22px] text-[var(--text-muted)]">%</span></span>
-            <div>
-              <p className="mb-1 text-[12px] font-semibold text-[var(--text-muted)]">Couverture GSC</p>
-              <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
-                <strong className="text-[var(--text-primary)]">118 pages crawlées sur 133 reçoivent des impressions.</strong>{" "}
-                Excellente couverture globale. Mais 15 pages restantes sont indexées sans aucune visibilité : ranking trop bas, pas un problème d'indexation.
+        {/* Couverture GSC — même style que l'encart AI Readiness (demi-cercle + texte + pills) */}
+        <div className={`mb-4 ${CARD} p-7`}>
+          <div className="flex items-center gap-8">
+            <ScoreArc score={89} width={168} />
+            <div className="flex-1">
+              <p className="mb-1 text-[17px] font-semibold tracking-tight text-[var(--text-primary)]">
+                Couverture GSC · <span style={{ color: "var(--color-success)" }}>excellente</span>
               </p>
+              <p className="mb-3 text-[14px] leading-relaxed text-[var(--text-secondary)]">
+                118 pages crawlées sur 133 reçoivent des impressions. Les 15 restantes sont indexées sans visibilité : ranking trop bas, pas un problème d'indexation.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Pill color="var(--color-success)" bg="var(--color-success-bg)">118 avec impressions</Pill>
+                <Pill color="var(--text-muted)" bg="var(--bg-subtle)">15 sans impression</Pill>
+                <Pill color="var(--text-muted)" bg="var(--bg-subtle)">133 URLs crawlées</Pill>
+                <Pill color="var(--text-muted)" bg="var(--bg-subtle)">246 clics/mois</Pill>
+              </div>
             </div>
           </div>
-
-          {/* Stats row */}
-          <div className="mb-5 grid grid-cols-5 divide-x divide-[var(--border-subtle)]">
-            {[
-              { v: "133",   l: "URLs crawlées",     c: "var(--text-primary)" },
-              { v: "118",   l: "Avec impressions",  c: "var(--accent-primary)" },
-              { v: "15",    l: "Sans impression",   c: "var(--color-warning)" },
-              { v: "214.1K",l: "Impressions/mois",  c: "var(--text-primary)" },
-              { v: "246",   l: "Clics/mois",        c: "var(--text-primary)" },
-            ].map((s) => (
-              <div key={s.l} className="px-4 first:pl-0 last:pr-0">
-                <p className="text-[26px] font-semibold leading-none tracking-tight" style={{ color: s.c }}>{s.v}</p>
-                <p className="mt-1 text-[12px] text-[var(--text-muted)]">{s.l}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Stacked bar */}
-          <div className="mb-2 flex h-7 overflow-hidden rounded-lg">
-            <div className="flex items-center justify-center text-[12px] font-semibold text-white" style={{ flex: 118, backgroundColor: "var(--color-success)" }}>118</div>
-            <div className="flex items-center justify-center text-[12px] font-semibold text-white" style={{ flex: 15,  backgroundColor: "var(--color-warning)" }}>15</div>
-          </div>
-          <div className="mb-4 flex gap-5 text-[13px] text-[var(--text-muted)]">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "var(--color-success)" }} />Crawl + impressions GSC · 118 (89%)</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: "var(--color-warning)" }} />Crawlées sans impression · 15 (11%)</span>
-          </div>
-          <Callout variant="warning">
+          <Callout variant="warning" className="mt-5">
             <strong>À retenir :</strong> ces 15 pages sont bien indexées par Google (pas un blocage technique), mais leur ranking est trop bas pour apparaître en SERP. C'est un signal de pertinence ou de maillage interne insuffisant — à diagnostiquer page par page.
           </Callout>
         </div>
 
-        {/* Actions + Schemas */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Actions */}
-          <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-            <div className="flex items-center justify-between px-6 py-4">
-              <p className="text-[14px] font-semibold text-[var(--text-primary)]">Actions prioritaires</p>
-              <span className="text-[13px] text-[var(--text-muted)]">{PRIORITY_ACTIONS.length} actions</span>
-            </div>
-            <div className="border-t border-[var(--border-subtle)]">
-              {PRIORITY_ACTIONS.map((action, i) => {
-                const status = getA(action.id);
-                const isOpen = expandedAction === action.id;
-                const priorityColor = action.priority === "high" ? "var(--color-danger)" : action.priority === "medium" ? "var(--color-warning)" : "var(--text-muted)";
-                return (
-                  <div key={action.id} className={i < PRIORITY_ACTIONS.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}>
-                    <button onClick={() => setExpandedAction(isOpen ? null : action.id)}
-                      className={`flex w-full items-center gap-3 px-6 py-4 text-left cursor-pointer ${status === "done" ? "opacity-50" : ""}`}>
-                      <StatusDot status={status} onClick={() => setActionStatus((p) => ({ ...p, [action.id]: nextStatus(getA(action.id)) }))} />
-                      <span className="w-5 flex-shrink-0 text-center font-mono text-[12px] text-[var(--text-muted)]">{String(action.id).padStart(2, "0")}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[14px] font-medium ${status === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>{action.title}</p>
-                        <p className="text-[12px] text-[var(--text-muted)]">{action.sub}</p>
-                      </div>
-                      <div className="flex flex-shrink-0 items-center gap-1.5">
-                        <span className="rounded-md px-3 py-1.5 text-[12px] font-semibold" style={{ color: priorityColor, backgroundColor: `${priorityColor}15` }}>{action.priority.toUpperCase()}</span>
-                        <ChevronDownIcon className="h-3.5 w-3.5 text-[var(--text-muted)] transition-transform" style={{ transform: isOpen ? "rotate(180deg)" : "none" }} />
-                      </div>
-                    </button>
-                    {isOpen && (
-                      <div className="border-t border-[var(--border-subtle)] px-6 py-4">
-                        <p className="mb-0.5 text-[12px] font-semibold text-[var(--text-muted)]">Impact</p>
-                        <p className="mb-3 text-[13px] text-[var(--text-secondary)]">{action.impact}</p>
-                        <p className="mb-0.5 text-[12px] font-semibold text-[var(--text-muted)]">Correction</p>
-                        <p className="text-[13px] text-[var(--text-secondary)]">{action.fix}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        {/* Actions prioritaires — ActionCard DS */}
+        <div>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="font-semibold tracking-tight text-[var(--text-primary)]">Actions prioritaires</h3>
+            <span className="text-[13px] text-[var(--text-muted)]">{PRIORITY_ACTIONS.length} actions</span>
           </div>
-
-          {/* Schemas */}
-          <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-            <div className="px-6 py-4">
-              <p className="text-[14px] font-semibold text-[var(--text-primary)]">
-                Schemas <span style={{ color: "var(--color-danger)" }}>25/100</span>
-              </p>
-              <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">2 schemas critiques manquants · 3 présents</p>
-            </div>
-            <div className="border-t border-[var(--border-subtle)]">
-              {SCHEMA_ITEMS.map((s) => {
-                const overrideStatus = schemaStatus[s.id];
-                const canToggle = s.status !== "ok";
-                const effectiveStatus: Status = canToggle ? (overrideStatus ?? "todo") : "done";
-                const statusColors = { ok: "var(--color-success)", missing: "var(--color-danger)", suggest: "var(--color-warning)" };
-                const statusLabels = { ok: "Détecté", missing: "Critique", suggest: "Recommandé" };
-                return (
-                  <div key={s.id} className={`flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-6 py-4 last:border-0 ${effectiveStatus === "done" && canToggle ? "opacity-50" : ""}`}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-[14px] text-[var(--text-primary)]">{s.name}</span>
-                      {s.detail && <span className="text-[12px] text-[var(--text-muted)]">{s.detail}</span>}
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                      <span className="rounded-full px-2 py-1 text-[12px] font-semibold"
-                        style={{ color: statusColors[s.status], backgroundColor: `${statusColors[s.status]}15` }}>
-                        {statusLabels[s.status]}
-                      </span>
-                      {canToggle && (
-                        <StatusDot status={effectiveStatus} onClick={() => setSchemaStatus((p) => ({ ...p, [s.id]: nextStatus(effectiveStatus) }))} />
-                      )}
-                      {!canToggle && <CheckCircleIcon className="h-4 w-4 text-[var(--color-success)]" />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="flex flex-col gap-2">
+            {PRIORITY_ACTIONS.map((action) => (
+              <ActionCard
+                key={action.id}
+                priority={PRIORITY_LEVEL[action.priority]}
+                title={action.title}
+                description={action.sub}
+                steps={[action.fix]}
+                impact={action.impact}
+                time={action.effort}
+                status={getA(action.id)}
+                onStatusChange={(s) => setActionStatus((p) => ({ ...p, [action.id]: s }))}
+              />
+            ))}
           </div>
         </div>
-      </div>
+
+        {/* Schemas */}
+        <div className={`mt-4 overflow-hidden ${CARD}`}>
+          <div className="px-6 py-4">
+            <p className="text-[14px] font-semibold text-[var(--text-primary)]">
+              Schemas <span style={{ color: "var(--color-danger)" }}>25/100</span>
+            </p>
+            <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">2 schemas critiques manquants · 3 présents</p>
+          </div>
+          <div className="border-t border-[var(--border-subtle)]">
+            {SCHEMA_ITEMS.map((s) => {
+              const canToggle = s.status !== "ok";
+              const workStatus: Status = canToggle ? (schemaStatus[s.id] ?? "todo") : "done";
+              const cfg = SCHEMA_CFG[s.status];
+              return (
+                <div key={s.id} className={`flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-6 py-4 last:border-0 ${workStatus === "done" && canToggle ? "opacity-50" : ""}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono text-[14px] text-[var(--text-primary)]">{s.name}</span>
+                    {s.detail && <span className="text-[12px] text-[var(--text-muted)]">{s.detail}</span>}
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    <Pill color={cfg.color} bg={cfg.bg}>{cfg.label}</Pill>
+                    {canToggle
+                      ? <StatusPillDropdown status={workStatus} onChange={(st) => setSchemaStatus((p) => ({ ...p, [s.id]: st }))} />
+                      : <CheckCircleIcon className="h-4 w-4 text-[var(--color-success)]" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </AuditSection>
 
       {/* ── 03. DIAGNOSTIC COMPLET ──────────────────────────────────── */}
-      <div id="tec-diagnostic">
-        <SectionHead num="03." title="Diagnostic" em="complet" meta="État de santé par dimension" />
+      <AuditSection id="tec-diagnostic" icon={ChartBarIcon} title="Diagnostic" em="complet" meta="État de santé par dimension">
 
         {/* Subscores */}
         <div className="mb-4 grid grid-cols-4 gap-3">
@@ -563,7 +504,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
             const color = scoreColor(c.score);
             const Icon = c.icon;
             return (
-              <div key={c.label} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+              <div key={c.label} className={`${CARD_SM} p-5`}>
                 <div className="mb-3 flex items-center justify-between gap-1.5">
                   <div className="flex items-center gap-1.5">
                     <Icon className="h-4 w-4 text-[var(--text-muted)]" />
@@ -578,7 +519,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
                 <p className="mb-2 text-[26px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
                   {c.score}<span className="text-[14px] font-normal text-[var(--text-muted)]">/100</span>
                 </p>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
+                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--bg-subtle)]">
                   <div className="h-full rounded-full" style={{ width: `${c.score}%`, backgroundColor: color }} />
                 </div>
               </div>
@@ -589,7 +530,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         {/* Circular crawl charts — 2×2 */}
         <div className="mb-4 grid grid-cols-2 gap-3">
           {CRAWL_CHARTS.map((chart) => (
-            <div key={chart.label} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">
+            <div key={chart.label} className={`${CARD_SM} p-5`}>
               <p className="mb-4 text-[13px] font-semibold text-[var(--text-primary)]">{chart.label}</p>
               <div className="flex items-center gap-6">
                 <DonutChart
@@ -622,133 +563,130 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
           ))}
         </div>
 
-        {/* PageSpeed */}
-        <div className="mb-4 overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-          <div className="flex items-center justify-between px-7 py-5">
+        {/* PageSpeed — TableWide contour */}
+        <div className="mb-4">
+          <div className="mb-3 flex items-center justify-between">
             <p className="text-[15px] font-semibold text-[var(--text-primary)]">PageSpeed · 10 URLs les plus lentes</p>
             <span className="text-[13px] text-[var(--text-muted)]">desktop · cible LCP &lt; 2.5s</span>
           </div>
-          <div className="grid grid-cols-[1fr_56px_64px_64px_56px_56px] gap-3 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-7 py-3 text-[12px] font-semibold text-[var(--text-muted)]">
-            <span>URL</span><span className="text-right">Score</span><span className="text-right">LCP</span>
-            <span className="text-right">FCP</span><span className="text-right">CLS</span><span className="text-right">TTFB</span>
+          <div className={`overflow-hidden ${CARD_SM}`}>
+            <TableWide<(typeof PAGESPEED_DATA)[number]>
+              hidePagination
+              rowKey={(r) => r.url}
+              data={PAGESPEED_DATA}
+              columns={[
+                { key: "url", header: "URL", width: 240, flex: true,
+                  render: (r) => <span className="truncate font-mono text-[13px] text-[var(--text-muted)]">{r.url}</span> },
+                { key: "score", header: "Score", width: 64, align: "right", sortable: true, sortValue: (r) => r.score,
+                  render: (r) => <span className="text-[13px] font-semibold tabular-nums" style={{ color: scoreColor(r.score) }}>{r.score}</span> },
+                { key: "lcp", header: "LCP", width: 64, align: "right", sortable: true, sortValue: (r) => parseFloat(r.lcp),
+                  render: (r) => <span className="text-[13px] tabular-nums" style={{ color: parseFloat(r.lcp) > 4 ? "var(--color-danger)" : "var(--color-warning)" }}>{r.lcp}</span> },
+                { key: "fcp", header: "FCP", width: 64, align: "right",
+                  render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-muted)]">{r.fcp}</span> },
+                { key: "cls", header: "CLS", width: 56, align: "right",
+                  render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-muted)]">{r.cls}</span> },
+                { key: "ttfb", header: "TTFB", width: 60, align: "right",
+                  render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-muted)]">{r.ttfb}</span> },
+              ]}
+            />
           </div>
-          {PAGESPEED_DATA.map((row, i) => {
-            const sc = scoreColor(row.score);
-            const lcpBad = parseFloat(row.lcp) > 4;
-            return (
-              <div key={i} className={`grid grid-cols-[1fr_56px_64px_64px_56px_56px] items-center gap-3 border-t border-[var(--border-subtle)] px-7 py-3 text-[13px]`}>
-                <span className="truncate font-mono text-[var(--text-muted)]">{row.url}</span>
-                <span className="text-right font-semibold text-[var(--text-primary)]">{row.score}</span>
-                <span className="text-right" style={{ color: lcpBad ? "var(--color-danger)" : "var(--color-warning)" }}>{row.lcp}</span>
-                <span className="text-right text-[var(--text-muted)]">{row.fcp}</span>
-                <span className="text-right text-[var(--text-muted)]">{row.cls}</span>
-                <span className="text-right text-[var(--text-muted)]">{row.ttfb}</span>
-              </div>
-            );
-          })}
         </div>
 
-        {/* AI Readiness */}
-        <div className="overflow-hidden rounded-3xl border border-[rgba(62,80,245,0.2)] bg-[var(--accent-primary-soft)] p-7">
-          <div className="flex items-center gap-6">
-            <div>
-              <span className="text-[52px] font-semibold leading-none tracking-tight" style={{ color: "var(--accent-primary)" }}>100</span>
-              <span className="text-[22px] text-[var(--text-muted)]">/100</span>
-            </div>
+        {/* AI Readiness — demi-cercle ScoreArc */}
+        <div className={`${CARD} p-7`}>
+          <div className="flex items-center gap-8">
+            <ScoreArc score={100} width={168} />
             <div className="flex-1">
               <p className="mb-1 text-[17px] font-semibold tracking-tight text-[var(--text-primary)]">
-                AI Readiness · <span style={{ color: "var(--accent-primary)" }}>excellence GEO</span>
+                AI Readiness · <span style={{ color: "var(--color-success)" }}>excellence GEO</span>
               </p>
               <p className="mb-3 text-[14px] leading-relaxed text-[var(--text-secondary)]">
                 7 crawlers IA autorisés sur 7. Votre site est entièrement accessible à GPTBot, ClaudeBot, PerplexityBot et OAI-SearchBot.
               </p>
               <div className="flex flex-wrap gap-2">
                 {CRAWLERS.map((c) => (
-                  <span key={c.name} className="rounded-full px-2 py-1 text-[12px] font-semibold"
-                    style={{ backgroundColor: c.ok === true ? "rgba(16,185,129,0.1)" : "var(--bg-secondary)", color: c.ok === true ? "var(--color-success)" : "var(--text-muted)" }}>
+                  <Pill key={c.name}
+                    color={c.ok === true ? "var(--color-success)" : "var(--text-muted)"}
+                    bg={c.ok === true ? "var(--color-success-bg)" : "var(--bg-subtle)"}>
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${c.domain}&sz=64`}
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="h-3.5 w-3.5 flex-shrink-0 rounded-sm"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
                     {c.name}{c.ok === true ? " ✓" : ""}
-                  </span>
+                  </Pill>
                 ))}
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </AuditSection>
 
       {/* ── 04. DONNÉES BRUTES ──────────────────────────────────────── */}
-      <div id="tec-donnees">
-        <SectionHead num="04." title="Données" em="brutes" meta="Pour aller plus loin" />
+      <AuditSection id="tec-donnees" icon={TableCellsIcon} title="Données" em="brutes" meta="Pour aller plus loin">
 
-        <div className="flex flex-col gap-3">
-          {/* Pilot table accordion */}
-          <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-            <button onClick={() => setRawOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-7 py-5 text-left cursor-pointer">
+        <div className="flex flex-col gap-4">
+          {/* Pilot registry — TableWide contour */}
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-4">
               <div>
                 <p className="text-[15px] font-semibold text-[var(--text-primary)]">Problèmes techniques · registre de pilotage</p>
                 <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">12 actions · {pilotCounts.todo} à faire</p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-28 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
-                    <div className="h-full rounded-full bg-[var(--color-success)] transition-all" style={{ width: `${pilotPct}%` }} />
-                  </div>
-                  <span className="font-mono text-[13px] font-semibold" style={{ color: "var(--color-success)" }}>{pilotPct}%</span>
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-[var(--bg-subtle)]">
+                  <div className="h-full rounded-full bg-[var(--color-success)] transition-all" style={{ width: `${pilotPct}%` }} />
                 </div>
-                <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)] transition-transform" style={{ transform: rawOpen ? "rotate(180deg)" : "none" }} />
+                <span className="font-mono text-[13px] font-semibold" style={{ color: "var(--color-success)" }}>{pilotPct}%</span>
               </div>
-            </button>
+            </div>
 
-            {rawOpen && (
-              <div className="border-t border-[var(--border-subtle)]">
-                {/* Counts + filters */}
-                <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-7 py-3">
-                  <div className="flex gap-2">
-                    {(["todo", "in_progress", "done"] as const).map((s) => (
-                      <span key={s} className="rounded-full px-2 py-1 text-[12px] font-semibold"
-                        style={{ backgroundColor: s === "todo" ? "var(--color-danger-bg)" : s === "in_progress" ? "rgba(245,158,11,0.1)" : "rgba(16,185,129,0.1)",
-                                 color: s === "todo" ? "var(--color-danger)" : s === "in_progress" ? "var(--color-warning)" : "var(--color-success)" }}>
-                        {pilotCounts[s]} {{ todo: "À faire", in_progress: "En cours", done: "Terminé" }[s].toLowerCase()}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-1.5">
-                    {(["all", "todo", "in_progress", "done", "high"] as const).map((f) => (
-                      <button key={f} onClick={() => setPilotFilter(f)}
-                        className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors ${pilotFilter === f ? "bg-[var(--text-primary)] text-[var(--bg-card)]" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]"}`}>
-                        {f === "all" ? "Tout" : f === "high" ? "Fort+" : ({ todo: "À faire", in_progress: "En cours", done: "Terminé", blocked_client: "Bloqué", abandoned: "Abandonné" } as Record<Status, string>)[f as Status]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Counts + filters */}
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div className="flex gap-2">
+                <Pill color="var(--color-danger)" bg="var(--color-danger-bg)">{pilotCounts.todo} à faire</Pill>
+                <Pill color="var(--color-warning)" bg="var(--color-warning-bg)">{pilotCounts.in_progress} en cours</Pill>
+                <Pill color="var(--color-success)" bg="var(--color-success-bg)">{pilotCounts.done} terminé</Pill>
+              </div>
+              <div className="flex gap-1.5">
+                {(["all", "todo", "in_progress", "done", "high"] as const).map((f) => (
+                  <button key={f} onClick={() => setPilotFilter(f)}
+                    className={`rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors cursor-pointer ${pilotFilter === f ? "bg-[var(--text-primary)] text-[var(--bg-primary)]" : "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"}`}>
+                    {f === "all" ? "Tout" : f === "high" ? "Fort+" : ({ todo: "À faire", in_progress: "En cours", done: "Terminé" } as Record<string, string>)[f]}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                {/* Table */}
-                <div className="grid grid-cols-[32px_48px_1fr_90px_90px_100px_100px] gap-3 border-b border-[var(--border-subtle)] px-7 py-3 text-[11px] font-semibold text-[var(--text-muted)]">
-                  <span /><span>Pages</span><span>Description</span>
-                  <span>Impact</span><span>Difficulté</span><span>Statut</span><span>Date</span>
-                </div>
-                {visiblePilot.map((p) => {
-                  const st = getP(p.id);
-                  return (
-                    <div key={p.id} className={`grid grid-cols-[32px_48px_1fr_90px_90px_100px_100px] items-center gap-3 border-b border-[var(--border-subtle)] px-7 py-3 last:border-0 transition-opacity ${st === "done" ? "opacity-50" : ""}`}>
-                      <StatusDot status={st} onClick={() => setPilotStatus((prev) => ({ ...prev, [p.id]: nextStatus(st) }))} />
-                      <span className={`rounded-md px-2 py-0.5 text-center font-mono text-[13px] font-semibold ${p.count === 0 ? "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]" : "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"}`}>
+            <div className={`overflow-hidden ${CARD_SM}`}>
+              <TableWide<(typeof PILOT_DATA)[number]>
+                hidePagination
+                rowKey={(p) => p.id}
+                data={visiblePilot}
+                emptyState={<div className="px-7 py-10 text-center text-[14px] text-[var(--text-muted)]">Aucun problème pour ce filtre.</div>}
+                columns={[
+                  { key: "count", header: "Pages", width: 60, align: "right",
+                    render: (p) => (
+                      <span className={`rounded-md px-2 py-0.5 font-mono text-[13px] font-semibold ${p.count === 0 ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"}`}>
                         {p.count}
                       </span>
-                      <span className={`text-[14px] font-medium ${st === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
-                        {p.label}
-                      </span>
-                      <span className="text-[13px] font-medium" style={{ color: impactColor(p.impact) }}>
-                        {p.impact.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                      </span>
-                      <span className="text-[13px] text-[var(--text-muted)]">{p.diff}</span>
-                      <StatusPill status={st} />
-                      <span className="text-[12px] text-[var(--text-muted)]">{p.date}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    ) },
+                  { key: "label", header: "Description", width: 220, flex: true,
+                    render: (p) => <span className={`text-[14px] font-medium ${getP(p.id) === "done" ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>{p.label}</span> },
+                  { key: "impact", header: "Impact", width: 90,
+                    render: (p) => <span className="text-[13px] font-medium" style={{ color: impactColor(p.impact) }}>{p.impact.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</span> },
+                  { key: "diff", header: "Difficulté", width: 90,
+                    render: (p) => <span className="text-[13px] text-[var(--text-muted)]">{p.diff}</span> },
+                  { key: "status", header: "Statut", width: 150,
+                    render: (p) => <StatusPillDropdown status={getP(p.id)} onChange={(s) => setPilotStatus((prev) => ({ ...prev, [p.id]: s }))} /> },
+                  { key: "date", header: "Date", width: 100, align: "right",
+                    render: (p) => <span className="text-[12px] text-[var(--text-muted)]">{p.date}</span> },
+                ]}
+              />
+            </div>
           </div>
 
           {/* Extra accordions */}
@@ -756,7 +694,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
             const isOpen = openAccordions[acc.id];
             const Icon = acc.icon;
             return (
-              <div key={acc.id} className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+              <div key={acc.id} className={`overflow-hidden ${CARD}`}>
                 <button onClick={() => toggleAccordion(acc.id)}
                   className="flex w-full items-center justify-between px-7 py-5 text-left cursor-pointer">
                   <div className="flex items-center gap-3">
@@ -771,19 +709,25 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
 
                 {isOpen && (
                   <div className="border-t border-[var(--border-subtle)]">
-                    <div className="grid grid-cols-[1fr_1fr_80px_80px] gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-7 py-3 text-[12px] font-semibold text-[var(--text-muted)]">
-                      <span>URL source</span><span>Cible / Valeur</span><span>Type</span><span>Statut</span>
-                    </div>
-                    {acc.rows.map((row, i) => (
-                      <div key={i} className={`grid grid-cols-[1fr_1fr_80px_80px] items-center gap-4 border-b border-[var(--border-subtle)] px-7 py-3 last:border-0 text-[13px]`}>
-                        <span className="truncate font-mono text-[var(--text-muted)]">{row.url}</span>
-                        <span className="truncate text-[var(--text-secondary)]">{row.target}</span>
-                        <span className="font-mono text-[12px] text-[var(--text-muted)]">{row.type}</span>
-                        <span className={`font-medium ${row.note === "OK" ? "text-[var(--color-success)]" : row.note.includes("vérifier") || row.note.includes("Temporaire") ? "text-[var(--color-warning)]" : "text-[var(--text-muted)]"}`}>
-                          {row.note}
-                        </span>
-                      </div>
-                    ))}
+                    <TableWide<ExtraRow>
+                      hidePagination
+                      rowKey={(row) => row.url}
+                      data={acc.rows}
+                      columns={[
+                        { key: "url", header: "URL source", width: 200, flex: true,
+                          render: (row) => <span className="truncate font-mono text-[13px] text-[var(--text-muted)]">{row.url}</span> },
+                        { key: "target", header: "Cible / Valeur", width: 200, flex: true,
+                          render: (row) => <span className="truncate text-[13px] text-[var(--text-secondary)]">{row.target}</span> },
+                        { key: "type", header: "Type", width: 90,
+                          render: (row) => <span className="font-mono text-[12px] text-[var(--text-muted)]">{row.type}</span> },
+                        { key: "note", header: "Statut", width: 120, align: "right",
+                          render: (row) => (
+                            <span className={`text-[13px] font-medium ${row.note === "OK" ? "text-[var(--color-success)]" : row.note.includes("vérifier") || row.note.includes("Temporaire") ? "text-[var(--color-warning)]" : "text-[var(--text-muted)]"}`}>
+                              {row.note}
+                            </span>
+                          ) },
+                      ]}
+                    />
                   </div>
                 )}
               </div>
@@ -794,7 +738,7 @@ export function AuditTechniqueTab({ domain }: { domain: string }) {
         <p className="mt-3 text-[12px] text-[var(--text-muted)]">
           Snapshot du 31 mars 2026 · prochain audit programmé le 30 avril 2026
         </p>
-      </div>
+      </AuditSection>
 
     </div>
   );

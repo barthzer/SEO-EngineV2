@@ -12,12 +12,16 @@
  *  - <50  → danger
  */
 
+import type { ElementType } from "react";
+import { WrenchIcon, DocumentTextIcon, LinkIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { Tooltip } from "@/components/Tooltip";
 
 type Props = {
   technique: number | null;
   contenu: number | null;
   netlinking: number | null;
+  /** Visibilité IA (GEO) — optionnel : ajoute une 4e jauge si fourni. */
+  geo?: number | null;
   /** Hauteur des barres (px). */
   height?: number;
   /** Si true, n'affiche pas les mini encarts T/C/N (utile en très compact). */
@@ -37,7 +41,7 @@ function Gauge({
   height,
   compact,
 }: {
-  label: "T" | "C" | "N";
+  label: string;
   value: number | null;
   height: number;
   compact: boolean;
@@ -49,7 +53,7 @@ function Gauge({
     <div className="flex flex-col items-center gap-1">
       {/* Jauge verticale */}
       <div
-        className="relative w-[6px] overflow-hidden rounded-full bg-[var(--border-subtle)]"
+        className="relative w-[4px] overflow-hidden rounded-full bg-[var(--border-subtle)]"
         style={{ height }}
       >
         <div
@@ -75,29 +79,35 @@ function GaugeTooltipContent({
   technique,
   contenu,
   netlinking,
+  geo,
 }: {
   technique: number | null;
   contenu: number | null;
   netlinking: number | null;
+  geo?: number | null;
 }) {
-  const lines: { label: string; value: number | null; color: string }[] = [
-    { label: "Technique",  value: technique,  color: gaugeColor(technique) },
-    { label: "Contenu",    value: contenu,    color: gaugeColor(contenu) },
-    { label: "Netlinking", value: netlinking, color: gaugeColor(netlinking) },
+  const lines: { label: string; value: number | null; icon: ElementType }[] = [
+    { label: "Technique",  value: technique,  icon: WrenchIcon },
+    { label: "Contenu",    value: contenu,    icon: DocumentTextIcon },
+    { label: "Netlinking", value: netlinking, icon: LinkIcon },
+    ...(geo !== undefined ? [{ label: "Visibilité IA", value: geo ?? null, icon: SparklesIcon }] : []),
   ];
   return (
     <div className="flex flex-col gap-1.5">
-      {lines.map((l) => (
-        <div key={l.label} className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
-            <span className="text-[12px] text-white/80">{l.label}</span>
-          </span>
-          <span className="tabular-nums text-[12px] font-semibold text-white">
-            {l.value == null ? "—" : `${l.value} / 100`}
-          </span>
-        </div>
-      ))}
+      {lines.map((l) => {
+        const Icon = l.icon;
+        return (
+          <div key={l.label} className="flex items-center justify-between gap-4">
+            <span className="inline-flex items-center gap-2">
+              <Icon className="h-3.5 w-3.5 text-white/60" />
+              <span className="text-[12px] text-white/80">{l.label}</span>
+            </span>
+            <span className="tabular-nums text-[12px] font-semibold" style={{ color: gaugeColor(l.value) }}>
+              {l.value == null ? "—" : `${l.value} / 100`}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -106,6 +116,7 @@ export function ScoreGauges({
   technique,
   contenu,
   netlinking,
+  geo,
   height = 28,
   compact = false,
 }: Props) {
@@ -116,6 +127,7 @@ export function ScoreGauges({
           technique={technique}
           contenu={contenu}
           netlinking={netlinking}
+          geo={geo}
         />
       }
       side="top"
@@ -123,9 +135,10 @@ export function ScoreGauges({
       rich
     >
       <div className="flex flex-shrink-0 items-end gap-2">
-        <Gauge label="T" value={technique}  height={height} compact={compact} />
-        <Gauge label="C" value={contenu}    height={height} compact={compact} />
-        <Gauge label="N" value={netlinking} height={height} compact={compact} />
+        <Gauge label="T"  value={technique}  height={height} compact={compact} />
+        <Gauge label="C"  value={contenu}    height={height} compact={compact} />
+        <Gauge label="N"  value={netlinking} height={height} compact={compact} />
+        {geo !== undefined && <Gauge label="IA" value={geo ?? null} height={height} compact={compact} />}
       </div>
     </Tooltip>
   );

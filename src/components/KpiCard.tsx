@@ -37,8 +37,8 @@ export function KpiCard({
   className = "",
 }: KpiCardProps) {
   const wrapperBase = bare
-    ? "flex flex-col gap-1.5 px-5 py-8"
-    : "flex flex-col gap-1.5 rounded-2xl bg-[var(--bg-card-static)] px-5 py-8";
+    ? "flex flex-col gap-1.5 p-5"
+    : "flex flex-col gap-1.5 rounded-2xl border border-[var(--border-subtle)] p-5";
   return (
     <div className={`${wrapperBase} ${className}`}>
       <div className="flex items-center gap-2">

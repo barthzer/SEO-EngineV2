@@ -28,7 +28,7 @@ const VISIBILITY_BY_PERIOD = {
   "1an": VISIBILITY_DATA,
 } as const;
 
-export function VisibilityLineChart() {
+export function VisibilityLineChart({ title, subtitle }: { title?: string; subtitle?: string } = {}) {
   const [period, setPeriod] = useState<"3m" | "6m" | "1an">("1an");
   const [hovered, setHovered] = useState<{ idx: number; mouseX: number; mouseY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,7 +104,13 @@ export function VisibilityLineChart() {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className={`mb-4 flex gap-3 ${title ? "items-start justify-between" : "justify-end"}`}>
+        {title && (
+          <div className="min-w-0">
+            <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">{title}</p>
+            {subtitle && <p className="mt-1.5 text-[14px] leading-snug tracking-caption text-[var(--text-secondary)]">{subtitle}</p>}
+          </div>
+        )}
         <FilterTabs
           tabs={[{ key: "3m", label: "3m" }, { key: "6m", label: "6m" }, { key: "1an", label: "1 an" }]}
           value={period}

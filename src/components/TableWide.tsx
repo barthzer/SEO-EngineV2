@@ -3,6 +3,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
+import { Checkbox } from "@/components/Checkbox";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
 
@@ -57,40 +58,28 @@ interface TableWideProps<T> {
   trailingAction?: (row: T, index: number) => ReactNode;
   /** Width of the trailing column (sticky-right). Default 96 px. */
   trailingActionWidth?: number;
-  /** Wraps the whole table in a card (rounded-3xl + border + bg-card).
-   *  Le comportement de scroll reste page-level (sticky header top-12 et
-   *  sticky pagination bottom-0). Le card est purement visuel et grandit
-   *  naturellement avec le contenu. */
+  /** Wraps the whole table in a card (rounded-2xl + border + bg-card). */
   bordered?: boolean;
+  /** Active la colonne de sélection (cases à cocher) en tête de ligne. */
+  selectable?: boolean;
+  /** Clés sélectionnées (contrôlé par le parent). */
+  selected?: Set<string | number>;
+  /** Toggle d'une ligne. */
+  onToggleRow?: (key: string | number) => void;
+  /** Toggle « tout sélectionner » (reçoit les clés de la page + l'état courant). */
+  onToggleAll?: (keys: (string | number)[], allSelected: boolean) => void;
+  /** Épingle horizontalement la colonne de sélection + la 1re colonne (nom).
+   *  Requiert `minWidth` pour produire un scroll horizontal. */
+  stickyLeft?: boolean;
   className?: string;
 }
 
+/** Ombre DS des colonnes sticky-left — bande dégradée verticale collée au bord DROIT
+ *  uniquement (pleine hauteur → aucune bavure haut/bas, continue entre les lignes). */
+export const STICKY_EDGE = "linear-gradient(to right, rgba(2,6,23,0.07), rgba(2,6,23,0.02) 55%, transparent)";
+
 /* ── Component ────────────────────────────────────────────────────────── */
 
-/**
- * TableWide — DS pour les grands tableaux applicatifs.
- *
- * - Header sticky (`top-12` sous la barre d'onglets) bg-subtle
- * - Body horizontal-scroll si `minWidth` > largeur du conteneur
- * - Rows = `<button>` quand `onRowClick`, sinon `<div>` (border-b last:border-0)
- * - Pagination sticky bottom (range + "X par page" + flèches prev/next)
- * - Optional sticky trailing chevron (sticky right, full-bleed bg primary)
- *
- * @example
- * ```tsx
- * <TableWide
- *   columns={[
- *     { key: "kw",  header: "Keyword",  width: 220, render: (r) => r.keyword },
- *     { key: "vol", header: "Volume",   width: 100, align: "right", render: (r) => r.volume },
- *   ]}
- *   data={rows}
- *   rowKey={(r) => r.id}
- *   onRowClick={(r) => openModal(r)}
- *   minWidth={1200}
- *   trailingChevron
- * />
- * ```
- */
 export function TableWide<T>({
   columns,
   data,
@@ -107,11 +96,18 @@ export function TableWide<T>({
   bordered = false,
   trailingAction,
   trailingActionWidth = 96,
+  selectable = false,
+  selected,
+  onToggleRow,
+  onToggleAll,
+  stickyLeft = false,
   className = "",
 }: TableWideProps<T>) {
   /* Sort interne — clé de colonne + direction. Cycle desc → asc → off au clic header. */
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  /* Scroll horizontal — l'ombre des colonnes sticky n'apparaît qu'une fois défilé. */
+  const [scrolled, setScrolled] = useState(false);
   function toggleSort(k: string) {
     if (sortKey !== k) { setSortKey(k); setSortDir("desc"); return; }
     if (sortDir === "desc") { setSortDir("asc"); return; }
@@ -144,90 +140,166 @@ export function TableWide<T>({
   const rowPadStyles: React.CSSProperties = { paddingLeft: edgePadding, paddingRight: 16 };
   const bodyStyle = minWidth ? { minWidth } : undefined;
 
-  /* Header element — always sticky to viewport (top-12). When bordered, rounded-t-3xl
-     pour matcher les coins arrondis de la card sans casser le scroll horizontal interne.
-     Bg conditionnel : `bg-card` quand bordered (matche la card autour, important en dark
-     où bg-card #1d1c1a ≠ bg-primary #131211), sinon `bg-primary` (matche la page). */
-  const headerBgClass = bordered ? "bg-[var(--bg-card)]" : "bg-[var(--bg-primary)]";
+  /* Contenu d'en-tête d'une colonne (label statique ou bouton de tri). */
+  function headerInner(col: ColumnDef<T>) {
+    const isSortable = !!col.sortable && !!col.sortValue;
+    const active = sortKey === col.key;
+    const labelClass = `text-[12px] font-medium ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`;
+    if (isSortable) {
+      return (
+        <button type="button" onClick={() => toggleSort(col.key)}
+          className={`group/sort inline-flex w-full items-center gap-1 rounded-md transition-colors ${col.align === "right" ? "justify-end" : ""} ${typeof col.header === "string" ? `${labelClass} hover:text-[var(--text-primary)]` : ""}`}>
+          {col.header}
+          <span className="flex flex-col leading-none">
+            <ChevronDownIcon className={`h-3 w-3 -mb-0.5 rotate-180 transition-opacity ${active && sortDir === "asc" ? "opacity-100" : "opacity-30 group-hover/sort:opacity-60"}`} />
+            <ChevronDownIcon className={`h-3 w-3 transition-opacity ${active && sortDir === "desc" ? "opacity-100" : "opacity-30 group-hover/sort:opacity-60"}`} />
+          </span>
+        </button>
+      );
+    }
+    if (typeof col.header === "string") {
+      return <span className={`${labelClass} ${col.align === "right" ? "block text-right" : ""}`}>{col.header}</span>;
+    }
+    return col.header;
+  }
+
+  // Règle DS : la ligne d'en-tête (colonnes/filtres) a TOUJOURS un fond `--bg-card-static`.
+  const headerBgClass = "bg-[var(--bg-card-static)]";
+
+  /* ════════════════════════════════════════════════════════════════════
+     Mode sticky-left (opt-in) — colonne sélection + 1re colonne épinglées,
+     scroll horizontal dans un conteneur unique (header + rows ensemble).
+     `overflow-y-clip` : le sticky-top reste relatif au scroll de page,
+     le sticky-left au conteneur horizontal. ════════════════════════════ */
+  if (stickyLeft) {
+    const [firstCol, ...restCols] = columns;
+    const pageKeys = pageRows.map(rowKey);
+    const allSelected = selectable && pageKeys.length > 0 && pageKeys.every((k) => selected?.has(k));
+    const someSelected = selectable && pageKeys.some((k) => selected?.has(k));
+
+    // Fond TOUJOURS opaque (le contenu défilant passe dessous) ; ombre droite au scroll.
+    const StickyGroup = ({ children, header, active }: { children: ReactNode; header?: boolean; active?: boolean }) => (
+      <div
+        className={`sticky left-0 z-[3] relative flex flex-shrink-0 items-center gap-3 self-stretch transition-colors ${
+          header ? headerBgClass
+            : active ? "bg-[var(--bg-card-hover-flat)]"
+              : "bg-[var(--bg-primary)] group-hover:bg-[var(--bg-card-hover-flat)]"
+        }`}
+        style={{ paddingLeft: edgePadding, paddingRight: 12 }}
+      >
+        {children}
+        {/* Bande d'ombre : pleine hauteur (self-stretch → 40px y compris en-tête), collée au
+            bord droit, plus large/diffuse, visible au scroll horizontal uniquement. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-6"
+          style={{ transform: "translateX(100%)", background: STICKY_EDGE, opacity: scrolled ? 1 : 0, transition: "opacity 140ms ease" }}
+        />
+      </div>
+    );
+
+    return (
+      <div className={`flex flex-col ${bordered ? "overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]" : ""} ${className}`}>
+        <div className="overflow-x-auto overflow-y-clip" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
+          <div style={bodyStyle} className="w-max min-w-full">
+            {/* Header */}
+            <div className={`sticky top-0 z-[15] flex h-10 items-center border-b border-[var(--border-subtle)] ${headerBgClass}`}>
+              <StickyGroup header>
+                {selectable && <Checkbox checked={!!allSelected} indeterminate={!!someSelected && !allSelected} onChange={() => onToggleAll?.(pageKeys, !!allSelected)} />}
+                <div className="min-w-0" style={{ width: firstCol.width }}>{headerInner(firstCol)}</div>
+              </StickyGroup>
+              <div className="flex items-center gap-3 pr-4" style={{ paddingLeft: 12 }}>
+                {restCols.map((col) => (
+                  <div key={col.key} className="flex-shrink-0 min-w-0" style={{ width: col.width }}>{headerInner(col)}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Rows */}
+            {data.length === 0 ? (
+              <div className="px-7 py-10 text-center text-[14px] text-[var(--text-muted)]">{emptyState ?? "Aucune donnée."}</div>
+            ) : (
+              pageRows.map((row, i) => {
+                const k = rowKey(row);
+                const idx = (safePage - 1) * pageSize + i;
+                const active = isRowActive?.(row) ?? false;
+                const isSel = !!selected?.has(k);
+                const rowBg = active ? "bg-[var(--bg-card-hover-flat)]" : "bg-[var(--bg-primary)] hover:bg-[var(--bg-card-hover-flat)]";
+                return (
+                  <div
+                    key={k}
+                    role={onRowClick ? "button" : undefined}
+                    tabIndex={onRowClick ? 0 : undefined}
+                    onClick={onRowClick ? () => onRowClick(row, idx) : undefined}
+                    onKeyDown={onRowClick ? (e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onRowClick(row, idx); } } : undefined}
+                    className={`group flex w-full items-stretch text-left transition-colors ${onRowClick ? "cursor-pointer" : ""} ${i < pageRows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""} ${rowBg}`}
+                  >
+                    <StickyGroup active={active}>
+                      {selectable && <Checkbox checked={isSel} onChange={() => onToggleRow?.(k)} />}
+                      <div className="min-w-0 self-center py-3 font-normal text-[var(--text-secondary)]" style={{ width: firstCol.width }}>{firstCol.render(row, idx)}</div>
+                    </StickyGroup>
+                    <div className="flex items-center gap-3 py-3 pr-4" style={{ paddingLeft: 12 }}>
+                      {restCols.map((col) => (
+                        <div key={col.key} className={`flex-shrink-0 min-w-0 font-normal text-[var(--text-secondary)] ${col.align === "right" ? "text-right" : ""}`} style={{ width: col.width }}>
+                          {col.render(row, idx)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+        {!hidePagination && data.length > 0 && (
+          <Pagination
+            edgePadding={edgePadding} bordered={bordered} pageStart={pageStart} pageEnd={pageEnd}
+            total={data.length} pageSize={pageSize} pageSizeOptions={pageSizeOptions} setPageSize={setPageSize}
+            safePage={safePage} pageCount={pageCount} setPage={setPage}
+          />
+        )}
+      </div>
+    );
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     Mode standard (inchangé) ════════════════════════════════════════════ */
   const headerEl = (
-    <div className={`sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] ${headerBgClass} ${bordered ? "rounded-t-3xl" : ""}`}>
+    <div className={`sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] ${headerBgClass} ${bordered ? "rounded-t-2xl" : ""}`}>
       <div style={bodyStyle} className="flex h-10 items-center gap-3">
         <div className="flex flex-1 items-center gap-3" style={rowPadStyles}>
-          {columns.map((col) => {
-            const isSortable = !!col.sortable && !!col.sortValue;
-            const active = sortKey === col.key;
-            const labelClass = `text-[12px] font-medium ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`;
-            return (
-              <div
-                key={col.key}
-                className={`flex-shrink-0 min-w-0 ${col.flex ? "flex-1" : ""}`}
-                style={col.flex ? { minWidth: col.width, maxWidth: col.maxWidth } : { width: col.width }}
-              >
-                {isSortable ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(col.key)}
-                    className={`group/sort inline-flex w-full items-center gap-1 rounded-md transition-colors ${col.align === "right" ? "justify-end" : ""} ${typeof col.header === "string" ? `${labelClass} hover:text-[var(--text-primary)]` : ""}`}
-                  >
-                    {col.header}
-                    <span className="flex flex-col leading-none">
-                      <ChevronDownIcon
-                        className={`h-3 w-3 -mb-0.5 rotate-180 transition-opacity ${active && sortDir === "asc" ? "opacity-100" : "opacity-30 group-hover/sort:opacity-60"}`}
-                      />
-                      <ChevronDownIcon
-                        className={`h-3 w-3 transition-opacity ${active && sortDir === "desc" ? "opacity-100" : "opacity-30 group-hover/sort:opacity-60"}`}
-                      />
-                    </span>
-                  </button>
-                ) : typeof col.header === "string" ? (
-                  <span className={`${labelClass} ${col.align === "right" ? "block text-right" : ""}`}>
-                    {col.header}
-                  </span>
-                ) : (
-                  col.header
-                )}
-              </div>
-            );
-          })}
+          {columns.map((col) => (
+            <div key={col.key} className={`flex-shrink-0 min-w-0 ${col.flex ? "flex-1" : ""}`}
+              style={col.flex ? { minWidth: col.width, maxWidth: col.maxWidth } : { width: col.width }}>
+              {headerInner(col)}
+            </div>
+          ))}
           {trailingChevron && <div className="w-12 flex-shrink-0 min-w-0" />}
         </div>
         {trailingChevron && <div className={`sticky right-0 w-16 flex-shrink-0 min-w-0 ${headerBgClass}`} />}
-        {/* trailingAction n'occupe pas de colonne dans le header : c'est un overlay absolu sur les rows */}
       </div>
     </div>
   );
 
-  /* Rows — same in both modes */
   const rowsEl = data.length === 0 ? (
-    <div className="px-7 py-10 text-center text-[14px] text-[var(--text-muted)]">
-      {emptyState ?? "Aucune donnée."}
-    </div>
+    <div className="px-7 py-10 text-center text-[14px] text-[var(--text-muted)]">{emptyState ?? "Aucune donnée."}</div>
   ) : (
     pageRows.map((row, i) => {
       const k = rowKey(row);
       const active = isRowActive?.(row) ?? false;
       const interactive = !!onRowClick;
-      // Row hover bg applies whenever the row has any interactive affordance
-      // (click handler or trailing action revealed on hover).
       const hoverable = interactive || !!trailingAction;
       const wrapperClass = `group relative w-full text-left transition-colors ${
         i < pageRows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
       } ${active ? "bg-[var(--bg-card-hover)]" : hoverable ? "hover:bg-[var(--bg-card-hover)]" : ""}`;
       const innerClass = "flex items-center gap-3 py-3";
 
-      // Trailing action — sticky right-0 IN flex flow, identique au chevron de la vue URLs.
-      // Toujours visible à droite du viewport pendant le scroll horizontal. Invisible sans hover,
-      // apparaît sur hover de ligne avec gradient transparent → bg-card-hover.
       const inner = (
         <>
           {columns.map((col) => (
-            <div
-              key={col.key}
-              // Default cells = text-primary / font-normal (400). Les render()
-              // qui posent explicitement une classe text-* ou font-* l'emporteront.
-              className={`flex-shrink-0 min-w-0 font-normal text-[var(--text-primary)] ${col.flex ? "flex-1" : ""} ${col.align === "right" ? "text-right" : ""}`}
-              style={col.flex ? { minWidth: col.width, maxWidth: col.maxWidth } : { width: col.width }}
-            >
+            <div key={col.key}
+              className={`flex-shrink-0 min-w-0 font-normal text-[var(--text-secondary)] ${col.flex ? "flex-1" : ""} ${col.align === "right" ? "text-right" : ""}`}
+              style={col.flex ? { minWidth: col.width, maxWidth: col.maxWidth } : { width: col.width }}>
               {col.render(row, (safePage - 1) * pageSize + i)}
             </div>
           ))}
@@ -237,14 +309,9 @@ export function TableWide<T>({
             </div>
           )}
           {trailingAction && (
-            <div
-              className="sticky right-0 flex flex-shrink-0 items-center justify-end self-stretch pr-3 opacity-0 transition-opacity group-hover:opacity-100"
-              style={{
-                width: trailingActionWidth,
-                background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 50%)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="sticky right-0 flex flex-shrink-0 items-center justify-end self-stretch pr-3 opacity-0 transition-opacity group-hover:opacity-100"
+              style={{ width: trailingActionWidth, background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 50%)" }}
+              onClick={(e) => e.stopPropagation()}>
               {trailingAction(row, (safePage - 1) * pageSize + i)}
             </div>
           )}
@@ -266,79 +333,71 @@ export function TableWide<T>({
     })
   );
 
-  /* Pagination — sticky bottom of viewport in both modes. When bordered, rounded-b-3xl
-     pour matcher les coins arrondis bas de la card. */
-  const paginationEl = !hidePagination && data.length > 0 ? (
+  return (
     <div
-      className={`sticky bottom-0 z-30 flex items-center justify-between gap-4 border-t border-[var(--border-subtle)] py-3 backdrop-blur ${bordered ? "bg-[var(--bg-card)]/95 rounded-b-3xl" : "bg-[var(--bg-primary)]/95"}`}
+      className={`flex flex-col ${bordered ? "rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]" : ""} ${className}`}
+      style={bordered ? { clipPath: "inset(0 round 1.5rem)" } : undefined}
+    >
+      {headerEl}
+      <div className={minWidth ? "overflow-x-auto" : ""}>
+        <div className="w-full" style={bodyStyle}>{rowsEl}</div>
+      </div>
+      {!hidePagination && data.length > 0 && (
+        <Pagination
+          edgePadding={edgePadding} bordered={bordered} pageStart={pageStart} pageEnd={pageEnd}
+          total={data.length} pageSize={pageSize} pageSizeOptions={pageSizeOptions} setPageSize={setPageSize}
+          safePage={safePage} pageCount={pageCount} setPage={setPage}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Pagination (partagée par les deux modes) ─────────────────────────── */
+
+function Pagination({
+  edgePadding, bordered, pageStart, pageEnd, total, pageSize, pageSizeOptions, setPageSize, safePage, pageCount, setPage,
+}: {
+  edgePadding: string; bordered: boolean; pageStart: number; pageEnd: number; total: number;
+  pageSize: number; pageSizeOptions: number[]; setPageSize: (n: number) => void;
+  safePage: number; pageCount: number; setPage: (fn: (p: number) => number) => void;
+}) {
+  return (
+    <div
+      className={`sticky bottom-0 z-30 flex items-center justify-between gap-4 border-t border-[var(--border-subtle)] py-3 backdrop-blur ${bordered ? "bg-[var(--bg-card)]/95 rounded-b-2xl" : "bg-[var(--bg-primary)]/95"}`}
       style={{ paddingLeft: edgePadding, paddingRight: edgePadding }}
     >
       <span className="text-[12px] tabular-nums text-[var(--text-muted)]">
-        {pageStart.toLocaleString("fr-FR")} – {pageEnd.toLocaleString("fr-FR")} sur {data.length.toLocaleString("fr-FR")}
+        {pageStart.toLocaleString("fr-FR")} – {pageEnd.toLocaleString("fr-FR")} sur {total.toLocaleString("fr-FR")}
       </span>
-
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-[var(--text-muted)]">Par page</span>
-          <DropdownMenu
-            upward
-            width={88}
-            align="right"
+          <DropdownMenu upward width={88} align="right"
             trigger={
               <button className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-2.5 py-1 text-[12px] font-medium tabular-nums text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]">
                 {pageSize}
                 <ChevronDownIcon className="h-3.5 w-3.5 text-[var(--text-muted)]" />
               </button>
-            }
-          >
+            }>
             {pageSizeOptions.map((n) => (
-              <DropdownItem key={n} selected={pageSize === n} onClick={() => setPageSize(n)}>
-                {n}
-              </DropdownItem>
+              <DropdownItem key={n} selected={pageSize === n} onClick={() => setPageSize(n)}>{n}</DropdownItem>
             ))}
           </DropdownMenu>
         </div>
-
         <div className="flex items-center gap-1">
-          <button
-            disabled={safePage <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          <button disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
             className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-30"
-            aria-label="Page précédente"
-          >
+            aria-label="Page précédente">
             <ChevronRightIcon className="h-4 w-4 rotate-180" />
           </button>
-          <button
-            disabled={safePage >= pageCount}
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+          <button disabled={safePage >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
             className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-30"
-            aria-label="Page suivante"
-          >
+            aria-label="Page suivante">
             <ChevronRightIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
-    </div>
-  ) : null;
-
-  /* ── Layout — single mode : page-level scroll, sticky header (top-12)
-       et pagination (bottom-0). `bordered` ajoute le visuel card (border + rounded +
-       bg-card) avec `clipPath: inset(round)` pour forcer le clipping rond.
-       `clipPath` clippe VISUELLEMENT sans établir de scrolling mechanism, donc
-       les sticky enfants restent attachés à leurs vrais ancêtres scrollables
-       (page pour top/bottom, body wrapper pour right). */
-  return (
-    <div
-      className={`flex flex-col ${bordered ? "rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]" : ""} ${className}`}
-      style={bordered ? { clipPath: "inset(0 round 1.5rem)" } : undefined}
-    >
-      {headerEl}
-      <div className={minWidth ? "overflow-x-auto" : ""}>
-        <div className="w-full" style={bodyStyle}>
-          {rowsEl}
-        </div>
-      </div>
-      {paginationEl}
     </div>
   );
 }

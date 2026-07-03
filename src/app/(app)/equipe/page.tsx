@@ -504,8 +504,8 @@ export default function EquipePage() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto py-[var(--page-py)]">
-      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
+    <div className="page-enter flex flex-1 flex-col overflow-y-auto py-5">
+      <div className="w-full px-5">
 
         {/* Header */}
         <div className="mb-8">
@@ -556,7 +556,7 @@ export default function EquipePage() {
         </div>
 
         {/* Table — header SANS bg distinct (convention DS) */}
-        <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
           <div className="grid grid-cols-[1.6fr_0.9fr_0.6fr_0.7fr_0.7fr_1.2fr_auto] items-center gap-4 border-b border-[var(--border-subtle)] px-6 py-3">
             <p className="text-[12px] font-medium text-[var(--text-muted)]">Consultant</p>
             <p className="text-[12px] font-medium text-[var(--text-muted)]">Rôle</p>

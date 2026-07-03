@@ -14,13 +14,13 @@ import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   MagnifyingGlassIcon,
-  HomeIcon,
   UserGroupIcon,
   Cog6ToothIcon,
   PlusIcon,
   ArrowRightIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { HomeGlyph } from "@/components/icons/HomeGlyph";
 import { useProjects } from "@/context/ProjectsContext";
 import { ProjectFavicon } from "@/components/ProjectSwitcher";
 import { TABS } from "@/components/analyse/constants";
@@ -121,7 +121,7 @@ export function CommandPalette() {
 
     // Navigation globale
     list.push(
-      { id: "nav-home", section: "Navigation", label: "Accueil — Projets", icon: <HomeIcon className={iconCls} />, keywords: "accueil home projets dashboard", run: () => go("/") },
+      { id: "nav-home", section: "Navigation", label: "Accueil — Projets", icon: <HomeGlyph className={iconCls} />, keywords: "accueil home projets dashboard", run: () => go("/") },
       { id: "nav-team", section: "Navigation", label: "Équipe", icon: <UserGroupIcon className={iconCls} />, keywords: "equipe team consultants", run: () => go("/equipe") },
       { id: "nav-settings", section: "Navigation", label: "Paramètres", icon: <Cog6ToothIcon className={iconCls} />, keywords: "parametres settings reglages agence", run: () => go("/parametres") },
     );

@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ChevronDownIcon, MagnifyingGlassIcon, Squares2X2Icon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, MagnifyingGlassIcon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { HomeGlyph } from "@/components/icons/HomeGlyph";
 import { Tooltip } from "@/components/Tooltip";
 import { Kbd } from "@/components/Kbd";
 import { useProjects } from "@/context/ProjectsContext";
@@ -221,8 +222,8 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
             <Kbd>⌘P</Kbd>
           </div>
 
-          {/* Scrollable list */}
-          <div className="flex-1 overflow-y-auto p-1.5">
+          {/* Scrollable list — léger gap entre chaque ligne */}
+          <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-1.5">
             {/* Recents */}
             {recentProjects.length > 0 && (
               <>
@@ -257,9 +258,9 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
             <Link
               href="/"
               onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--dropdown-hover)]"
             >
-              <Squares2X2Icon className="h-4 w-4 flex-shrink-0 text-[var(--text-secondary)]" />
+              <HomeGlyph className="h-4 w-4 flex-shrink-0 text-[var(--text-secondary)]" />
               Voir tous les projets
             </Link>
             <button
@@ -285,7 +286,7 @@ function ProjectRow({ project, active, onClick }: { project: Project; active?: b
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-[var(--bg-secondary)] ${active ? "bg-[var(--bg-secondary)]" : ""}`}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-[var(--dropdown-hover)] ${active ? "bg-[var(--dropdown-hover)]" : ""}`}
     >
       <ProjectFavicon domain={project.domain} logo={project.logo} size={20} />
       <div className="min-w-0 flex-1">

@@ -274,7 +274,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
+      <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
 
         <Stepper steps={3} current={step} onClose={onClose} />
 

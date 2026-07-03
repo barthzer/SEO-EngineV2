@@ -99,32 +99,47 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
 }
 
 export function DropdownItem({
-  onClick, danger = false, icon: Icon, selected = false, keepOpen = false, children,
+  onClick, danger = false, icon: Icon, selected = false, keepOpen = false, checkbox = false, children,
 }: {
   onClick?: () => void;
   danger?: boolean;
   icon?: React.ElementType;
-  /** When true, renders a check icon on the right (use for sort / filter dropdowns) */
+  /** When true, marks the item as selected (single-select : check à droite ;
+   *  mode `checkbox` : case cochée à gauche). */
   selected?: boolean;
   /** Si true : ne ferme PAS le dropdown au clic. Indispensable pour les
    *  filtres multi-select où on veut cocher plusieurs items à la suite. */
   keepOpen?: boolean;
+  /** Mode multi-select : affiche une case à cocher DS à gauche (au lieu du
+   *  check à droite du single-select). À utiliser conjointement à `keepOpen`. */
+  checkbox?: boolean;
   children: ReactNode;
 }) {
   const { close } = useContext(DropdownCtx);
   const iconColor = danger ? "currentColor" : "var(--text-secondary)";
-  // État `selected` : border + bg en couleur main (accent-primary) + check
-  // à droite. Affordance forte pour les dropdowns multi-select.
-  // Le border-transparent fallback évite que l'apparition de la border quand
-  // selected fasse sauter le layout de 2px.
+  // Style neutre : hover bg uniquement, pas de border ni de fond coloré sur la
+  // ligne. L'état sélectionné se lit via la case à cocher (multi-select) ou le
+  // check à droite (single-select).
   return (
     <button
       onClick={() => { onClick?.(); if (!keepOpen) close(); }}
-      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--bg-secondary)] ${danger ? "text-[var(--color-danger)]" : selected ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"} ${selected ? "border border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]" : "border border-transparent"}`}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--dropdown-hover)] ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"}`}
     >
+      {checkbox && (
+        <span
+          aria-hidden
+          className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[6px] border transition-colors ${
+            selected
+              ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]"
+              : "border-[var(--border-medium)] bg-transparent"
+          }`}
+        >
+          {selected && <CheckIcon className="h-3 w-3 text-white" strokeWidth={3} />}
+        </span>
+      )}
       {Icon && <Icon className="h-5 w-5 flex-shrink-0" style={{ color: iconColor }} />}
       <span className="flex-1 text-left">{children}</span>
-      {selected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-[var(--accent-primary)]" strokeWidth={2.5} />}
+      {!checkbox && selected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-[var(--accent-primary)]" strokeWidth={2.5} />}
     </button>
   );
 }

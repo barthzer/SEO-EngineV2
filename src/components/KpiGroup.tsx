@@ -7,9 +7,9 @@ import { Children, type ReactNode } from "react";
  *
  * NOTE : refondu (post-feedback) — auparavant le composant enveloppait tous
  * les bare KpiCard dans un seul gros encart "wide". On ne veut plus ça.
- * Maintenant chaque enfant est rendu dans son propre encart #F8F8F8, avec
- * un gap entre eux. Le résultat visuel : autant de cards séparées que de
- * KPIs, en grille.
+ * Maintenant chaque enfant est rendu dans son propre encart à contour
+ * (border-subtle, sans fond), avec un gap entre eux. Le résultat visuel :
+ * autant de cards séparées que de KPIs, en grille.
  *
  * Les call sites restent compatibles : ils passent toujours des
  * `<KpiCard bare ... />` enfants — chacun est wrappé pour récupérer le bg.
@@ -36,7 +36,7 @@ export function KpiGroup({
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
     >
       {Children.map(children, (child, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl bg-[var(--bg-card-static)]">
+        <div key={i} className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
           {child}
         </div>
       ))}

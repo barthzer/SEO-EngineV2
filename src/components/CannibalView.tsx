@@ -372,7 +372,7 @@ export function CannibalView() {
 
         {view === "keywords" && (
           <div
-            className="flex flex-col overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
+            className="flex flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
             style={{ clipPath: "inset(0 round 1.5rem)" }}
           >
             <table className="w-full table-fixed border-collapse">

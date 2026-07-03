@@ -281,7 +281,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
       </button>
 
       {/* Panel — flex col, fixed height, no scroll on outer */}
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-[760px] flex-col overflow-hidden rounded-3xl bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
 
         {/* Header — sticky */}
         <div className="flex flex-shrink-0 items-start justify-between gap-4 px-6 py-5">
@@ -436,7 +436,7 @@ function AddKwModal({ onClose, onAdd }: {
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
 
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
           <h2 className="font-semibold text-[var(--text-primary)]">Ajouter des mots-clés</h2>
@@ -563,7 +563,7 @@ function ImportCsvModal({ onClose, onImport }: {
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
+      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
 
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
           <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Importer des mots-clés depuis un CSV</h2>
@@ -702,7 +702,7 @@ function VisibilityChart() {
   const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
+    <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
       <div className="mb-4 flex items-start justify-between">
         <div>
           <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité organique</p>

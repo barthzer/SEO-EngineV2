@@ -50,7 +50,7 @@ export function ConnectModal({ tool, onClose, onConnect }: { tool: Tool; onClose
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
+      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
         <div className="flex items-start justify-between">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
             {config.logo}

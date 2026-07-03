@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
+import { Flag } from "@/components/Flag";
 import { useToast } from "@/context/ToastContext";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 import {
@@ -36,7 +37,7 @@ function Section({ title, description, children }: { title: string; description?
         <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</p>
         {description && <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-muted)]">{description}</p>}
       </div>
-      <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
         {children}
       </div>
     </div>
@@ -219,10 +220,10 @@ function Ga4Logo() {
 /* ── Custom select ───────────────────────────────────────────────────── */
 
 const LANGUES = [
-  { value: "fr", label: "Français", flag: "🇫🇷" },
-  { value: "en", label: "English",  flag: "🇬🇧" },
-  { value: "es", label: "Español",  flag: "🇪🇸" },
-  { value: "de", label: "Deutsch",  flag: "🇩🇪" },
+  { value: "fr", label: "Français" },
+  { value: "en", label: "English"  },
+  { value: "es", label: "Español"  },
+  { value: "de", label: "Deutsch"  },
 ];
 
 function LangueSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -233,7 +234,7 @@ function LangueSelect({ value, onChange }: { value: string; onChange: (v: string
       trigger={(open) => (
         <button className="flex h-9 w-full items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 text-[14px] font-medium text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-medium)]">
           <span className="flex items-center gap-2">
-            <span className="text-[16px] leading-none">{current?.flag}</span>
+            {current && <Flag code={current.value} size={16} />}
             {current?.label}
           </span>
           <ChevronDownIcon
@@ -245,7 +246,7 @@ function LangueSelect({ value, onChange }: { value: string; onChange: (v: string
     >
       {LANGUES.map((l) => (
         <DropdownItem key={l.value} onClick={() => onChange(l.value)}>
-          <span className="text-[18px] leading-none">{l.flag}</span>
+          <Flag code={l.value} size={18} />
           <span className={value === l.value ? "font-semibold text-[var(--text-primary)]" : ""}>{l.label}</span>
         </DropdownItem>
       ))}
@@ -323,10 +324,10 @@ export default function ParametresPage() {
   function handleSave() { showToast("Modifications enregistrées", <CheckCircleIcon className="h-5 w-5" />); }
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
+    <div className="page-enter flex flex-1 flex-col overflow-y-auto">
 
       {/* Header */}
-      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)] pt-[var(--page-py)] pb-4">
+      <div className="w-full px-5 pt-5 pb-4">
         <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
           Paramètres
         </h1>
@@ -334,7 +335,7 @@ export default function ParametresPage() {
 
       {/* Sticky Tabs — même look que la barre Audit (h-12, text-14, underline inset, border-b) */}
       <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/75 backdrop-blur-md">
-        <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
+        <div className="w-full px-5">
           <div className="relative flex h-12 items-center gap-1">
             {TABS.map((t) => {
               const isActive = tab === t.key;
@@ -356,7 +357,7 @@ export default function ParametresPage() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)] py-[var(--page-py)]">
+      <div className="w-full px-5 py-5">
 
         {/* ── Mon Compte ── */}
         {tab === "compte" && (

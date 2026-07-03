@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 export interface VerticalBarChartItem {
   label: string;
   value: number;
+  /** Couleur pleine propre à la barre (ex. couleur de marque). Prioritaire sur l'intensité par index. */
+  color?: string;
 }
 
 interface VerticalBarChartProps {
@@ -19,6 +21,10 @@ interface VerticalBarChartProps {
   chartHeight?: number;
   /** Contenu du tooltip au survol d'une barre — reçoit l'item + son index + total */
   tooltip?: (item: VerticalBarChartItem, index: number, total: number) => ReactNode;
+  /** Rendu personnalisé du label sous la barre (ex. logo). Par défaut : texte du label. */
+  renderLabel?: (item: VerticalBarChartItem, index: number) => ReactNode;
+  /** Affiche l'axe Y (5 graduations à gauche, alignées sur les barres). */
+  showYAxis?: boolean;
   className?: string;
 }
 
@@ -39,6 +45,8 @@ export function VerticalBarChart({
   barWidth = 56,
   chartHeight = 238,
   tooltip,
+  renderLabel,
+  showYAxis = false,
   className = "",
 }: VerticalBarChartProps) {
   const maxValue = Math.max(...data.map((d) => d.value), 1);
@@ -48,9 +56,20 @@ export function VerticalBarChart({
   const VALUE_GAP = 22; // espace réservé pour la valeur au-dessus
   const barsAreaHeight = chartHeight - LABEL_GAP;
 
+  const yTicks = showYAxis
+    ? [0, 1, 2, 3, 4].map((k) => ({ value: Math.round((maxValue * (4 - k)) / 4), top: VALUE_GAP + (k / 4) * (barsAreaHeight - VALUE_GAP) }))
+    : [];
+
   return (
-    <div className={`flex h-full flex-col justify-end ${className}`}>
-      <div className="relative" style={{ height: chartHeight }}>
+    <div className={`flex h-full ${showYAxis ? "items-end" : "flex-col justify-end"} ${className}`}>
+      {showYAxis && (
+        <div className="relative flex-shrink-0" style={{ width: 46, height: chartHeight }} aria-hidden="true">
+          {yTicks.map((t, k) => (
+            <span key={k} className="absolute right-2 -translate-y-1/2 text-[11px] tabular-nums text-[var(--text-muted)]" style={{ top: t.top }}>{formatValue(t.value)}</span>
+          ))}
+        </div>
+      )}
+      <div className={`relative ${showYAxis ? "flex-1" : ""}`} style={{ height: chartHeight }}>
         {/* Continuous horizontal gridlines */}
         <div
           className="pointer-events-none absolute inset-x-0 flex flex-col justify-between"
@@ -77,7 +96,7 @@ export function VerticalBarChart({
             const alpha = Math.max(0.12, 1 - i * 0.28);
             // Réserve VALUE_GAP px en haut pour que la valeur tienne toujours
             const barHeight = Math.max(ratio * (barsAreaHeight - VALUE_GAP), ratio > 0 ? 6 : 0);
-            const valueInside = barHeight >= 36 && alpha >= 0.5;
+            const valueInside = barHeight >= 36 && (d.color != null || alpha >= 0.5);
             return (
               <div
                 key={d.label}
@@ -97,7 +116,7 @@ export function VerticalBarChart({
                       style={{
                         width: barWidth,
                         height: barHeight,
-                        backgroundColor: withAlpha(color, alpha),
+                        backgroundColor: d.color ?? withAlpha(color, alpha),
                       }}
                     />
                   </div>
@@ -118,9 +137,9 @@ export function VerticalBarChart({
 
         {/* Labels */}
         <div className="absolute inset-x-0 bottom-0 flex justify-around" style={{ height: LABEL_GAP }}>
-          {data.map((d) => (
+          {data.map((d, i) => (
             <div key={d.label} className="flex flex-1 items-center justify-center">
-              <span className="text-[13px] tracking-body text-[var(--text-secondary)]">{d.label}</span>
+              {renderLabel ? renderLabel(d, i) : <span className="text-[13px] tracking-body text-[var(--text-secondary)]">{d.label}</span>}
             </div>
           ))}
         </div>

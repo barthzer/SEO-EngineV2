@@ -12,9 +12,9 @@ const counts = {
 
 export default function BriefsPage() {
   return (
-    <div className="flex flex-1 min-h-0 flex-col py-[var(--page-py)]">
-      {/* Header — borné à --page-max-w pour la lisibilité du titre */}
-      <div className="mx-auto mb-8 w-full max-w-[var(--page-max-w)] flex-shrink-0 px-[var(--page-px)]">
+    <div className="flex flex-1 min-h-0 flex-col py-5">
+      {/* Header */}
+      <div className="mb-8 w-full flex-shrink-0 px-5">
         <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
           <ArrowLeftIcon className="h-3.5 w-3.5" />
           Projets

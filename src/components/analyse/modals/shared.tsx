@@ -37,7 +37,7 @@ export function ModalShell({
       <div
         role="dialog"
         aria-modal="true"
-        className={`t-modal ${modalClass} relative w-full rounded-3xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
+        className={`t-modal ${modalClass} relative w-full rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
         style={{ maxWidth: `${maxWidth}px` }}
       >
         <button onClick={requestClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">

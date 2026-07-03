@@ -7,6 +7,8 @@ import Link from "next/link";
 import { use } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { usePageMeta } from "@/context/PageMetaContext";
+import { useChat } from "@/context/ChatContext";
+import { ChatAiIcon } from "@/components/chat/ChatWidget";
 import { Button } from "@/components/Button";
 import { useToast } from "@/context/ToastContext";
 import { Tooltip, ChartTooltip } from "@/components/Tooltip";
@@ -17,23 +19,25 @@ import { AuditTechniqueTab } from "@/components/AuditTechniqueTab";
 import { AuditEditorialTab } from "@/components/AuditEditorialTab";
 import { AuditNetlinkingTab } from "@/components/AuditNetlinkingTab";
 import { Stepper } from "@/components/Stepper";
-import { BlocCard, type BlocDef } from "@/components/BlocCard";
+import { BlocCard } from "@/components/BlocCard";
 import { CannibalView } from "@/components/CannibalView";
 import { DeltaIndicator } from "@/components/DeltaIndicator";
 import { NetlinkingView } from "@/components/NetlinkingView";
 import { HistoriqueView } from "@/components/analyse/HistoriqueView";
+import { OpportunitesView } from "@/components/analyse/OpportunitesView";
+import { CreationView } from "@/components/analyse/CreationView";
+import { contentBlocs } from "@/components/analyse/contentBlocs";
 import { NotesView } from "@/components/analyse/NotesView";
 import { BenchmarkView } from "@/components/analyse/BenchmarkView";
+import { VisibiliteIAView } from "@/components/geo/VisibiliteIAView";
 import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
-import { AuditToc, type TocItem } from "@/components/AuditToc";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
 import { useDrawer } from "@/context/DrawerContext";
 import { ShareLinkDrawer } from "@/components/share/ShareLinkDrawer";
 import {
   ChevronRightIcon,
   ArrowRightIcon,
-  ArrowTopRightOnSquareIcon,
   XMarkIcon,
   EllipsisHorizontalIcon,
   EllipsisVerticalIcon,
@@ -47,9 +51,6 @@ import {
   FolderOpenIcon,
   BoltIcon,
   ChevronDownIcon,
-  PhotoIcon,
-  CursorArrowRaysIcon,
-  ArrowsPointingOutIcon,
   PlusIcon,
   ArrowUpTrayIcon,
   ExclamationCircleIcon,
@@ -103,14 +104,15 @@ import { NewBriefModal } from "@/components/analyse/modals/NewBriefModal";
 import { ImportModal } from "@/components/analyse/modals/ImportModal";
 import { ConnectModal, ConnBadge, type Tool } from "@/components/analyse/modals/ConnectModal";
 import { ParametresModal } from "@/components/analyse/modals/ParametresModal";
+import { ModalShell } from "@/components/analyse/modals/shared";
 import { KeywordStudyModal } from "@/components/analyse/modals/KeywordStudyModal";
 
 
 /* ── Helpers extracted to @/components/analyse — voir wave 1 & 2 du refactor ── */
-import { Tab, TABS, TAB_TITLES, TAB_SUBTITLES, sectionForTab } from "@/components/analyse/constants";
-import { HealthCard } from "@/components/analyse/HealthCard";
+import { Tab, TABS, TAB_TITLES, TAB_SUBTITLES } from "@/components/analyse/constants";
+import { IconBadge } from "@/components/IconBadge";
+import { scoreColor } from "@/data/projects";
 import { PositionBarChart } from "@/components/analyse/charts/PositionBarChart";
-import { OrganicCompetitorsTable } from "@/components/analyse/charts/OrganicCompetitorsTable";
 import { VisibilityLineChart } from "@/components/analyse/charts/VisibilityLineChart";
 import { ChartBar, InsightList } from "@/components/analyse/charts/ChartPrimitives";
 import { TopPages } from "@/components/analyse/charts/TopPages";
@@ -128,14 +130,24 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   const { show: showToast } = useToast();
   // Tab state is driven by `?tab=` in the URL so the sidebar can navigate to it directly.
   const rawTab = (searchParams.get("tab") ?? "general") as Tab;
-  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations","historique","notes","benchmark"] as Tab[]).includes(rawTab) ? rawTab : "general";
+  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations","opportunites","creation","historique","notes","benchmark","geo"] as Tab[]).includes(rawTab) ? rawTab : "general";
   const setTab = (next: Tab) => {
     const sp = new URLSearchParams(searchParams.toString());
     if (next === "general") sp.delete("tab"); else sp.set("tab", next);
     router.replace(`${pathname}${sp.toString() ? `?${sp.toString()}` : ""}`, { scroll: false });
   };
-  const [auditTab, setAuditTab] = useState<"technique" | "editorial" | "netlinking">("technique");
+  // Sous-onglet d'audit — piloté par `?section=` (ex. depuis les cartes Santé du projet).
+  const auditSection = searchParams.get("section");
+  const [auditTab, setAuditTab] = useState<"technique" | "editorial" | "netlinking">(
+    auditSection === "editorial" ? "editorial" : auditSection === "netlinking" ? "netlinking" : "technique",
+  );
+  useEffect(() => {
+    if (tab === "audit" && (auditSection === "technique" || auditSection === "editorial" || auditSection === "netlinking")) {
+      setAuditTab(auditSection);
+    }
+  }, [tab, auditSection]);
   const [parametresOpen, setParametresOpen] = useState(false);
+  const [relaunchOpen, setRelaunchOpen] = useState(false);
   const [urlModal, setUrlModal] = useState<"import-csv" | "add-url" | "new-brief" | null>(null);
   const [gscConnected, setGscConnected] = useState(true);
   const [ga4Connected, setGa4Connected] = useState(true);
@@ -148,26 +160,52 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   function openPageByUrl(url: string) {
     setPendingBriefUrl(url);
   }
+  // Filtre de lot à pré-appliquer dans la vue URLs (ex. clic sur un "Lot récent").
+  const [pendingTagFilter, setPendingTagFilter] = useState<string | null>(null);
+  function openUrlsWithTag(tag: string) {
+    setPendingTagFilter(tag);
+    setTab("briefs");
+  }
 
 
   /* ── Push project actions (GSC, GA4, ...) into the Topbar's right slot ── */
   const { setMeta } = usePageMeta();
   const { open: drawerOpen } = useDrawer();
+  const { isOpen: chatOpen, toggle: toggleChat } = useChat();
   useEffect(() => {
     setMeta({
       rightSlot: (
         <>
-          <ConnBadge
-            tool="gsc"
-            connected={gscConnected}
-            onClick={() => gscConnected ? setGscConnected(false) : setConnectModal("gsc")}
-            onImport={() => setImportModalOpen(true)}
-          />
-          <ConnBadge
-            tool="ga4"
-            connected={ga4Connected}
-            onClick={() => ga4Connected ? setGa4Connected(false) : setConnectModal("ga4")}
-          />
+          {tab === "briefs" && (
+            <>
+              <ConnBadge
+                tool="gsc"
+                connected={gscConnected}
+                onClick={() => gscConnected ? setGscConnected(false) : setConnectModal("gsc")}
+                onImport={() => setImportModalOpen(true)}
+              />
+              <ConnBadge
+                tool="ga4"
+                connected={ga4Connected}
+                onClick={() => ga4Connected ? setGa4Connected(false) : setConnectModal("ga4")}
+              />
+            </>
+          )}
+          {tab === "audit" && (
+            <Button size="md" variant="secondary" onClick={() => setRelaunchOpen(true)}>
+              <RefreshCw className="h-4 w-4" />
+              Relancer l'audit
+            </Button>
+          )}
+          <Button
+            size="md"
+            variant="secondary"
+            onClick={toggleChat}
+            aria-pressed={chatOpen}
+          >
+            <ChatAiIcon className="h-4 w-4" />
+            Demander
+          </Button>
           <DropdownMenu
             trigger={
               <button className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
@@ -200,7 +238,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
       ),
     });
     return () => setMeta({ rightSlot: null });
-  }, [gscConnected, ga4Connected, setMeta]);
+  }, [tab, gscConnected, ga4Connected, chatOpen, toggleChat, setMeta]);
 
   const DOMAIN_HEALTH: Record<string, { tech: number }> = {
     "leboncoin.fr":   { tech: 84 },
@@ -215,76 +253,39 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   };
   const healthScores = DOMAIN_HEALTH[decodedDomain] ?? { tech: 84 };
 
-  // Sous-onglets de la section courante (sections multi-onglets uniquement).
-  const sectionTabs = sectionForTab(tab)?.tabs ?? [];
-  const showSubTabs = sectionTabs.length > 1;
-
   return (
     <>
     <div className="flex flex-1 flex-col">
-      {/* Barre de sous-onglets — sections regroupées (Contenu, Performance, Suivi).
-          La nav principale (sections) reste dans la Sidebar. */}
-      {showSubTabs && (
-        <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/75 backdrop-blur-md">
-          <div className="mx-auto w-full max-w-[var(--page-max-w)] px-[var(--page-px)]">
-            <div className="relative flex h-12 items-center gap-1">
-              {sectionTabs.map((t) => {
-                const active = tab === t;
-                return (
-                  <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`relative flex h-full cursor-pointer items-center px-4 text-[14px] font-semibold tracking-tight transition-colors ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
-                  >
-                    {TAB_TITLES[t]}
-                    {active && (
-                      <span className="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent-primary" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* La nav des sections + sous-onglets (drill-in) est dans la Sidebar. */}
 
       {/* ── Tab content ── */}
-      <div className={`mx-auto w-full py-[var(--page-py)] ${tab !== "briefs" && tab !== "historique" ? "max-w-[var(--page-max-w)] px-[var(--page-px)]" : ""}`}>
+      <div className={`w-full py-5 ${tab !== "briefs" && tab !== "historique" ? "px-5" : ""}`}>
         {/* key={tab} : force le remount du contenu actif → l'animation `t-tab-enter` rejoue
             à chaque changement d'onglet (fade + slide + blur, ~200ms). */}
-        <div key={tab} className="t-tab-enter">
+        <div key={tab} className="t-tab-enter flex flex-col gap-5">
 
         {/* Titre de la vue + sous-titre éventuel. Skipped pour briefs / tracking / univers /
             recommandations qui rendent leur propre header (title + CTAs sur la même ligne).
             Vue d'ensemble : on accole le nom du projet (lien externe) à droite du titre,
             et la subtitle reprend l'info de fraîcheur GSC/GA4. */}
-        {!["briefs", "tracking", "univers", "recommandations"].includes(tab) && (
-          <div className={`mb-6 ${tab === "historique" ? "px-[var(--page-px)]" : ""}`}>
+        {!["briefs", "tracking", "univers", "recommandations", "geo", "opportunites"].includes(tab) && (
+          <div className={tab === "historique" ? "px-5" : ""}>
             <div className="flex items-baseline gap-2">
               <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
                 {TAB_TITLES[tab]}
               </h1>
               {tab === "general" && (
-                <Tooltip label="Ouvrir dans un nouvel onglet" side="top" portal>
-                  <a
-                    href={`https://${decodedDomain}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group/proj inline-flex items-center gap-2 transition-colors"
-                  >
-                    <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)] transition-opacity group-hover/proj:opacity-70">
-                      {decodedDomain}
-                    </h1>
-                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-[var(--text-muted)] opacity-0 transition-opacity group-hover/proj:opacity-100" />
-                  </a>
-                </Tooltip>
+                <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+                  {decodedDomain}
+                </h1>
+              )}
+              {tab === "general" && (gscConnected || ga4Connected) && (
+                <span className="self-center rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-secondary)]">
+                  Mis à jour aujourd&apos;hui
+                </span>
               )}
             </div>
-            {tab === "general" && (gscConnected || ga4Connected) ? (
-              <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
-                Mis à jour aujourd&apos;hui · 133 pages crawlées · 12 pages non indexées
-              </p>
-            ) : TAB_SUBTITLES[tab] && (
+            {tab !== "general" && TAB_SUBTITLES[tab] && (
               <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">
                 {TAB_SUBTITLES[tab]}
               </p>
@@ -294,219 +295,132 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
         {/* Général tab */}
         {tab === "general" && (
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-5">
 
             {/* Stats globales */}
-            <KpiGroup columns={3}>
+            <KpiGroup columns={4}>
               <KpiCard bare icon={TrendingUp} label="Trafic organique / mois" value="42 800" delta="+8,4 %" sub="vs N−1" />
+              <KpiCard bare icon={LLayers}    label="Pages crawlées"          value="133 / 145" sub="12 pages non indexées" />
               <KpiCard bare icon={LFolderOpen} label="Lots créés"              value="18"     sub="6 actifs · 12 terminés" />
               <KpiCard bare icon={FileText}    label="Analyses générées"          value="147"    sub="63 livrés (43 %)" />
             </KpiGroup>
 
-            {/* 3 blocs stratégiques (GEO retiré — conservé dans le DS pour usage futur) */}
+            {/* Hero — graph visibilité (2/3) + santé du projet en barres (1/3) */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+
+              {/* Gauche 2/3 — Visibilité et trafic organique */}
+              <div className="min-w-0 overflow-hidden rounded-2xl border border-[var(--border-subtle)] p-5">
+                <VisibilityLineChart title="Visibilité et trafic organique" subtitle="Visibilité Haloscan" />
+              </div>
+
+              {/* Droite 1/3 — Santé du projet (cards cliquables) */}
+              <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+                <div className="px-5 pb-4 pt-5">
+                  <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Santé du projet</p>
+                  <p className="mt-1.5 text-[14px] leading-snug tracking-caption text-[var(--text-secondary)]">
+                    Score global <span className="font-semibold">59/100</span>
+                  </p>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-1 px-2.5 pb-2.5">
+                  {([
+                    { label: "Technique",    score: healthScores.tech, icon: Settings,  href: `/analyse/${domain}?tab=audit&section=technique` },
+                    { label: "Éditorial",    score: 61,                icon: FileText,  href: `/analyse/${domain}?tab=audit&section=editorial` },
+                    { label: "Netlinking",   score: 48,                icon: LinkIcon,  href: `/analyse/${domain}?tab=audit&section=netlinking` },
+                    { label: "Visibilité IA", score: 41,               icon: LSparkles, href: `/analyse/${domain}?tab=geo` },
+                  ] as const).map((s) => {
+                    const c = scoreColor(s.score);
+                    const status = s.score >= 80 ? "Excellent" : s.score >= 65 ? "Bon" : s.score >= 50 ? "Moyen" : "Faible";
+                    return (
+                      <button
+                        key={s.label}
+                        onClick={() => router.push(s.href)}
+                        className="group flex flex-1 items-center gap-3 rounded-2xl border border-transparent px-2.5 py-2.5 text-left transition-all hover:border-[var(--border-subtle)] hover:bg-[var(--bg-card-static)]"
+                      >
+                        <IconBadge icon={s.icon} size="sm" color="var(--text-secondary)" bg="var(--bg-subtle)" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[14px] font-medium text-[var(--text-primary)]">{s.label}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                                style={{ color: c, backgroundColor: `color-mix(in oklab, ${c} 12%, transparent)` }}
+                              >
+                                {status}
+                              </span>
+                              <span className="text-[15px] font-semibold tabular-nums leading-none" style={{ color: c }}>{s.score}</span>
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-card-static)]">
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${s.score}%`, backgroundColor: c }} />
+                          </div>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4 flex-shrink-0 text-[var(--text-muted)] transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* 4 blocs stratégiques */}
             <div>
               <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Blocs stratégiques</p>
-              <div className="grid grid-cols-3 gap-3">
-                {([
-                  {
-                    gradFrom: "#00CCFF", gradTo: "#3265FF", iconBottomColor: "#3265FF",
-                    color: "#3265FF", colorBg: "rgba(50,101,255,0.08)",
-                    title: "Optimiser les pages existantes",
-                    description: "Scoring auto, priorisation, analyse d'optimisation",
-                    features: ["Analyse EMC par page","Score sémantique","Maillage interne","Balises meta & titres","Core Web Vitals"],
-                    cta: `/analyse/${encodeURIComponent(decodedDomain)}?tab=briefs`,
-                    iconPaths: (fill: string) => (<>
-                      <path fillRule="evenodd" fill={fill} d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z" clipRule="evenodd" />
-                      <path fill={fill} d="m10.076 8.64-2.201-2.2V4.874a.75.75 0 0 0-.364-.643l-3.75-2.25a.75.75 0 0 0-.916.113l-.75.75a.75.75 0 0 0-.113.916l2.25 3.75a.75.75 0 0 0 .643.364h1.564l2.062 2.062 1.575-1.297Z" />
-                      <path fillRule="evenodd" fill={fill} d="m12.556 17.329 4.183 4.182a3.375 3.375 0 0 0 4.773-4.773l-3.306-3.305a6.803 6.803 0 0 1-1.53.043c-.394-.034-.682-.006-.867.042a.589.589 0 0 0-.167.063l-3.086 3.748Zm3.414-1.36a.75.75 0 0 1 1.06 0l1.875 1.876a.75.75 0 1 1-1.06 1.06L15.97 17.03a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-                    </>),
-                  },
-                  {
-                    gradFrom: "#FFB930", gradTo: "#FB5F26", iconBottomColor: "#FFB930",
-                    color: "#FB5F26", colorBg: "rgba(251,95,38,0.08)",
-                    title: "Identifier les pages manquantes",
-                    description: "Moteur EMC : détecte thématiques non couvertes",
-                    features: ["Analyse concurrentielle","Gaps de mots-clés","Pages intermédiaires","Cocon sémantique","Intentions de recherche"],
-                    cta: `/analyse/${encodeURIComponent(decodedDomain)}?tab=recommandations`,
-                    iconPaths: (fill: string) => (<>
-                      <path fill={fill} d="M12 .75a8.25 8.25 0 0 0-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 0 0 .577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.714 6.714 0 0 1-.937-.171.75.75 0 1 1 .374-1.453 5.261 5.261 0 0 0 2.626 0 .75.75 0 1 1 .374 1.452 6.712 6.712 0 0 1-.937.172v4.66c0 .327.277.586.6.545.364-.047.722-.112 1.074-.195a.75.75 0 0 0 .577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0 0 12 .75Z" />
-                      <path fillRule="evenodd" fill={fill} d="M9.013 19.9a.75.75 0 0 1 .877-.597 11.319 11.319 0 0 0 4.22 0 .75.75 0 1 1 .28 1.473 12.819 12.819 0 0 1-4.78 0 .75.75 0 0 1-.597-.876ZM9.754 22.344a.75.75 0 0 1 .824-.668 13.682 13.682 0 0 0 2.844 0 .75.75 0 1 1 .156 1.492 15.156 15.156 0 0 1-3.156 0 .75.75 0 0 1-.668-.824Z" clipRule="evenodd" />
-                    </>),
-                  },
-                  {
-                    gradFrom: "#6270F7", gradTo: "var(--accent-primary)", iconBottomColor: "var(--accent-primary)",
-                    color: "var(--accent-primary)", colorBg: "rgba(62,80,245,0.08)",
-                    title: "Créer page from scratch",
-                    description: "Mot-clé + type de page, filtre SERP automatique",
-                    features: ["Recherche de mots-clés","Analyse IA complète","Structure d'URL","Maillage cible","Calendrier éditorial"],
-                    onClick: () => setUrlModal("new-brief"),
-                    iconPaths: (fill: string) => (<>
-                      <path fillRule="evenodd" fill={fill} d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clipRule="evenodd" />
-                      <path fill={fill} d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z" />
-                    </>),
-                  },
-                ] satisfies BlocDef[]).map((bloc, index) => (
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {contentBlocs(decodedDomain, { onNewBrief: () => setUrlModal("new-brief") }).map((bloc, index) => (
                   <BlocCard key={bloc.title} bloc={bloc} index={index} />
                 ))}
               </div>
             </div>
 
-            {/* Bilans santé — 3 cards cliquables avec hover bg (comme les Blocs stratégiques) */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
-                <HealthCard
-                  title="Santé technique"
-                  score={healthScores.tech}
-                  critiques={3}
-                  visitesRisk="99"
-                  quote="3 problèmes techniques critiques impactent 99 visites/mois. Priorité : corriger les balises titres et réduire les temps de réponse pour récupérer ce trafic."
-                  ctaHref={`/analyse/${domain}/audit`}
-                />
-              </div>
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
-                <HealthCard
-                  title="Santé éditoriale"
-                  score={61}
-                  critiques={2}
-                  importants={6}
-                  visitesRisk="4,1k"
-                  quote="Vos 9 pages manquent de signaux E-E-A-T, exposant 1 361 visites/mois. Priorité : renforcer la crédibilité et l'expertise avant le prochain Core Update pour sécuriser ce trafic."
-                  note="3 détecteurs avec données partielles"
-                  ctaHref={`/analyse/${domain}/audit?tab=editorial`}
-                />
-              </div>
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] transition-colors hover:bg-[var(--bg-subtle)]">
-                <HealthCard
-                  title="Santé Netlinking"
-                  score={48}
-                  critiques={1}
-                  importants={4}
-                  visitesRisk="2,3k"
-                  quote="Profil de backlinks sous-dimensionné face aux concurrents (TF 15 vs moyenne 32). Priorité : campagne d'outreach ciblée pour combler le gap d'autorité avant la prochaine vague de Core Update."
-                  note="Risque spam : −46% vs concurrents"
-                  ctaHref={`/analyse/${domain}?tab=netlinking`}
-                />
-              </div>
-            </div>
+            {/* Action — lots en cours puis pouls du projet, empilés */}
+            <div className="flex flex-col gap-5">
 
-            {/* Core Web Vitals — bloc indépendant */}
-            <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)]">
-              <div className="p-7">
-                <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
-                <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Simulation Lighthouse · 10 URLs · 26 avr.</p>
-              </div>
-              <div className="flex px-7 pb-7 gap-4">
-                {[
-                  { key: "LCP", label: "Largest Contentful Paint", icon: PhotoIcon,            value: "4.52 s", status: "Mauvais", threshold: "≤ 2.5s",  color: "var(--color-danger)", bg: "var(--color-danger-bg)" },
-                  { key: "INP", label: "Interaction to Next Paint", icon: CursorArrowRaysIcon,  value: "4 ms",   status: "Bon",     threshold: "≤ 200ms", color: "var(--color-success)", bg: "var(--color-success-bg)" },
-                  { key: "CLS", label: "Cumulative Layout Shift",   icon: ArrowsPointingOutIcon, value: "0.05",  status: "Bon",     threshold: "≤ 0.1",   color: "var(--color-success)", bg: "var(--color-success-bg)" },
-                ].map((m) => (
-                  <div key={m.key} className="flex flex-1 items-center gap-4 px-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border-medium)]">
-                      <m.icon className="h-5 w-5 text-[var(--text-primary)]" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[11px] font-semibold text-[var(--text-muted)]">{m.key}</span>
-                      <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{m.value}</p>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: m.color, backgroundColor: m.bg }}>{m.status}</span>
-                        <span className="text-[11px] text-[var(--text-muted)]">{m.threshold}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Distribution des positions + Visibilité — 2 colonnes */}
-            <div className="grid grid-cols-2 gap-4">
-
-              {/* Distribution des positions — bar chart */}
-              <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] p-7">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
-                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
-                  </div>
-                  <Tooltip
-                    side="top"
-                    label={<>
-                      <span className="block text-[12px] text-white"><span className="font-semibold">5</span> mots-clés dans le top 100 / <span className="font-semibold">2 081</span> détectés (Haloscan)</span>
-                      <span className="mt-1 block text-[11px] text-white/70">2 076 mots-clés au-delà de la position 100</span>
-                    </>}
-                  >
-                    <button className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                        <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <path d="M7.5 6.5v4M7.5 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                      </svg>
-                    </button>
-                  </Tooltip>
+              {/* Lots récents */}
+              <div>
+                <div className="mb-4 flex items-baseline justify-between">
+                  <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Lots récents</p>
+                  <button onClick={() => setTab("briefs")} className="text-[14px] font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">Voir tout</button>
                 </div>
-                <div className="flex-1">
-                  <PositionBarChart />
+                <TagList onNavigate={(tag) => (tag ? openUrlsWithTag(tag) : setTab("briefs"))} columns={4} />
+              </div>
+
+              {/* Activités récentes */}
+              <div>
+                <div className="mb-4 flex items-baseline justify-between">
+                  <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Activités récentes</p>
+                  <button className="text-[14px] font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">Voir tout</button>
                 </div>
-              </div>
-
-              {/* Visibilité et trafic organique */}
-              <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] p-7">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
-                    <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">Visibilité Haloscan</p>
-                  </div>
-                  <Button size="sm" variant="secondary" onClick={() => setTab("seo")}>
-                    Voir Analytics SEO
-                    <ArrowRightIcon className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                <VisibilityLineChart />
-              </div>
-
-            </div>
-
-            {/* Concurrents organiques */}
-            <OrganicCompetitorsTable />
-
-            {/* Tags actifs */}
-            <div>
-              <p className="mb-4 text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Lots récents</p>
-              <TagList onNavigate={() => setTab("briefs")} />
-            </div>
-
-            {/* Activités récentes */}
-            <div>
-              <div className="mb-4 flex items-baseline justify-between">
-                <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Activités récentes</p>
-                <button className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Voir tout</button>
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
-                {[
-                  { label: "Analyse publiée",      desc: "Guide SEO local complet · optimisé",          time: "Il y a 2h",  color: "var(--color-success)", Icon: FileText },
-                  { label: "Score mis à jour",  desc: "Score sémantique /blog/link-building : 55 → 67", time: "Il y a 5h",  color: "var(--color-warning)", Icon: TrendingUp },
-                  { label: "Lot créé",          desc: "Lot GEO — Structured data · 6 URLs",          time: "Hier",       color: "#A855F7", Icon: LTag },
-                  { label: "Analyse lancée",    desc: "Nouveau crawl GSC · 1 048 pages indexées",    time: "28 avr.",    color: "var(--accent-primary)", Icon: LPlay },
-                  { label: "Analyse livrée",       desc: "Schema.org et données structurées",           time: "27 avr.",    color: "var(--color-success)", Icon: CircleCheck },
-                ].map((a, i, arr) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${i < arr.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
-                  >
-                    <span
-                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
-                      style={{ backgroundColor: `color-mix(in oklab, ${a.color} 12%, transparent)`, color: a.color }}
+                <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+                  {[
+                    { label: "Analyse publiée",      desc: "Guide SEO local complet · optimisé",          time: "Il y a 2h",  color: "var(--color-success)", Icon: FileText },
+                    { label: "Score mis à jour",  desc: "Score sémantique /blog/link-building : 55 → 67", time: "Il y a 5h",  color: "var(--color-warning)", Icon: TrendingUp },
+                    { label: "Lot créé",          desc: "Lot GEO — Structured data · 6 URLs",          time: "Hier",       color: "#A855F7", Icon: LTag },
+                    { label: "Analyse lancée",    desc: "Nouveau crawl GSC · 1 048 pages indexées",    time: "28 avr.",    color: "var(--accent-primary)", Icon: LPlay },
+                    { label: "Analyse livrée",       desc: "Schema.org et données structurées",           time: "27 avr.",    color: "var(--color-success)", Icon: CircleCheck },
+                  ].map((a, i, arr) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${i < arr.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
                     >
-                      <a.Icon className="h-4 w-4" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{a.label}</p>
-                      <p className="truncate text-[12px] text-[var(--text-secondary)]">{a.desc}</p>
-                    </div>
-                    <span className="flex-shrink-0 text-[11px] tracking-caption text-[var(--text-muted)]">{a.time}</span>
-                  </button>
-                ))}
+                      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
+                        <a.Icon className="h-4 w-4" />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{a.label}</p>
+                          <ChevronRightIcon className="h-3.5 w-3.5 flex-shrink-0 -translate-x-1 text-[var(--text-muted)] opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100" />
+                        </div>
+                        <p className="truncate text-[14px] text-[var(--text-secondary)]">{a.desc}</p>
+                      </div>
+                      <span className="flex-shrink-0 text-[12px] tracking-caption text-[var(--text-muted)]">{a.time}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
+
             </div>
 
           </div>
@@ -519,6 +433,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           <BriefsView
             initialBriefUrl={pendingBriefUrl}
             onPendingHandled={() => setPendingBriefUrl(null)}
+            initialTagFilter={pendingTagFilter}
+            onTagFilterHandled={() => setPendingTagFilter(null)}
           />
         </div>
 
@@ -542,7 +458,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                 <div className="grid grid-cols-2 gap-4">
 
                   {/* Distribution des positions */}
-                  <div className="flex flex-col rounded-3xl border border-[var(--border-subtle)] p-7">
+                  <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-7">
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Distribution des positions</p>
@@ -569,7 +485,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
                   </div>
 
                   {/* Visibilité et trafic organique */}
-                  <div className="overflow-hidden rounded-3xl border border-[var(--border-subtle)] p-7">
+                  <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] p-7">
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité et trafic organique</p>
@@ -652,7 +568,15 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
         {tab === "benchmark" && <BenchmarkView />}
 
-        {/* B2 — Historique tab : timeline d'actions livrées + impact agrégé par mois. */}
+        {tab === "geo" && <VisibiliteIAView domain={decodedDomain} />}
+
+        {/* Opportunités — hub d'actions : backlog + en-cours, tous leviers, groupés par statut. */}
+        {tab === "opportunites" && <OpportunitesView domain={decodedDomain} />}
+
+        {/* Créer du contenu — blocs stratégiques de production (optimiser / identifier / from scratch / GEO). */}
+        {tab === "creation" && <CreationView domain={decodedDomain} onNewBrief={() => setUrlModal("new-brief")} />}
+
+        {/* B2 — Historique (onglet "Suivi") : timeline d'actions livrées + impact agrégé par mois. */}
         {tab === "historique" && <HistoriqueView />}
 
         {tab === "notes" && <NotesView domain={decodedDomain} />}
@@ -669,62 +593,32 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           />
         )}
 
-        {tab === "audit" && (() => {
-          const TECH_TOC: TocItem[] = [
-            { id: "tec-synthese",      label: "Synthèse" },
-            { id: "tec-urgences",      label: "01 · Urgences" },
-            { id: "tec-optimisations", label: "02 · Optimisations" },
-            { id: "tec-diagnostic",    label: "03 · Diagnostic" },
-            { id: "tec-donnees",       label: "04 · Données brutes" },
-          ];
-          const EDI_TOC: TocItem[] = [
-            { id: "edi-synthese",        label: "Synthèse" },
-            { id: "edi-tags",            label: "Lots" },
-            { id: "edi-diagnostic",      label: "01 · Diagnostic" },
-            { id: "edi-dimensions",      label: "02 · Dimensions" },
-            { id: "edi-donnees",         label: "03 · Données brutes" },
-          ];
-          const NET_TOC: TocItem[] = [
-            { id: "net-benchmark",  label: "01 · Benchmark concurrents" },
-            { id: "net-liens",      label: "02 · Profil des liens" },
-            { id: "net-evolution",  label: "03 · Évolution TF" },
-            { id: "net-topical",    label: "04 · Topical Trust Flow" },
-            { id: "net-ancres",     label: "05 · Ancres" },
-            { id: "net-visibilite", label: "06 · Visibilité SEO" },
-          ];
-          const currentToc = auditTab === "technique" ? TECH_TOC : auditTab === "editorial" ? EDI_TOC : NET_TOC;
-          return (
-            <div className="flex gap-10 items-start">
-              <div className="min-w-0 flex-1 flex flex-col gap-6">
-                {/* Switch Technique / Éditorial / Netlinking — inline, juste sous le titre */}
-                <div className="relative flex h-14 items-center gap-1 border-b border-[var(--border-subtle)]">
-                  {(["technique", "editorial", "netlinking"] as const).map((t) => {
-                    const isActive = auditTab === t;
-                    const label = t === "technique" ? "Technique" : t === "editorial" ? "Éditorial" : "Netlinking";
-                    return (
-                      <button
-                        key={t}
-                        onClick={() => setAuditTab(t)}
-                        className={`relative flex h-full cursor-pointer items-center px-3 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
-                      >
-                        {label}
-                        {isActive && (
-                          <span className="pointer-events-none absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent-primary" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                {auditTab === "technique"  && <AuditTechniqueTab domain={decodedDomain} />}
-                {auditTab === "editorial"  && <AuditEditorialTab domain={decodedDomain} />}
-                {auditTab === "netlinking" && <AuditNetlinkingTab domain={decodedDomain} />}
-              </div>
-              <aside className="w-40 flex-shrink-0 self-stretch">
-                <AuditToc items={currentToc} />
-              </aside>
+        {tab === "audit" && (
+          <div className="flex flex-col gap-5">
+            {/* Switch Technique / Éditorial / Netlinking — inline, juste sous le titre */}
+            <div className="relative flex h-14 items-center gap-1 border-b border-[var(--border-subtle)]">
+              {(["technique", "editorial", "netlinking"] as const).map((t) => {
+                const isActive = auditTab === t;
+                const label = t === "technique" ? "Technique" : t === "editorial" ? "Éditorial" : "Netlinking";
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setAuditTab(t)}
+                    className={`relative flex h-full cursor-pointer items-center px-3 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                  >
+                    {label}
+                    {isActive && (
+                      <span className="pointer-events-none absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent-primary" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          );
-        })()}
+            {auditTab === "technique"  && <AuditTechniqueTab domain={decodedDomain} />}
+            {auditTab === "editorial"  && <AuditEditorialTab domain={decodedDomain} />}
+            {auditTab === "netlinking" && <AuditNetlinkingTab domain={decodedDomain} />}
+          </div>
+        )}
 
         </div>{/* end content animate-fade-in */}
       </div>{/* end content max-w-5xl */}
@@ -771,6 +665,93 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         onClose={() => setParametresOpen(false)}
       />
     )}
+
+    {relaunchOpen && (
+      <RelaunchAuditModal
+        onClose={() => setRelaunchOpen(false)}
+        onConfirm={(labels) => {
+          setRelaunchOpen(false);
+          showToast(
+            labels.length === 3
+              ? "Audit complet relancé"
+              : `Audit relancé : ${labels.join(", ")}`,
+            <RefreshCw className="h-5 w-5" />,
+          );
+        }}
+      />
+    )}
   </>
+  );
+}
+
+/* ── Modale de relance d'audit ────────────────────────────────────────── */
+
+const AUDIT_KINDS: { key: "technique" | "editorial" | "netlinking"; label: string; desc: string }[] = [
+  { key: "technique",  label: "Audit technique",  desc: "Crawl, indexation, performance, schemas" },
+  { key: "editorial",  label: "Audit éditorial",  desc: "E-E-A-T, SOSEO, intent, structure Hn" },
+  { key: "netlinking", label: "Audit netlinking", desc: "Trust Flow, ancres, backlinks, benchmark" },
+];
+
+function RelaunchAuditModal({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void;
+  onConfirm: (labels: string[]) => void;
+}) {
+  const [selected, setSelected] = useState<Record<string, boolean>>({
+    technique: true,
+    editorial: true,
+    netlinking: true,
+  });
+  const toggle = (k: string) => setSelected((p) => ({ ...p, [k]: !p[k] }));
+  const chosen = AUDIT_KINDS.filter((a) => selected[a.key]);
+
+  return (
+    <ModalShell onClose={onClose} maxWidth={460}>
+      <h2 className="text-[20px] font-semibold tracking-tight text-[var(--text-primary)]">Relancer l'audit</h2>
+      <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        Sélectionnez les audits à relancer. Les autres conservent leurs résultats actuels.
+      </p>
+
+      <div className="mt-5 flex flex-col gap-2">
+        {AUDIT_KINDS.map((a) => {
+          const on = selected[a.key];
+          return (
+            <button
+              key={a.key}
+              type="button"
+              onClick={() => toggle(a.key)}
+              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${
+                on
+                  ? "border-[var(--accent-primary)] bg-[var(--accent-primary-soft)]"
+                  : "border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)]"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[5px] border transition-colors ${
+                  on ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]" : "border-[var(--border-medium)]"
+                }`}
+              >
+                {on && <CheckIcon className="h-3 w-3 text-white" strokeWidth={3} />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-medium text-[var(--text-primary)]">{a.label}</span>
+                <span className="block text-[12px] text-[var(--text-muted)]">{a.desc}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 flex justify-end gap-2">
+        <Button variant="secondary" onClick={onClose}>Annuler</Button>
+        <Button onClick={() => onConfirm(chosen.map((a) => a.label))} disabled={chosen.length === 0}>
+          <RefreshCw className="h-4 w-4" />
+          Relancer {chosen.length > 0 ? `(${chosen.length})` : ""}
+        </Button>
+      </div>
+    </ModalShell>
   );
 }

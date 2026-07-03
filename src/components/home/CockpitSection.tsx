@@ -157,6 +157,12 @@ function TraficChip({ value, dir }: { value: string; dir: AnalysisRow["traficDir
    PROJECT CARD — chaque projet est sa propre card séparée
    ───────────────────────────────────────────────────────────────────── */
 
+/** Score Visibilité IA (GEO) dérivé — mock : pondère contenu + netlinking, le
+ *  GEO corrélant surtout avec la qualité éditoriale et l'autorité citée. */
+function geoScoreOf(a: AnalysisRow): number {
+  return Math.round((a.scoreContenu * 2 + a.scoreNetlinking) / 3);
+}
+
 function ProjectCard({ a }: { a: AnalysisRow }) {
   return (
     <Link
@@ -183,7 +189,9 @@ function ProjectCard({ a }: { a: AnalysisRow }) {
         technique={a.scoreTechnique}
         contenu={a.scoreContenu}
         netlinking={a.scoreNetlinking}
+        geo={geoScoreOf(a)}
         height={24}
+        compact
       />
 
       <div className="flex items-center gap-5 text-right">
@@ -219,7 +227,7 @@ function AlertRow({ alert: a }: { alert: AlertItem }) {
       href={`/analyse/${encodeURIComponent(a.domain)}`}
       className="group flex items-start gap-2.5 rounded-xl px-2.5 py-2.5 transition-[background-color] duration-150 hover:bg-[var(--bg-card-hover)]"
     >
-      <IconBadge icon={a.icon} size="sm" outline />
+      <IconBadge icon={a.icon} size="sm" color="var(--text-secondary)" bg="var(--bg-subtle)" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-medium text-[var(--text-muted)]">{a.domain}</p>
         <p className="mt-0.5 text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
@@ -240,7 +248,7 @@ function QuickWinRow({ qw }: { qw: QuickWin }) {
       href={`/analyse/${encodeURIComponent(qw.domain)}`}
       className="group flex items-start gap-2.5 rounded-xl px-2.5 py-2.5 transition-[background-color] duration-150 hover:bg-[var(--bg-card-hover)]"
     >
-      <IconBadge icon={ArrowTrendingUpIcon} size="sm" outline />
+      <IconBadge icon={ArrowTrendingUpIcon} size="sm" color="var(--text-secondary)" bg="var(--bg-subtle)" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-medium text-[var(--text-muted)]">{qw.domain}</p>
         <p className="mt-0.5 truncate text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
@@ -303,7 +311,7 @@ export function CockpitSection({ analyses }: { analyses: AnalysisRow[] }) {
       {/* ─── LEFT : liste — pas d'overflow interne, scroll page-level ─── */}
       <section>
         {analyses.length === 0 ? (
-          <div className="rounded-3xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
+          <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
             Aucun projet à afficher.
           </div>
         ) : (
