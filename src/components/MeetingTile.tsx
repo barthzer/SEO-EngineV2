@@ -75,13 +75,13 @@ export function MeetingTile({
         <div className="flex items-center gap-4">
           <CalendarPage date={d} />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="type-micro uppercase tracking-wider">
               Prochain rendez-vous
             </p>
-            <h3 className="mt-1 text-[14px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+            <h3 className="mt-1 type-title leading-tight">
               {topic}
             </h3>
-            <p className="mt-1 text-[12px] capitalize text-[var(--text-secondary)]">
+            <p className="mt-1 type-caption capitalize">
               {weekday}
               {time ? ` · ${time}` : ""}
             </p>
@@ -114,17 +114,17 @@ export function MeetingTile({
         }}
       />
       {/* Titre intégré + contenu */}
-      <h3 className="relative text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
+      <h3 className="relative type-title">
         Prochain rendez-vous
       </h3>
       <div className="relative flex flex-1 flex-col items-center justify-center gap-4">
         <CalendarPage date={d} size="lg" />
         <div>
-          <p className="text-[15px] font-semibold capitalize tracking-tight text-[var(--text-primary)]">
+          <p className="type-title capitalize">
             {weekday} {d.getDate()} {MONTHS_SHORT[d.getMonth()].toLowerCase()}
             {time ? ` · ${time}` : ""}
           </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-secondary)]">
+          <p className="mt-1 type-caption leading-relaxed">
             {topic}
           </p>
         </div>

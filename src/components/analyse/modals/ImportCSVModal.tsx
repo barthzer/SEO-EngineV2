@@ -57,12 +57,12 @@ export function ImportCSVModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 font-semibold tracking-heading text-[var(--text-primary)]">Importer des URLs</h2>
-      <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">Choisissez votre méthode d'importation</p>
+      <h2 className="pr-10 type-h2">Importer des URLs</h2>
+      <p className="mt-1 type-body-sm">Choisissez votre méthode d'importation</p>
 
       <div className="mt-5 flex items-center gap-1 rounded-2xl bg-[var(--bg-secondary)] p-1">
         {([["csv", "Importer CSV"], ["paste", "Coller des URLs"]] as const).map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} className="flex-1 rounded-xl py-1.5 text-[13px] font-medium transition-all"
+          <button key={key} onClick={() => setTab(key)} className="flex-1 rounded-xl py-1.5 type-label transition-all"
             style={tab === key ? { backgroundColor: "var(--modal-bg)", color: "var(--text-primary)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" } : { color: "var(--text-muted)" }}>
             {label}
           </button>
@@ -81,16 +81,16 @@ export function ImportCSVModal({ onClose }: { onClose: () => void }) {
             {file ? (
               <>
                 <FileSpreadsheet className="h-8 w-8 text-[var(--color-success)]" />
-                <p className="text-[14px] font-medium text-[var(--text-primary)]">{file.name}</p>
-                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">
+                <p className="type-body-strong">{file.name}</p>
+                <p className="type-caption">
                   {parsed.length} URL{parsed.length > 1 ? "s" : ""} détectée{parsed.length > 1 ? "s" : ""} · cliquez pour changer
                 </p>
               </>
             ) : (
               <>
                 <Upload className="h-8 w-8 text-[var(--text-muted)]" />
-                <p className="text-[14px] font-medium text-[var(--text-primary)]">Glissez un fichier CSV ou cliquez pour parcourir</p>
-                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">Colonnes : <code className="font-mono text-[11px]">url</code> · <code className="font-mono text-[11px]">keyword</code> (optionnel) · <code className="font-mono text-[11px]">volume</code> (optionnel)</p>
+                <p className="type-body-strong">Glissez un fichier CSV ou cliquez pour parcourir</p>
+                <p className="type-caption">Colonnes : <code className="font-mono type-micro">url</code> · <code className="font-mono type-micro">keyword</code> (optionnel) · <code className="font-mono type-micro">volume</code> (optionnel)</p>
               </>
             )}
             <input
@@ -102,17 +102,17 @@ export function ImportCSVModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {error && <p className="text-[12px] tracking-caption text-[var(--color-danger)]">{error}</p>}
+          {error && <p className="type-caption text-[var(--color-danger)]">{error}</p>}
 
           {parsed.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <p className="text-[13px] font-medium text-[var(--text-secondary)]">Aperçu ({Math.min(5, parsed.length)} premier{parsed.length > 1 ? "s" : ""} sur {parsed.length})</p>
+              <p className="type-label">Aperçu ({Math.min(5, parsed.length)} premier{parsed.length > 1 ? "s" : ""} sur {parsed.length})</p>
               <div className="rounded-xl border border-[var(--border-subtle)] divide-y divide-[var(--border-subtle)]">
                 {parsed.slice(0, 5).map((p, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
-                    <span className="truncate font-mono text-[12px] text-[var(--text-primary)]">{p.url}</span>
+                  <div key={i} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="truncate font-mono type-label text-[var(--text-primary)]">{p.url}</span>
                     {p.keyword && (
-                      <span className="ml-3 flex-shrink-0 rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] tracking-caption text-[var(--text-muted)]">{p.keyword}</span>
+                      <span className="ml-3 flex-shrink-0 rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-micro">{p.keyword}</span>
                     )}
                   </div>
                 ))}
@@ -125,14 +125,14 @@ export function ImportCSVModal({ onClose }: { onClose: () => void }) {
         <div className="mt-5">
           <textarea value={pasted} onChange={(e) => setPasted(e.target.value)}
             placeholder={"https://exemple.com/page-1\nhttps://exemple.com/page-2"}
-            className="w-full resize-none rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 font-mono text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)] transition-colors"
+            className="w-full resize-none rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 font-mono type-body-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)] transition-colors"
             rows={7} autoFocus />
-          <p className="mt-1.5 text-[11px] tracking-caption text-[var(--text-muted)]">Une URL par ligne · {pastedCount} détectée{pastedCount > 1 ? "s" : ""}</p>
+          <p className="mt-1.5 type-micro">Une URL par ligne · {pastedCount} détectée{pastedCount > 1 ? "s" : ""}</p>
         </div>
       )}
 
       <div className="mt-6 flex items-center justify-end gap-3">
-        <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
+        <button onClick={onClose} className="rounded-full px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
         <Button disabled={!canImport} onClick={onClose}>
           Importer {tab === "csv" && parsed.length > 0 ? `${parsed.length} URL${parsed.length > 1 ? "s" : ""}` : tab === "paste" && pastedCount > 0 ? `${pastedCount} URL${pastedCount > 1 ? "s" : ""}` : ""}
         </Button>

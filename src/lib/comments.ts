@@ -100,6 +100,16 @@ export function removeComment(domain: string, id: string): void {
   save(domain, loadComments(domain).filter((c) => c.id !== id));
 }
 
+/** Met à jour le texte d'un commentaire existant (édition d'une note). */
+export function updateComment(domain: string, id: string, text: string): void {
+  const next = text.trim();
+  if (!next) return;
+  save(
+    domain,
+    loadComments(domain).map((c) => (c.id === id ? { ...c, text: next } : c)),
+  );
+}
+
 /** Hook live : renvoie tous les commentaires d'un projet, réactif aux changements. */
 export function useProjectComments(domain: string): ProjectComment[] {
   const [comments, setComments] = useState<ProjectComment[]>([]);

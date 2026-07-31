@@ -113,6 +113,10 @@ export function LineDotChart({
     return { v, y };
   });
 
+  // Positions X retenues (~7 max, espacées) — servent aux labels ET à la grille verticale.
+  const xStep = Math.max(1, Math.ceil(pts.length / 7));
+  const xGridPts = pts.filter((_, i) => i % xStep === 0 || i === pts.length - 1);
+
   function handleMove(e: MouseEvent<SVGSVGElement>) {
     const svg = svgRef.current;
     if (!svg) return;
@@ -152,27 +156,31 @@ export function LineDotChart({
           </linearGradient>
         </defs>
 
-        {/* Y axis labels + grid lines */}
+        {/* Grille verticale — alignée sur les labels de l'axe X (plus de lignes horizontales) */}
+        {xGridPts.map((p, i) => (
+          <line
+            key={`grid-${i}`}
+            x1={p.x}
+            y1={PAD_TOP}
+            x2={p.x}
+            y2={PAD_TOP + chartH}
+            stroke="var(--border-subtle)"
+            strokeWidth={1}
+          />
+        ))}
+
+        {/* Y axis labels */}
         {ticks.map((t, i) => (
-          <g key={i}>
-            <line
-              x1={yAxisWidth}
-              y1={t.y}
-              x2={yAxisWidth + chartW}
-              y2={t.y}
-              stroke="var(--border-subtle)"
-              strokeWidth={1}
-            />
-            <text
-              x={yAxisWidth - 6}
-              y={t.y + 4}
-              textAnchor="end"
-              fontSize={12}
-              fill="var(--text-muted)"
-            >
-              {formatValue(t.v)}
-            </text>
-          </g>
+          <text
+            key={i}
+            x={yAxisWidth - 6}
+            y={t.y + 4}
+            textAnchor="end"
+            fontSize={12}
+            fill="var(--text-muted)"
+          >
+            {formatValue(t.v)}
+          </text>
         ))}
 
         {/* Area gradient */}
@@ -188,27 +196,19 @@ export function LineDotChart({
           strokeLinejoin="round"
         />
 
-        {/* Date labels — thinned out pour éviter overlap (max ~7 labels affichés) */}
-        {(() => {
-          const targetLabels = 7;
-          const step = Math.max(1, Math.ceil(pts.length / targetLabels));
-          return pts.map((p, i) => {
-            const show = i % step === 0 || i === pts.length - 1;
-            if (!show) return null;
-            return (
-              <text
-                key={i}
-                x={p.x}
-                y={height - 4}
-                textAnchor="middle"
-                fontSize={12}
-                fill="var(--text-muted)"
-              >
-                {formatXLabel(p.date)}
-              </text>
-            );
-          });
-        })()}
+        {/* Date labels — mêmes positions que la grille verticale (max ~7) */}
+        {xGridPts.map((p, i) => (
+          <text
+            key={i}
+            x={p.x}
+            y={height - 4}
+            textAnchor="middle"
+            fontSize={12}
+            fill="var(--text-muted)"
+          >
+            {formatXLabel(p.date)}
+          </text>
+        ))}
 
         {/* Dots */}
         {pts.map((p, i) => (
@@ -246,8 +246,8 @@ export function LineDotChart({
         return (
           <ChartTooltip x={tipX} y={tipY} portal>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] text-white/60">{formatDate(hovPt.date)}</span>
-              <span className="text-[13px] font-semibold text-white">{formatValue(hovPt.val)}</span>
+              <span className="type-micro text-white/60">{formatDate(hovPt.date)}</span>
+              <span className="type-label text-white">{formatValue(hovPt.val)}</span>
             </div>
           </ChartTooltip>
         );

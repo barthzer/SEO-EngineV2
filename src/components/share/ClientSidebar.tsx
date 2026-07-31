@@ -56,7 +56,7 @@ export function ClientSidebar({ token, agency: fallbackAgency }: { token: string
             {agency.initials}
           </div>
         )}
-        <span className="text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
+        <span className="type-body-strong font-semibold">
           {agency.name}
         </span>
       </div>
@@ -77,7 +77,7 @@ export function ClientSidebar({ token, agency: fallbackAgency }: { token: string
             <Link
               key={item.href}
               href={targetPath}
-              className={`flex h-9 w-full items-center gap-2 rounded-xl pr-2 text-[14px] font-medium tracking-body transition-colors duration-150 ${
+              className={`flex h-9 w-full items-center gap-2 rounded-xl pr-2 type-body-strong transition-colors duration-150 ${
                 isActive
                   ? "bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]"
                   : "text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
@@ -94,10 +94,10 @@ export function ClientSidebar({ token, agency: fallbackAgency }: { token: string
 
       {/* Footer subtle */}
       <div className="mt-auto px-4">
-        <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
+        <p className="type-micro uppercase tracking-[0.12em] text-[var(--text-muted)]">
           Portail client
         </p>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--text-muted)]">
+        <p className="mt-1.5 type-micro leading-relaxed text-[var(--text-muted)]">
           Vue partagée par {agency.name}. Lecture seule.
         </p>
       </div>

@@ -39,7 +39,7 @@ function SemrushFileField({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-[13px] font-medium text-[var(--text-secondary)]">
+      <label className="type-label">
         {label} {required && <span className="text-[var(--color-danger)]">*</span>}
       </label>
       <div
@@ -64,8 +64,8 @@ function SemrushFileField({
           <>
             <FileSpreadsheet className="h-6 w-6 flex-shrink-0 text-[var(--color-success)]" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{file.name}</p>
-              <p className="text-[11px] tracking-caption text-[var(--text-muted)]">{(file.size / 1024).toFixed(1)} Ko · cliquez pour changer</p>
+              <p className="truncate type-label text-[var(--text-primary)]">{file.name}</p>
+              <p className="type-micro">{(file.size / 1024).toFixed(1)} Ko · cliquez pour changer</p>
             </div>
             <button
               type="button"
@@ -80,8 +80,8 @@ function SemrushFileField({
           <>
             <Upload className="h-6 w-6 flex-shrink-0 text-[var(--text-muted)]" />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium text-[var(--text-primary)]">Aucun fichier choisi</p>
-              <p className="text-[11px] tracking-caption text-[var(--text-muted)]">Glissez un export CSV / XLSX ou cliquez pour parcourir</p>
+              <p className="type-label text-[var(--text-primary)]">Aucun fichier choisi</p>
+              <p className="type-micro">Glissez un export CSV / XLSX ou cliquez pour parcourir</p>
             </div>
           </>
         )}
@@ -163,8 +163,8 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
 
         {/* Header */}
         <div className="flex-shrink-0 px-8 pt-8 pb-4">
-          <h2 className="pr-10 font-semibold tracking-heading text-[var(--text-primary)]">Identifier les pages manquantes</h2>
-          <p className="mt-1 text-[13px] tracking-body text-[var(--text-muted)]">
+          <h2 className="pr-10 type-h2">Identifier les pages manquantes</h2>
+          <p className="mt-1 type-body-sm">
             Détectez les mots-clés que vos concurrents ont et que vous n'avez pas. Vous validerez chaque création d'URL et d'analyse ensuite.
           </p>
         </div>
@@ -190,10 +190,10 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
               <div className="flex items-start gap-3">
                 <ExclamationCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--color-warning)]" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold text-[var(--text-primary)]">
+                  <p className="type-label font-semibold text-[var(--text-primary)]">
                     <span className="tabular-nums">{DETECTED_DUPLICATES.length}</span> mots-clés déjà exploités détectés
                   </p>
-                  <p className="mt-0.5 text-[12px] text-[var(--text-secondary)]">
+                  <p className="mt-0.5 type-caption">
                     Sur les {EXISTING_KEYWORDS.length}+ mots-clés actuellement couverts par vos URLs existantes. Comment les traiter dans le listing ?
                   </p>
 
@@ -219,10 +219,10 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
                             {active && <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className={`block text-[13px] font-medium ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+                            <span className={`block type-label ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
                               {opt.label}
                             </span>
-                            <span className="mt-0.5 block text-[12px] tracking-caption text-[var(--text-muted)]">
+                            <span className="mt-0.5 block type-caption">
                               {opt.desc}
                             </span>
                           </span>
@@ -234,7 +234,7 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
                   <button
                     type="button"
                     onClick={() => setShowDupesList((v) => !v)}
-                    className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--accent-primary)] transition-opacity hover:opacity-80"
+                    className="mt-3 inline-flex items-center gap-1 type-caption font-medium text-[var(--accent-primary)] transition-opacity hover:opacity-80"
                   >
                     {showDupesList ? "Masquer" : "Voir"} la liste des doublons détectés
                     <ChevronDownIcon className={`h-3 w-3 transition-transform ${showDupesList ? "rotate-180" : ""}`} />
@@ -248,10 +248,10 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
                           className={`grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2 ${i < DETECTED_DUPLICATES.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-[12.5px] font-medium text-[var(--text-primary)]">{d.keyword}</p>
-                            <p className="truncate font-mono text-[10.5px] text-[var(--text-muted)]">{d.existingUrl}</p>
+                            <p className="truncate type-label text-[var(--text-primary)]">{d.keyword}</p>
+                            <p className="truncate font-mono type-micro">{d.existingUrl}</p>
                           </div>
-                          <span className="text-[10.5px] tracking-caption text-[var(--text-muted)]">{d.lastAnalysis}</span>
+                          <span className="type-micro">{d.lastAnalysis}</span>
                         </div>
                       ))}
                     </div>
@@ -264,7 +264,7 @@ export function KeywordStudyModal({ onClose, onLaunch }: { onClose: () => void; 
 
         {/* Footer sticky avec separator */}
         <div className="flex-shrink-0 flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] bg-[var(--modal-bg)] px-8 py-4">
-          <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
+          <button onClick={onClose} className="rounded-full px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
           <Button disabled={!canLaunch} onClick={handleLaunch}>
             <LSparkles className="h-4 w-4" />
             Lancer l'étude de mots-clés

@@ -29,7 +29,11 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top?: number; bottom?: number; left: number; width: number | "auto" }>({ left: 0, width });
+  // Direction verticale effective : respecte `upward` explicite, sinon auto-flip
+  // vers le haut quand il n'y a pas assez de place en dessous (dernières lignes).
+  const [openUp, setOpenUp] = useState(upward);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   function openDropdown() {
     setMounted(true);
@@ -51,17 +55,23 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
     if (!open || !triggerRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
     const resolvedWidth = matchTrigger ? r.width : width;
+    // Hauteur réelle du menu (déjà monté) pour décider du sens vertical.
+    const menuH = menuRef.current?.offsetHeight ?? 0;
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top;
+    const up = upward || (menuH + 16 > spaceBelow && spaceAbove > spaceBelow);
+    setOpenUp(up);
     setCoords({
-      top: upward ? undefined : r.bottom + 8,
-      bottom: upward ? window.innerHeight - r.top + 8 : undefined,
+      top: up ? undefined : r.bottom + 8,
+      bottom: up ? window.innerHeight - r.top + 8 : undefined,
       left: align === "right" ? r.right - (resolvedWidth === "auto" ? 0 : resolvedWidth) : r.left,
       width: resolvedWidth,
     });
   }, [open, align, width, matchTrigger, upward]);
 
-  /** Origin-aware : map align + upward → data-origin du skill */
+  /** Origin-aware : map align + sens vertical effectif → data-origin du skill */
   const origin = (() => {
-    const v = upward ? "bottom" : "top";
+    const v = openUp ? "bottom" : "top";
     const h = align === "right" ? "right" : "left";
     return `${v}-${h}` as const;
   })();
@@ -76,8 +86,9 @@ export function DropdownMenu({ trigger, children, align = "left", width = 240, m
         <>
           <div className="fixed inset-0 z-[1100]" onClick={closeDropdown} />
           <div
+            ref={menuRef}
             data-origin={origin}
-            className={`t-dropdown ${open ? "is-open" : "is-closing"} fixed z-[1101] flex flex-col gap-0.5 rounded-2xl p-2 shadow-[var(--shadow-floating)]`}
+            className={`t-dropdown ${open ? "is-open" : "is-closing"} fixed z-[1101] flex max-h-[min(60vh,440px)] flex-col gap-0.5 overflow-y-auto overflow-x-hidden rounded-2xl p-2 shadow-[var(--shadow-floating)]`}
             style={{
               top: coords.top,
               bottom: coords.bottom,
@@ -123,7 +134,7 @@ export function DropdownItem({
   return (
     <button
       onClick={() => { onClick?.(); if (!keepOpen) close(); }}
-      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--dropdown-hover)] ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"}`}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 type-body-strong transition-colors hover:bg-[var(--dropdown-hover)] ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"}`}
     >
       {checkbox && (
         <span
@@ -160,7 +171,7 @@ export function useDropdownClose() {
  */
 export function DropdownHeader({ children }: { children: ReactNode }) {
   return (
-    <div className="-mx-2 -mt-2 mb-2 border-b border-[var(--border-subtle)] px-3 py-2 text-[13px] font-medium text-[var(--text-muted)]">
+    <div className="-mx-2 -mt-2 mb-2 border-b border-[var(--border-subtle)] px-3 py-2 type-label">
       {children}
     </div>
   );

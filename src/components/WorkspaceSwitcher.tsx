@@ -114,6 +114,7 @@ export function WorkspaceSwitcher({ isExpanded }: { isExpanded: boolean }) {
     setCreated((prev) => [...prev, { id, name, initials: deriveInitials(name), accentColor, plan: "Hobby" }]);
     setActiveId(id);
     setCreating(false);
+    router.push("/");
     showToast(`Workspace « ${name} » créé`, <CheckIcon className="h-5 w-5" />);
   }
 
@@ -132,7 +133,7 @@ export function WorkspaceSwitcher({ isExpanded }: { isExpanded: boolean }) {
           >
             <WorkspaceAvatar ws={active} size={28} />
             <span
-              className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--text-primary)] transition-all duration-300"
+              className="min-w-0 flex-1 truncate type-label text-[var(--text-primary)] transition-all duration-300"
               style={{
                 maxWidth: isExpanded ? "9999px" : "0px",
                 opacity: isExpanded ? 1 : 0,
@@ -150,12 +151,12 @@ export function WorkspaceSwitcher({ isExpanded }: { isExpanded: boolean }) {
     >
       <DropdownHeader>Workspaces</DropdownHeader>
       {workspaces.map((ws) => (
-        <DropdownItem key={ws.id} selected={ws.id === active.id} onClick={() => setActiveId(ws.id)}>
+        <DropdownItem key={ws.id} selected={ws.id === active.id} onClick={() => { setActiveId(ws.id); router.push("/"); }}>
           <span className="flex items-center gap-2.5">
             <WorkspaceAvatar ws={ws} size={22} />
             <span className="flex flex-col">
-              <span className="text-[13px] font-medium leading-tight">{ws.name}</span>
-              <span className="text-[11px] leading-tight text-[var(--text-muted)]">{ws.plan}</span>
+              <span className="type-label leading-tight text-[var(--text-primary)]">{ws.name}</span>
+              <span className="type-micro leading-tight">{ws.plan}</span>
             </span>
           </span>
         </DropdownItem>
@@ -164,8 +165,8 @@ export function WorkspaceSwitcher({ isExpanded }: { isExpanded: boolean }) {
       <DropdownItem icon={PlusIcon} onClick={() => setCreating(true)}>
         Créer un workspace
       </DropdownItem>
-      <DropdownItem icon={Cog6ToothIcon} onClick={() => router.push("/parametres")}>
-        Paramètres de l&apos;agence
+      <DropdownItem icon={Cog6ToothIcon} onClick={() => router.push("/parametres/workspace")}>
+        Paramètres du workspace
       </DropdownItem>
     </DropdownMenu>
 

@@ -11,11 +11,11 @@ import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { ColPill } from "@/components/ColPill";
 import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { SearchInput } from "@/components/SearchInput";
-import { Layers, CircleCheck, TriangleAlert, Sparkles, Clock } from "lucide-react";
+import { Layers, CircleCheck, Sparkles, Clock } from "lucide-react";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
 
-type SemStatus = "cannibalisation" | "opportunite" | "couvert";
+type SemStatus = "opportunite" | "couvert";
 type SemUrl = { url: string; pos: number };
 type SemanticKw = {
   keyword: string;
@@ -48,9 +48,9 @@ const X_SEO_EXTRAS = [
 ];
 
 const SEMANTIC_KWS: SemanticKw[] = [
-  S("agence seo définition",               [{url:"/agence-marketing-digital-banque-assurance/",pos:2},{url:"/agence-marketing-digital-b2b/",pos:8}], X_LUXE,       "PAA",     "cannibalisation", 4, 90,    80),
-  S("agence digitale luxe",                [{url:"/",pos:50},{url:"/agence-marketing-digital-sante/",pos:59}],                                     [],            "Related", "cannibalisation", 2, 140,   82),
-  S("agence seo",                          [{url:"/agence-marketing-digital-banque-assurance/",pos:2},{url:"/agence-marketing-digital-b2b/",pos:8}], X_SEO_EXTRAS,  "Related", "cannibalisation", 6, 2100,  80),
+  S("agence seo définition",               [{url:"/agence-marketing-digital-banque-assurance/",pos:2},{url:"/agence-marketing-digital-b2b/",pos:8}], X_LUXE,       "PAA",     "couvert", undefined, 90,    80),
+  S("agence digitale luxe",                [{url:"/",pos:50},{url:"/agence-marketing-digital-sante/",pos:59}],                                     [],            "Related", "couvert", undefined, 140,   82),
+  S("agence seo",                          [{url:"/agence-marketing-digital-banque-assurance/",pos:2},{url:"/agence-marketing-digital-b2b/",pos:8}], X_SEO_EXTRAS,  "Related", "couvert", undefined, 2100,  80),
   S("google analytics",                    [], [], "Related", "opportunite", undefined, 61400, null),
   S("agence seo paris",                    [], [], "Related", "opportunite", undefined, 2400,  null),
   S("formation seo",                       [{url:"/formation/formation-seo/",pos:46}],                                                              [], "Related", "couvert",         undefined, 1700, 80),
@@ -119,16 +119,6 @@ function SourceTip({ source }: { source: "PAA" | "Related" }) {
   );
 }
 
-function CannibalTip({ row }: { row: SemanticKw }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <p className="font-semibold text-[#F87171]">Cannibalisation détectée</p>
-      <p className="opacity-75">Plusieurs pages ciblent ce keyword — dilution du positionnement.</p>
-      <p className="opacity-60">Choisissez une page principale et redirigez les autres.</p>
-    </div>
-  );
-}
-
 function CouvertTip({ row }: { row: SemanticKw }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -152,32 +142,24 @@ function OppTip({ row }: { row: SemanticKw }) {
 /* ── Cell renderers ──────────────────────────────────────────────────── */
 
 function SemStatusCell({ row }: { row: SemanticKw }) {
-  if (row.status === "cannibalisation") return (
-    <Tooltip portal rich side="bottom" label={<CannibalTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold"
-        style={{ color: "var(--color-danger)", backgroundColor: "var(--color-danger-bg)" }}>
-        Cannibalisation ({row.cannibCount})
-      </span>
-    </Tooltip>
-  );
   if (row.status === "couvert") return (
     <Tooltip portal rich side="bottom" label={<CouvertTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-1 text-[12px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-1 type-micro"
         style={{ color: "var(--color-success)", backgroundColor: "var(--color-success-bg)" }}>Couvert</span>
     </Tooltip>
   );
   return (
     <Tooltip portal rich side="bottom" label={<OppTip row={row} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-1 text-[12px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2 py-1 type-micro"
         style={{ color: "var(--accent-primary)", backgroundColor: "rgba(62,80,245,0.08)" }}>Opportunité</span>
     </Tooltip>
   );
 }
 
 function SemScore({ score }: { score: number | null }) {
-  if (score === null) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+  if (score === null) return <span className="type-label text-[var(--text-muted)]">—</span>;
   const color = score >= 80 ? "var(--color-success)" : score >= 70 ? "var(--color-warning)" : "var(--color-danger)";
-  return <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>{score}%</span>;
+  return <span className="type-label tabular-nums" style={{ color }}>{score}%</span>;
 }
 
 /** Pills source — Related cyan, PAA purple */
@@ -187,7 +169,7 @@ function SourcePill({ source }: { source: "PAA" | "Related" }) {
     : { color: "#0891B2", bg: "rgba(6,182,212,0.12)" };   // cyan
   return (
     <Tooltip portal rich side="bottom" label={<SourceTip source={source} />}>
-      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2.5 py-1 text-[12px] font-semibold"
+      <span className="inline-flex w-fit cursor-help items-center rounded-full px-2.5 py-1 type-micro"
         style={{ color: cfg.color, backgroundColor: cfg.bg }}>
         {source}
       </span>
@@ -203,10 +185,10 @@ function ClickableUrl({ url, pos, onOpen }: { url: string; pos: number; onOpen: 
       onClick={(e) => { e.stopPropagation(); onOpen(url); }}
       className="group/url inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 -mx-1 transition-colors hover:bg-[var(--bg-subtle)]"
     >
-      <span className="truncate font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] group-hover/url:text-[var(--text-primary)] group-hover/url:decoration-[var(--text-primary)]">
+      <span className="truncate font-mono type-caption underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] group-hover/url:text-[var(--text-primary)] group-hover/url:decoration-[var(--text-primary)]">
         {url}
       </span>
-      <span className="flex-shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold tabular-nums"
+      <span className="flex-shrink-0 rounded px-1 py-0.5 type-micro tabular-nums"
         style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)" }}>#{pos}</span>
     </button>
   );
@@ -244,7 +226,7 @@ function ExtraUrlsPopover({ extras, onOpen }: { extras: SemUrl[]; onOpen: (url: 
         ref={triggerRef}
         type="button"
         onClick={toggle}
-        className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-medium text-[var(--accent-primary)] transition-colors hover:bg-[var(--accent-primary-soft)]"
+        className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 type-caption text-[var(--accent-primary)] transition-colors hover:bg-[var(--accent-primary-soft)]"
       >
         +{extras.length} autre{extras.length > 1 ? "s" : ""}
         <ChevronDownIcon className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -256,7 +238,7 @@ function ExtraUrlsPopover({ extras, onOpen }: { extras: SemUrl[]; onOpen: (url: 
           className="animate-dropdown-down fixed z-[1000] min-w-[280px] max-w-[420px] rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-2 shadow-[var(--shadow-floating)]"
           style={{ top: pos.top, left: pos.left, transformOrigin: "top center" }}
         >
-          <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
+          <p className="px-3 pt-2 pb-1 type-micro">
             URLs supplémentaires en conflit
           </p>
           <div className="flex flex-col gap-0.5 px-1 pb-1">
@@ -267,10 +249,10 @@ function ExtraUrlsPopover({ extras, onOpen }: { extras: SemUrl[]; onOpen: (url: 
                 onClick={() => { onOpen(u.url); setOpen(false); }}
                 className="group/x flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[var(--bg-subtle)]"
               >
-                <span className="truncate font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] group-hover/x:text-[var(--text-primary)] group-hover/x:decoration-[var(--text-primary)]">
+                <span className="truncate font-mono type-caption underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] group-hover/x:text-[var(--text-primary)] group-hover/x:decoration-[var(--text-primary)]">
                   {u.url}
                 </span>
-                <span className="ml-auto flex-shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold tabular-nums"
+                <span className="ml-auto flex-shrink-0 rounded px-1 py-0.5 type-micro tabular-nums"
                   style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)" }}>#{u.pos}</span>
               </button>
             ))}
@@ -283,7 +265,7 @@ function ExtraUrlsPopover({ extras, onOpen }: { extras: SemUrl[]; onOpen: (url: 
 }
 
 function SemUrlList({ urls, extras, onOpen }: { urls: SemUrl[]; extras: SemUrl[]; onOpen: (url: string) => void }) {
-  if (urls.length === 0) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+  if (urls.length === 0) return <span className="type-label text-[var(--text-muted)]">—</span>;
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {urls.map((u, i) => (
@@ -325,7 +307,7 @@ export function UniversSemantiqueView({
       header: "Keyword",
       width: 260,
       render: (kw) => (
-        <span className="block truncate text-[13px] text-[var(--text-secondary)]" title={kw.keyword}>
+        <span className="block truncate type-label" title={kw.keyword}>
           {kw.keyword}
         </span>
       ),
@@ -348,7 +330,7 @@ export function UniversSemantiqueView({
       key: "volume", header: "Volume", width: 110, align: "right",
       sortable: true, sortValue: (kw) => kw.volume,
       render: (kw) => (
-        <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">
+        <span className="type-label tabular-nums">
           {kw.volume.toLocaleString("fr-FR")}
         </span>
       ),
@@ -367,27 +349,30 @@ export function UniversSemantiqueView({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           {title && (
-            <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h1>
+            <h1 className="type-h1 leading-none">{title}</h1>
           )}
           {subtitle && (
-            <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>
+            <p className="mt-1 type-body text-[var(--text-secondary)]">{subtitle}</p>
           )}
         </div>
-        <div className="flex flex-shrink-0 items-center gap-2">
+        <div className="flex flex-shrink-0 items-center gap-3">
+          <span className="hidden items-center gap-1.5 type-caption sm:inline-flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+            Dernière MAJ il y a 3 j
+          </span>
           <Button variant="secondary">
             <ArrowPathIcon className="h-4 w-4" />
-            Rebuild
+            Actualiser
           </Button>
           <Button variant="secondary">Matcher</Button>
         </div>
       </div>
 
-      {/* KPI cards */}
-      <KpiGroup columns={5}>
+      {/* KPI cards — cannibalisation gérée dans son propre onglet (pas de doublon ici) */}
+      <KpiGroup columns={4}>
         <KpiCard bare icon={Layers}        label="Total"        value="303" />
-        <KpiCard bare icon={CircleCheck}   label="Couverts"     value="65" />
-        <KpiCard bare icon={TriangleAlert} label="Cannibalisés" value="15" />
         <KpiCard bare icon={Sparkles}      label="Opportunités" value="223" />
+        <KpiCard bare icon={CircleCheck}   label="Couverts"     value="80" />
         <KpiCard bare icon={Clock}         label="En attente"   value="0" />
       </KpiGroup>
 
@@ -411,23 +396,22 @@ export function UniversSemantiqueView({
           label={
             semStatus === "all"
               ? "Statut"
-              : ({ cannibalisation: "Cannibalisation", opportunite: "Opportunité", couvert: "Couvert" } as const)[semStatus]
+              : ({ opportunite: "Opportunité", couvert: "Couvert" } as const)[semStatus]
           }
           active={semStatus !== "all"}
           value={semStatus}
           onChange={(v) => setSemStatus(v as SemStatus | "all")}
           items={[
             { value: "all",             label: "Tous" },
-            { value: "couvert",         label: "Couvert" },
-            { value: "cannibalisation", label: "Cannibalisation" },
             { value: "opportunite",     label: "Opportunité" },
+            { value: "couvert",         label: "Couvert" },
           ]}
         />
         <ResetFiltersButton
           show={hasActiveFilters}
           onReset={() => { setSemStatus("all"); setSemSource("all"); setSemSearch(""); }}
         />
-        <span className="ml-auto text-[12px] tabular-nums text-[var(--text-muted)]">{filteredKws.length} / {SEMANTIC_KWS.length}</span>
+        <span className="ml-auto type-caption text-[var(--text-muted)] tabular-nums">{filteredKws.length} / {SEMANTIC_KWS.length}</span>
       </div>
 
       {/* Table — DS TableWide bordered (même look que Recommandations) */}

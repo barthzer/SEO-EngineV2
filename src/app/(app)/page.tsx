@@ -20,6 +20,8 @@ import {
   FolderOpenIcon,
   MagnifyingGlassIcon,
   ChevronDownIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { Stepper } from "@/components/Stepper";
 import { ScoreGauges } from "@/components/ScoreGauges";
@@ -32,7 +34,7 @@ type Analysis = {
   domain: string;
   updatedAt: string; // ISO date string
   gscConnected: boolean;
-  /** 3 sous-scores transparents : Technique / Contenu / Netlinking. */
+  /** 3 sous-scores transparents : Technique / Contenu / Popularité. */
   scoreTechnique: number;
   scoreContenu: number;
   scoreNetlinking: number;
@@ -86,7 +88,7 @@ const MOCK_ANALYSES: Analysis[] = [
 /* ── Score (F3 : ScoreCircle opaque → 3 jauges verticales transparentes) ─ */
 // L'ancien ScoreCircle 0-100 ne survivait pas à un client qui demandait
 // "pourquoi 61 ?" — le composite était indéfendable. On le remplace par
-// 3 jauges (Technique / Contenu / Netlinking) défendables individuellement.
+// 3 jauges (Technique / Contenu / Popularité) défendables individuellement.
 
 /* ── Relative time ───────────────────────────────────────────────────── */
 
@@ -126,10 +128,10 @@ function TraficChip({ value, dir }: { value: string; dir: Analysis["traficDir"] 
 function MetricRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="flex items-center justify-between border-b border-[var(--border-subtle)] py-3 last:border-0">
-      <span className="text-[13px] text-[var(--text-secondary)]">{label}</span>
+      <span className="type-label">{label}</span>
       <div className="text-right">
-        <span className="text-[14px] font-semibold text-[var(--text-primary)]">{value}</span>
-        {sub && <span className="ml-2 text-[11px] text-[var(--text-muted)]">{sub}</span>}
+        <span className="type-body-strong font-semibold">{value}</span>
+        {sub && <span className="ml-2 type-micro">{sub}</span>}
       </div>
     </div>
   );
@@ -138,7 +140,7 @@ function MetricRow({ label, value, sub }: { label: string; value: string; sub?: 
 function ChartPlaceholder({ label }: { label: string }) {
   return (
     <div className="mt-5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] p-4">
-      <p className="mb-3 text-[11px] font-medium text-[var(--text-muted)]">{label}</p>
+      <p className="mb-3 type-micro">{label}</p>
       <div className="flex h-28 items-end gap-1.5">
         {[40, 55, 45, 65, 72, 60, 80, 75, 84, 90, 78, 95].map((h, i) => (
           <div
@@ -155,7 +157,7 @@ function ChartPlaceholder({ label }: { label: string }) {
 function SeoDrawerContent({ domain }: { domain: string }) {
   return (
     <div>
-      <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+      <p className="type-body-sm leading-relaxed">
         Données Google Search Console · <strong className="text-[var(--text-primary)]">{domain}</strong>
       </p>
       <div className="mt-5">
@@ -256,7 +258,7 @@ function AnalysisCard({
       <div className="flex items-center gap-3">
         <SiteLogo domain={a.domain} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">{a.domain}</p>
+          <p className="truncate type-h3">{a.domain}</p>
         </div>
         <ScoreGauges
           technique={a.scoreTechnique}
@@ -268,26 +270,26 @@ function AnalysisCard({
       {/* Metrics */}
       <div className="mt-4 grid grid-cols-3 gap-2">
         <div className="flex flex-col gap-1.5 px-1 py-1">
-          <p className="text-[10px] text-[var(--text-muted)]">Trafic/mois</p>
-          <p className="text-[18px] font-semibold leading-none" style={{ color: a.traficDir === "up" ? "var(--color-success)" : a.traficDir === "down" ? "var(--color-danger)" : "var(--text-muted)" }}>
+          <p className="type-micro">Trafic/mois</p>
+          <p className="type-h3 leading-none" style={{ color: a.traficDir === "up" ? "var(--color-success)" : a.traficDir === "down" ? "var(--color-danger)" : "var(--text-muted)" }}>
             {a.trafic}
           </p>
-          <p className="text-[10px] text-[var(--text-muted)]">vs N−1</p>
+          <p className="type-micro">vs N−1</p>
         </div>
         <div className="flex flex-col gap-1.5 px-1 py-1">
-          <p className="text-[10px] text-[var(--text-muted)]">Lots actifs</p>
-          <p className="text-[18px] font-semibold leading-none text-[var(--text-primary)]">{a.tagsActifs}</p>
+          <p className="type-micro">Lots actifs</p>
+          <p className="type-h3 leading-none">{a.tagsActifs}</p>
         </div>
         <div className="flex flex-col gap-1.5 px-1 py-1">
-          <p className="text-[10px] text-[var(--text-muted)]">URLs</p>
-          <p className="text-[18px] font-semibold leading-none text-[var(--text-primary)]">{a.briefs}</p>
+          <p className="type-micro">URLs</p>
+          <p className="type-h3 leading-none">{a.briefs}</p>
         </div>
       </div>
 
       {/* Date + Status + Actions */}
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <p className="text-[11px] text-[var(--text-muted)]">{relativeTime(a.updatedAt)}</p>
+          <p className="type-micro">{relativeTime(a.updatedAt)}</p>
           <StatusPill status={a.status} onChange={onStatusChange} />
           <GscPill connected={a.gscConnected} />
         </div>
@@ -367,10 +369,10 @@ function AnalyseModal({
           <div className="mb-5 flex h-11 w-11 items-center justify-center bg-accent-primary" style={{ borderRadius: "30%" }}>
             <SeoEngineLogo className="h-6 w-6 text-white" />
           </div>
-          <h2 id="modal-title" className="font-semibold tracking-tight text-[var(--text-primary)]">
+          <h2 id="modal-title" className="type-h2">
             {step === 1 ? "Nouveau projet" : "Fréquence d'analyse"}
           </h2>
-          <p className="mt-1.5 text-[13px] text-[var(--text-muted)]">
+          <p className="mt-1.5 type-body-sm">
             {step === 1 ? "Entrez l'URL du domaine à analyser" : "À quelle cadence relancer l'analyse ?"}
           </p>
 
@@ -436,6 +438,7 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState<"actif" | "archive">("actif");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const { open } = useDrawer();
 
   const filtered = analyses.filter((a) => {
@@ -474,7 +477,7 @@ export default function DashboardPage() {
 
         {/* Greeting + toolbar — sticky en haut (ne défile pas) */}
         <div className="mb-6 flex-shrink-0">
-          <h1 className="mb-5 font-semibold leading-none tracking-heading text-[var(--text-primary)]">
+          <h1 className="mb-5 type-h1 leading-none">
             Bonjour, Barthélemy.
           </h1>
           <div className="flex items-center gap-4">
@@ -487,7 +490,25 @@ export default function DashboardPage() {
               value={filter}
               onChange={setFilter}
             />
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-3">
+              {/* Switch de vue liste / grille (même composant que la vue Actions) */}
+              <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border-subtle)] p-0.5">
+                {([["list", ListBulletIcon, "Vue liste"], ["grid", Squares2X2Icon, "Vue grille"]] as const).map(([mode, Icon, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-label={label}
+                    onClick={() => setViewMode(mode)}
+                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                      viewMode === mode
+                        ? "bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                ))}
+              </div>
               <Button size="md" onClick={() => setModalOpen(true)}>
                 <PlusIcon className="h-5 w-5" />
                 Nouveau projet
@@ -507,7 +528,7 @@ export default function DashboardPage() {
               action={<Button size="md" onClick={() => setModalOpen(true)}>Nouveau projet</Button>}
             />
           ) : (
-            <CockpitSection analyses={filtered} />
+            <CockpitSection analyses={filtered} viewMode={viewMode} />
           )}
         </div>
 

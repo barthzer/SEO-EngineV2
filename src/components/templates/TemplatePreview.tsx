@@ -20,7 +20,7 @@ import { templateIcon, TemplateTagPill, VisibilityBadge } from "@/components/tem
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2.5 text-[13px] font-semibold text-[var(--text-primary)]">{title}</p>
+      <p className="mb-2.5 type-label font-semibold text-[var(--text-primary)]">{title}</p>
       {children}
     </div>
   );
@@ -29,8 +29,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function MetaField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] font-medium text-[var(--text-muted)]">{label}</p>
-      <p className="mt-0.5 text-[13px] font-medium text-[var(--text-primary)]">{value}</p>
+      <p className="type-micro">{label}</p>
+      <p className="mt-0.5 type-label text-[var(--text-primary)]">{value}</p>
     </div>
   );
 }
@@ -56,7 +56,7 @@ export function TemplatePreviewContent({
         <div className="flex items-start gap-3">
           <IconBadge icon={Icon} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-[20px] font-semibold leading-tight tracking-heading text-[var(--text-primary)]">
+            <h2 className="type-h2">
               {template.name}
             </h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -67,7 +67,7 @@ export function TemplatePreviewContent({
             </div>
           </div>
         </div>
-        <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">{template.description}</p>
+        <p className="mt-3 type-body-sm">{template.description}</p>
         <Button variant="primary" className="mt-4 w-full justify-center" onClick={() => onUse(template)}>
           Utiliser ce template
           <ChevronRightIcon className="h-4 w-4" />
@@ -95,12 +95,12 @@ export function TemplatePreviewContent({
               key={n.id}
               className={`flex items-start gap-2.5 rounded-xl px-3 py-2 ${LEVEL_INDENT[n.level]}`}
             >
-              <span className="mt-0.5 flex-shrink-0 rounded-md border border-[var(--border-subtle)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--text-muted)]">
+              <span className="mt-0.5 flex-shrink-0 rounded-md border border-[var(--border-subtle)] px-1.5 py-0.5 type-micro font-semibold uppercase">
                 {n.level}
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-[var(--text-primary)]">{n.title}</p>
-                <p className="text-[12px] leading-snug text-[var(--text-muted)]">{n.hint}</p>
+                <p className="type-label text-[var(--text-primary)]">{n.title}</p>
+                <p className="type-caption">{n.hint}</p>
               </div>
             </div>
           ))}
@@ -111,17 +111,17 @@ export function TemplatePreviewContent({
       <Section title="Paramètres de génération">
         <div className="flex flex-col gap-2 rounded-2xl border border-[var(--border-subtle)] p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[var(--text-muted)]">Ton</span>
-            <span className="text-[13px] font-medium text-[var(--text-primary)]">{template.params.tone}</span>
+            <span className="type-caption">Ton</span>
+            <span className="type-label text-[var(--text-primary)]">{template.params.tone}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[var(--text-muted)]">Longueur cible</span>
-            <span className="text-[13px] font-medium text-[var(--text-primary)]">{template.params.length}</span>
+            <span className="type-caption">Longueur cible</span>
+            <span className="type-label text-[var(--text-primary)]">{template.params.length}</span>
           </div>
           {template.params.brandVoice && (
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-[var(--text-muted)]">Brand voice</span>
-              <span className="text-[13px] font-medium text-[var(--text-primary)]">{template.params.brandVoice}</span>
+              <span className="type-caption">Brand voice</span>
+              <span className="type-label text-[var(--text-primary)]">{template.params.brandVoice}</span>
             </div>
           )}
         </div>
@@ -133,20 +133,20 @@ export function TemplatePreviewContent({
           <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] p-4">
             {geo.semanticDensity > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-[var(--text-muted)]">Densité sémantique cible</span>
-                <span className="text-[13px] font-semibold text-[var(--text-primary)]">
+                <span className="type-caption">Densité sémantique cible</span>
+                <span className="type-label font-semibold text-[var(--text-primary)]">
                   {geo.semanticDensity}%
                 </span>
               </div>
             )}
             {geo.entities.length > 0 && (
               <div>
-                <p className="mb-1.5 text-[12px] text-[var(--text-muted)]">Entités à couvrir</p>
+                <p className="mb-1.5 type-caption">Entités à couvrir</p>
                 <div className="flex flex-wrap gap-1.5">
                   {geo.entities.map((e) => (
                     <span
                       key={e}
-                      className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]"
+                      className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-micro text-[var(--text-secondary)]"
                     >
                       {e}
                     </span>
@@ -156,10 +156,10 @@ export function TemplatePreviewContent({
             )}
             {geo.questions.length > 0 && (
               <div>
-                <p className="mb-1 text-[12px] text-[var(--text-muted)]">Questions answer-first</p>
+                <p className="mb-1 type-caption">Questions answer-first</p>
                 <ul className="flex flex-col gap-1">
                   {geo.questions.map((q) => (
-                    <li key={q} className="text-[13px] text-[var(--text-primary)]">
+                    <li key={q} className="type-body-sm text-[var(--text-primary)]">
                       · {q}
                     </li>
                   ))}
@@ -168,8 +168,8 @@ export function TemplatePreviewContent({
             )}
             {geo.sources.length > 0 && (
               <div>
-                <p className="mb-1 text-[12px] text-[var(--text-muted)]">Sources à citer</p>
-                <p className="text-[13px] text-[var(--text-primary)]">{geo.sources.join(", ")}</p>
+                <p className="mb-1 type-caption">Sources à citer</p>
+                <p className="type-body-sm text-[var(--text-primary)]">{geo.sources.join(", ")}</p>
               </div>
             )}
           </div>
@@ -184,14 +184,14 @@ export function TemplatePreviewContent({
               key={s.id}
               className="flex items-start gap-3 rounded-xl border border-[var(--border-subtle)] p-3"
             >
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[12px] font-semibold text-[var(--text-secondary)]">
+              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] type-caption font-semibold text-[var(--text-secondary)]">
                 {i + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-[var(--text-primary)]">{s.label}</p>
-                {s.hint && <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">{s.hint}</p>}
+                <p className="type-label text-[var(--text-primary)]">{s.label}</p>
+                {s.hint && <p className="mt-0.5 type-caption">{s.hint}</p>}
                 {s.prompt && (
-                  <p className="mt-1.5 rounded-lg bg-[var(--bg-subtle)] px-2.5 py-1.5 font-mono text-[11px] leading-snug text-[var(--text-secondary)]">
+                  <p className="mt-1.5 rounded-lg bg-[var(--bg-subtle)] px-2.5 py-1.5 font-mono type-micro text-[var(--text-secondary)]">
                     {s.prompt}
                   </p>
                 )}

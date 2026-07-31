@@ -44,7 +44,7 @@ export function BlocCard({ bloc, index }: { bloc: BlocDef; index: number }) {
         label={
           <ul className="space-y-1.5">
             {bloc.features.map((f) => (
-              <li key={f} className="flex items-center gap-2 text-[12px] text-white/85">
+              <li key={f} className="flex items-center gap-2 type-caption text-white/85">
                 <span className="h-1 w-1 flex-shrink-0 rounded-full bg-white/50" />
                 {f}
               </li>
@@ -67,8 +67,8 @@ export function BlocCard({ bloc, index }: { bloc: BlocDef; index: number }) {
 
   const titleBlock = (
     <>
-      <p className="mt-4 text-[14px] font-semibold leading-tight text-[var(--text-primary)]">{bloc.title}</p>
-      <p className="mt-1.5 text-[14px] leading-snug tracking-caption text-[var(--text-secondary)]">{bloc.description}</p>
+      <p className="mt-4 type-title leading-tight">{bloc.title}</p>
+      <p className="mt-1.5 type-body leading-snug text-[var(--text-secondary)]">{bloc.description}</p>
     </>
   );
 

@@ -65,7 +65,7 @@ export function VerticalBarChart({
       {showYAxis && (
         <div className="relative flex-shrink-0" style={{ width: 46, height: chartHeight }} aria-hidden="true">
           {yTicks.map((t, k) => (
-            <span key={k} className="absolute right-2 -translate-y-1/2 text-[11px] tabular-nums text-[var(--text-muted)]" style={{ top: t.top }}>{formatValue(t.value)}</span>
+            <span key={k} className="absolute right-2 -translate-y-1/2 type-micro tabular-nums text-[var(--text-primary)]" style={{ top: t.top }}>{formatValue(t.value)}</span>
           ))}
         </div>
       )}
@@ -106,7 +106,7 @@ export function VerticalBarChart({
                 {ratio > 0 ? (
                   <div className="relative flex flex-col items-center justify-end">
                     <span
-                      className={`absolute left-1/2 -translate-x-1/2 text-[12px] font-semibold tabular-nums ${valueInside ? "top-2 text-white" : "-top-5 text-[var(--text-primary)]"}`}
+                      className={`absolute left-1/2 -translate-x-1/2 type-caption tabular-nums ${valueInside ? "top-2 text-white" : "-top-5 text-[var(--text-primary)]"}`}
                       style={{ zIndex: 1 }}
                     >
                       {formatValue(d.value)}
@@ -121,7 +121,7 @@ export function VerticalBarChart({
                     />
                   </div>
                 ) : (
-                  <span className="pb-1 text-[12px] tabular-nums text-[var(--text-muted)]">
+                  <span className="pb-1 type-caption tabular-nums text-[var(--text-primary)]">
                     {formatValue(d.value)}
                   </span>
                 )}
@@ -139,7 +139,7 @@ export function VerticalBarChart({
         <div className="absolute inset-x-0 bottom-0 flex justify-around" style={{ height: LABEL_GAP }}>
           {data.map((d, i) => (
             <div key={d.label} className="flex flex-1 items-center justify-center">
-              {renderLabel ? renderLabel(d, i) : <span className="text-[13px] tracking-body text-[var(--text-secondary)]">{d.label}</span>}
+              {renderLabel ? renderLabel(d, i) : <span className="type-label">{d.label}</span>}
             </div>
           ))}
         </div>

@@ -46,16 +46,16 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <h1 className="font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h1">
           Sur quel marché travaillez-vous ?
         </h1>
-        <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="type-body text-[var(--text-secondary)]">
           Définit la SERP analysée, les concurrents trackés et la langue des briefs.
         </p>
       </header>
 
       <div className="flex flex-col gap-2.5">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Pays principal</label>
+        <label className="type-label text-[var(--text-primary)]">Pays principal</label>
         <div className="flex flex-wrap gap-1.5">
           {COUNTRIES.map(({ code, label }) => {
             const selected = data.primaryCountry === code;
@@ -64,7 +64,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
                 key={code}
                 type="button"
                 onClick={() => update({ primaryCountry: code })}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 type-label transition-colors ${
                   selected
                     ? "border border-[var(--accent-primary)] bg-[color-mix(in_oklab,var(--accent-primary)_8%,transparent)] text-[var(--accent-primary)]"
                     : "border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
@@ -79,7 +79,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Langue du contenu</label>
+        <label className="type-label text-[var(--text-primary)]">Langue du contenu</label>
         <div className="flex flex-wrap gap-1.5">
           {LANGUAGES.map(({ code, label }) => {
             const selected = data.primaryLanguage === code;
@@ -88,7 +88,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
                 key={code}
                 type="button"
                 onClick={() => update({ primaryLanguage: code })}
-                className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                className={`rounded-full px-3.5 py-1.5 type-label transition-colors ${
                   selected
                     ? "border border-[var(--accent-primary)] bg-[color-mix(in_oklab,var(--accent-primary)_8%,transparent)] text-[var(--accent-primary)]"
                     : "border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
@@ -103,7 +103,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
 
       {showLLMs && (
         <div className="flex flex-col gap-2.5">
-          <label className="text-[13px] font-medium text-[var(--text-primary)]">
+          <label className="type-label text-[var(--text-primary)]">
             LLMs à tracker
             <span className="ml-1.5 font-normal text-[var(--text-muted)]">(optionnel)</span>
           </label>
@@ -115,7 +115,7 @@ export function StepMarche({ data, update }: { data: OnboardingData; update: (p:
                   key={key}
                   type="button"
                   onClick={() => toggleLLM(key)}
-                  className={`inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-[13px] font-medium transition-colors ${
+                  className={`inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 type-label transition-colors ${
                     selected
                       ? "border border-[var(--accent-primary)] bg-[color-mix(in_oklab,var(--accent-primary)_8%,transparent)] text-[var(--accent-primary)]"
                       : "border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"

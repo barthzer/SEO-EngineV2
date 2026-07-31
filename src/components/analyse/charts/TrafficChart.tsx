@@ -66,7 +66,7 @@ export function TrafficChart() {
   return (
     <div className="rounded-2xl bg-[var(--bg-card)] p-5">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution du trafic organique</p>
+        <p className="type-h3">Évolution du trafic organique</p>
         <FilterTabs
           tabs={[{ key: "3m", label: "3m" }, { key: "6m", label: "6m" }, { key: "1an", label: "1 an" }]}
           value={period}

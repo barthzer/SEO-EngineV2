@@ -6,12 +6,16 @@
  * Comparaison de visibilité SEO vs concurrents (positions, top 3/10/50,
  * mots-clés, trafic estimé, gap). Source Haloscan.
  *
- * Sorti de Netlinking : c'est de la performance / comparaison concurrents,
+ * Sorti de la Popularité : c'est de la performance / comparaison concurrents,
  * pas du profil de backlinks.
  */
 
 import { TableWide } from "@/components/TableWide";
 import { VariationPill } from "@/components/VariationPill";
+import { KpiCard } from "@/components/KpiCard";
+import { KpiGroup } from "@/components/KpiGroup";
+import { SourcePill } from "@/components/SourcePill";
+import { Eye, Trophy, Users } from "lucide-react";
 
 const YOUR_DOMAIN = "aw-i.com";
 
@@ -43,27 +47,27 @@ const VISIBILITY: VisibilityRow[] = [
 ];
 
 const COMPETITOR_COUNT = VISIBILITY.filter((r) => !r.isYou).length;
+// Meilleur concurrent (visibilité max) — pour situer votre position.
+const TOP_COMPETITOR = VISIBILITY
+  .filter((r) => !r.isYou && r.visibility != null)
+  .sort((a, b) => (b.visibility ?? 0) - (a.visibility ?? 0))[0];
+const fmtVis = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1).replace(".", ",")}K` : String(v));
 
 export function BenchmarkView() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">
-            Benchmark SEO — Visibilité
-          </h2>
-          <p className="mt-0.5 text-[12px] tracking-caption text-[var(--text-muted)]">
-            Visibilité organique vs concurrents · source Haloscan
-          </p>
+      {/* Encart de synthèse — votre position vs concurrents (le titre de la vue
+          vient de l'en-tête de page, on ne le redouble pas ici). */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="type-title">Votre position vs concurrents</p>
+          <SourcePill source="Haloscan" href="https://haloscan.com" />
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-[11px] text-[var(--text-muted)]">
-            Votre visibilité : <span className="font-semibold text-[var(--text-primary)]">10</span>
-          </span>
-          <span className="text-[11px] text-[var(--text-muted)]">
-            Concurrents : <span className="font-semibold text-[var(--text-primary)]">{COMPETITOR_COUNT}</span>
-          </span>
-        </div>
+        <KpiGroup columns={3}>
+          <KpiCard bare icon={Eye}    label="Votre visibilité"    value="10"                       sub="score Haloscan" />
+          <KpiCard bare icon={Trophy} label="Meilleur concurrent" value={fmtVis(TOP_COMPETITOR.visibility ?? 0)} sub={TOP_COMPETITOR.domain} />
+          <KpiCard bare icon={Users}  label="Concurrents suivis"  value={String(COMPETITOR_COUNT)} />
+        </KpiGroup>
       </div>
 
       <TableWide<VisibilityRow>
@@ -80,38 +84,38 @@ export function BenchmarkView() {
                   className="h-4 w-4 flex-shrink-0 rounded-sm"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                 />
-                <span className={`block truncate text-[13px] ${r.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+                <span className={`block truncate type-label ${r.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
                   {r.domain}
-                  {r.isYou && <span className="ml-2 text-[11px] font-medium text-[var(--text-muted)]">Vous</span>}
+                  {r.isYou && <span className="ml-2 type-micro">Vous</span>}
                 </span>
               </div>
             ),
           },
           {
-            key: "visibility", header: "Visibilité", width: 110, align: "right", sortable: true, sortValue: (r) => r.visibility ?? -1,
+            key: "visibility", header: "Score visib.", width: 120, align: "right", sortable: true, sortValue: (r) => r.visibility ?? -1,
             render: (r) => (
-              <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+              <span className="type-label tabular-nums text-[var(--text-primary)]">
                 {r.visibility === null ? "—" : r.visibility >= 1000 ? `${(r.visibility / 1000).toFixed(1)}K` : r.visibility}
               </span>
             ),
           },
-          { key: "top3",   header: "Top 3",   width: 70, align: "right", sortable: true, sortValue: (r) => r.top3,   render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.top3}</span> },
-          { key: "top10",  header: "Top 10",  width: 70, align: "right", sortable: true, sortValue: (r) => r.top10,  render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.top10}</span> },
-          { key: "top50",  header: "Top 50",  width: 70, align: "right", sortable: true, sortValue: (r) => r.top50,  render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.top50}</span> },
-          { key: "top100", header: "Top 100", width: 80, align: "right", sortable: true, sortValue: (r) => r.top100, render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.top100}</span> },
+          { key: "top3",   header: "Top 3",   width: 70, align: "right", sortable: true, sortValue: (r) => r.top3,   render: (r) => <span className="type-label tabular-nums">{r.top3}</span> },
+          { key: "top10",  header: "Top 10",  width: 70, align: "right", sortable: true, sortValue: (r) => r.top10,  render: (r) => <span className="type-label tabular-nums">{r.top10}</span> },
+          { key: "top50",  header: "Top 50",  width: 70, align: "right", sortable: true, sortValue: (r) => r.top50,  render: (r) => <span className="type-label tabular-nums">{r.top50}</span> },
+          { key: "top100", header: "Top 100", width: 80, align: "right", sortable: true, sortValue: (r) => r.top100, render: (r) => <span className="type-label tabular-nums">{r.top100}</span> },
           {
             key: "keywords", header: "Mots-clés", width: 90, align: "right", sortable: true, sortValue: (r) => r.keywords,
-            render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.keywords}</span>,
+            render: (r) => <span className="type-label tabular-nums">{r.keywords}</span>,
           },
           {
             key: "trafic", header: "Trafic Est.", width: 110, align: "right", sortable: true, sortValue: (r) => r.trafic,
-            render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-muted)]">{r.trafic.toLocaleString("fr-FR")}</span>,
+            render: (r) => <span className="type-label tabular-nums text-[var(--text-primary)]">{r.trafic.toLocaleString("fr-FR")}</span>,
           },
           {
             key: "gap", header: "Gap", width: 80, align: "right", sortable: true, sortValue: (r) => r.gap ?? 0,
             render: (r) => {
-              if (r.gap === null) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
-              if (r.gap === 0) return <span className="text-[13px] text-[var(--text-muted)]">0</span>;
+              if (r.gap === null) return <span className="type-label text-[var(--text-muted)]">—</span>;
+              if (r.gap === 0) return <span className="type-label text-[var(--text-muted)]">0</span>;
               return (
                 <VariationPill direction="down" className="justify-end">
                   +{r.gap.toLocaleString("fr-FR")}

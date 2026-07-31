@@ -402,7 +402,7 @@ export type CitationCat = "earned" | "social" | "owned";
 export const CITATION_CAT_CFG: Record<CitationCat, { label: string; color: string }> = {
   earned: { label: "Gagné",   color: "var(--accent-primary)" },
   social: { label: "Social",  color: "#8B5CF6" },
-  owned:  { label: "Possédé", color: "var(--color-success)" },
+  owned:  { label: "Déjà acquis", color: "var(--color-success)" },
 };
 
 /** Origine des citations — répartition Gagné / Social / Possédé (somme = 100). */

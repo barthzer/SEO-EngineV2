@@ -70,7 +70,7 @@ export function SearchInput({
         onBlur={handleBlur}
         placeholder={placeholder}
         tabIndex={isActive ? 0 : -1}
-        className="flex-1 bg-transparent text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+        className="flex-1 bg-transparent type-body outline-none placeholder:text-[var(--text-muted)]"
         style={{ minWidth: 0 }}
       />
 

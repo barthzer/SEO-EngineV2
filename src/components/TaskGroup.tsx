@@ -56,10 +56,10 @@ export function TaskGroup({
           color={color}
           bg={`color-mix(in oklab, ${color} 14%, transparent)`}
         />
-        <p className="text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
+        <p className="type-body-strong">
           {label}
         </p>
-        <span className="rounded-full bg-[var(--bg-card-static)] px-2 py-0.5 text-[11px] font-semibold tabular-nums text-[var(--text-muted)]">
+        <span className="rounded-full bg-[var(--bg-card-static)] px-2 py-0.5 type-micro tabular-nums">
           {count}
         </span>
         <span className="flex-1" />

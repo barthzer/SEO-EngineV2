@@ -45,7 +45,7 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
 }) {
   const { show: toast } = useToast();
   const [topic, setTopic] = useState<string>("all");            // "all" | topicId
-  const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string | number>>(() => new Set());
   const [addTopicOpen, setAddTopicOpen] = useState(false);
@@ -58,7 +58,7 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
   const rows: Row[] = lists.flatMap((l) => l.prompts.map((p) => ({ p, topicId: l.id, topicName: l.name })));
   const filtered = rows.filter((r) =>
     (topic === "all" || r.topicId === topic) &&
-    (status === "active" ? r.p.active : !r.p.active) &&
+    (status === "all" || (status === "active" ? r.p.active : !r.p.active)) &&
     (!search || r.p.text.toLowerCase().includes(search.toLowerCase())),
   );
 
@@ -109,24 +109,24 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
       {/* Barre supérieure */}
       <div className="flex items-center justify-between gap-3">
         <button type="button" onClick={onClose}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+          className="inline-flex items-center gap-1.5 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
           <ArrowLeftIcon className="h-4 w-4" />Retour
         </button>
         <div className="flex items-center gap-3">
-          <span className="text-[12px] text-[var(--text-muted)]">Modifications temporaires jusqu'à l'enregistrement</span>
+          <span className="type-caption text-[var(--text-muted)]">Modifications temporaires jusqu'à l'enregistrement</span>
           <Button size="sm" onClick={() => { toast("Prompts enregistrés", null); onClose(); }}>Enregistrer</Button>
         </div>
       </div>
 
       <div>
-        <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">Gestion des prompts</h1>
-        <p className="mt-1.5 text-[14px] tracking-body text-[var(--text-secondary)]">On interroge ces prompts sur les plateformes IA pour générer les insights de la Visibilité IA.</p>
+        <h1 className="type-h1 leading-none">Gestion des prompts</h1>
+        <p className="mt-1.5 type-body text-[var(--text-secondary)]">On interroge ces prompts sur les plateformes IA pour générer les insights de la Visibilité IA.</p>
       </div>
 
       {/* Toolbar : statut + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FilterTabs<"active" | "inactive">
-          tabs={[{ key: "active", label: "Actifs" }, { key: "inactive", label: "Inactifs" }]}
+        <FilterTabs<"all" | "active" | "inactive">
+          tabs={[{ key: "all", label: "Tous" }, { key: "active", label: "Actifs" }, { key: "inactive", label: "Inactifs" }]}
           value={status} onChange={(v) => { setStatus(v); clearSel(); }}
         />
         <div className="flex items-center gap-2">
@@ -140,13 +140,13 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
       {/* Corps : sujets (gauche) + table (droite) — seul le tableau scrolle */}
       <div className="grid min-h-0 flex-1 grid-cols-[220px_1fr] gap-5">
         <aside className="flex min-h-0 flex-col gap-1 overflow-y-auto">
-          <p className="px-2 pb-1 text-[11px] font-semibold tracking-caption text-[var(--text-muted)]">Sujets ({lists.length})</p>
+          <p className="px-2 pb-1 type-micro font-semibold">Sujets ({lists.length})</p>
           <TopicRow label="Tous les sujets" count={total} active={topic === "all"} onClick={() => setTopic("all")} />
           {lists.map((l) => (
             <TopicRow key={l.id} label={l.name} count={l.prompts.length} active={topic === l.id} onClick={() => setTopic(l.id)} />
           ))}
           <button type="button" onClick={() => setAddTopicOpen(true)}
-            className="mt-1 flex items-center gap-1.5 rounded-xl border border-dashed border-[var(--border-subtle)] px-3 py-2 text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+            className="mt-1 flex items-center gap-1.5 rounded-xl border border-dashed border-[var(--border-subtle)] px-3 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
             <PlusIcon className="h-4 w-4 flex-shrink-0" />
             Ajouter un sujet
           </button>
@@ -158,19 +158,20 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
               <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un prompt…" alwaysExpanded />
             </div>
             <div className="ml-auto flex items-center gap-3">
-              <span className="text-[12px] tabular-nums text-[var(--text-muted)]">{total} / {MAX_PROMPTS} prompts</span>
+              <span className="type-caption tabular-nums text-[var(--text-muted)]">{total} / {MAX_PROMPTS} prompts</span>
               <Button size="sm" onClick={() => setAddModalOpen(true)} disabled={total >= MAX_PROMPTS}><PlusIcon className="h-4 w-4" />Ajouter un prompt</Button>
             </div>
           </div>
 
-          {/* Zone table bornée : seule cette zone scrolle (header de colonnes sticky). */}
+          {/* Zone table bornée : scroll vertical + horizontal (la colonne Plateformes
+              débordait et était coupée). */}
           <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${CARD_SM}`}>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-auto">
             <TableWide<Row>
               hidePagination
               rowKey={(r) => r.p.id}
               data={filtered}
-              emptyState={<div className="px-7 py-10 text-center text-[14px] text-[var(--text-muted)]">Aucun prompt {status === "active" ? "actif" : "inactif"}.</div>}
+              emptyState={<div className="px-7 py-10 text-center type-body text-[var(--text-muted)]">Aucun prompt{status === "active" ? " actif" : status === "inactive" ? " inactif" : ""}.</div>}
               columns={[
                 { key: "select", width: 28,
                   header: <Checkbox checked={allSel} indeterminate={someSel && !allSel} onChange={toggleAllRows} />,
@@ -179,13 +180,13 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
                   render: (r) => (
                     <input value={r.p.text} onChange={(e) => updateText(r.p.id, e.target.value)} onClick={(e) => e.stopPropagation()}
                       placeholder="Saisir un prompt…"
-                      className="w-full truncate rounded-md bg-transparent px-1.5 py-1 text-[14px] font-medium text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--bg-subtle)] focus:bg-[var(--bg-subtle)]" /> ) },
+                      className="w-full truncate rounded-md bg-transparent px-1.5 py-1 type-body-strong outline-none transition-colors hover:bg-[var(--bg-subtle)] focus:bg-[var(--bg-subtle)]" /> ) },
                 { key: "topic", header: "Sujet", width: 170,
-                  render: (r) => <span className="truncate text-[13px] text-[var(--text-secondary)]">{r.topicName}</span> },
+                  render: (r) => <span className="truncate type-label">{r.topicName}</span> },
                 { key: "active", header: "Statut", width: 120,
                   render: (r) => (
                     <button type="button" onClick={(e) => { e.stopPropagation(); toggleActive(r.p.id); }}
-                      className="inline-flex items-center gap-2 text-[13px] font-medium" aria-label={r.p.active ? "Désactiver" : "Activer"}>
+                      className="inline-flex items-center gap-2 type-label" aria-label={r.p.active ? "Désactiver" : "Activer"}>
                       <span className={`relative h-[18px] w-8 flex-shrink-0 rounded-full transition-colors ${r.p.active ? "bg-[var(--color-success)]" : "bg-[var(--border-medium)]"}`}>
                         <span className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-all ${r.p.active ? "left-[15px]" : "left-0.5"}`} />
                       </span>
@@ -193,11 +194,11 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
                     </button>
                   ) },
                 { key: "lang", header: "Langue", width: 120,
-                  render: (r) => <span className="text-[13px] text-[var(--text-secondary)]">{langLabel(r.p.language)}</span> },
+                  render: (r) => <span className="type-label">{langLabel(r.p.language)}</span> },
                 { key: "region", header: "Régions", width: 90,
-                  render: (r) => <span className="inline-flex items-center gap-1.5"><Flag code={r.p.region} size={16} /><span className="text-[13px] text-[var(--text-secondary)]">{r.p.region}</span></span> },
+                  render: (r) => <span className="inline-flex items-center gap-1.5"><Flag code={r.p.region} size={16} /><span className="type-label">{r.p.region}</span></span> },
                 { key: "tags", header: "Tags", width: 120,
-                  render: () => <button type="button" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"><PlusIcon className="h-3.5 w-3.5" />Tag</button> },
+                  render: () => <button type="button" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 rounded-full px-2 py-1 type-caption font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"><PlusIcon className="h-3.5 w-3.5" />Tag</button> },
                 { key: "platforms", header: "Plateformes", width: 150,
                   render: () => <PlatformTiles platforms={setup.platforms} /> },
               ]}
@@ -210,9 +211,9 @@ export function PromptDesigner({ setup, lists, setLists, onClose }: {
       {/* Barre d'actions groupées — suppression */}
       {selected.size > 0 && typeof document !== "undefined" && createPortal(
         <div className="fixed bottom-6 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-1 rounded-2xl px-2 py-2 shadow-[var(--shadow-floating)]" style={{ backgroundColor: "var(--floating-bar-bg)" }}>
-          <span className="px-3 text-[14px] font-medium" style={{ color: "var(--floating-bar-text)", opacity: 0.5 }}>{selected.size} sélectionné{selected.size > 1 ? "s" : ""}</span>
+          <span className="px-3 type-body-strong" style={{ color: "var(--floating-bar-text)", opacity: 0.5 }}>{selected.size} sélectionné{selected.size > 1 ? "s" : ""}</span>
           <div className="h-4 w-px" style={{ backgroundColor: "var(--floating-bar-sep)" }} />
-          <button onClick={deleteSelected} className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors hover:bg-[var(--floating-bar-hover)]" style={{ color: "var(--floating-bar-text)" }}>
+          <button onClick={deleteSelected} className="flex items-center gap-2 rounded-xl px-3 py-1.5 type-body-strong transition-colors hover:bg-[var(--floating-bar-hover)]" style={{ color: "var(--floating-bar-text)" }}>
             <TrashIcon className="h-4 w-4" />Supprimer
           </button>
           <div className="h-4 w-px" style={{ backgroundColor: "var(--floating-bar-sep)" }} />
@@ -241,7 +242,7 @@ function TopicRow({ label, count, active, onClick }: { label: string; count: num
   return (
     <button type="button" onClick={onClick}
       className={`flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-colors ${active ? "bg-[var(--accent-primary-soft)]" : "hover:bg-[var(--bg-subtle)]"}`}>
-      <span className={`flex-1 truncate text-[13px] font-medium ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{label}</span>
+      <span className={`flex-1 truncate type-label ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{label}</span>
       <Pill color="var(--text-muted)" bg="var(--bg-subtle)">{count}</Pill>
     </button>
   );

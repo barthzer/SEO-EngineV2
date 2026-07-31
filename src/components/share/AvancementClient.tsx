@@ -35,13 +35,13 @@ function ActionRowFooter({ action, domain, clientName }: { action: SharedAction;
         <div className="flex items-center gap-2">
           {done ? (
             <>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-success)]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 type-caption font-medium text-[var(--color-success)]">
                 <CheckCircleIcon className="h-4 w-4" /> Fait
               </span>
               <button
                 type="button"
                 onClick={() => clearTaskDone(domain, action.id)}
-                className="text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                className="type-caption text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
               >
                 Annuler
               </button>
@@ -50,7 +50,7 @@ function ActionRowFooter({ action, domain, clientName }: { action: SharedAction;
             <button
               type="button"
               onClick={() => setTaskDone(domain, action.id, clientName)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 type-caption font-medium text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: "var(--color-success)" }}
             >
               <CheckCircleIcon className="h-4 w-4" /> Marquer comme fait
@@ -120,10 +120,10 @@ export function AvancementClient({ project }: { project: SharedProject }) {
     <div className="w-full px-8 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-[24px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h1">
           Avancement
         </h1>
-        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+        <p className="mt-1 type-body-sm">
           Toutes les actions en cours d&apos;exécution sur votre prestation
         </p>
       </div>
@@ -151,14 +151,14 @@ export function AvancementClient({ project }: { project: SharedProject }) {
       {/* Barre d'action groupée — missions assignées au client */}
       {selected.size > 0 && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-subtle)] px-4 py-2.5">
-          <span className="text-[13px] font-medium text-[var(--text-primary)]">
+          <span className="type-label text-[var(--text-primary)]">
             {selected.size} mission{selected.size > 1 ? "s" : ""} sélectionnée{selected.size > 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={markSelectedDone}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 type-caption font-medium text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: "var(--color-success)" }}
             >
               <CheckCircleIcon className="h-4 w-4" /> Marquer comme fait
@@ -166,7 +166,7 @@ export function AvancementClient({ project }: { project: SharedProject }) {
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+              className="type-caption font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
             >
               Annuler
             </button>
@@ -176,7 +176,7 @@ export function AvancementClient({ project }: { project: SharedProject }) {
 
       {/* Empty state */}
       {totalFiltered === 0 && (
-        <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
+        <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center type-body text-[var(--text-muted)]">
           {q
             ? `Aucune action ne contient « ${search} ».`
             : "Aucune action dans ce statut pour le moment."}

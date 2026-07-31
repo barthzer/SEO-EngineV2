@@ -45,7 +45,7 @@ export function KpiCard({
         {Icon && <Icon className="h-5 w-5 flex-shrink-0 text-[var(--text-secondary)]" />}
         {/* Titre 16px, gris doux via light-dark() formula */}
         <p
-          className="text-[16px] font-medium tracking-body"
+          className="type-h3 font-medium"
           style={{
             color:
               "light-dark(color(srgb 0.05 0.05 0.05 / 0.5), var(--text-muted))",
@@ -57,7 +57,7 @@ export function KpiCard({
       <div className="flex items-baseline gap-2">
         {/* Chiffre clé 24px */}
         <p
-          className="text-[24px] font-semibold tabular-nums tracking-heading leading-none"
+          className="type-h1 tabular-nums leading-none"
           style={{ color: valueColor ?? "var(--text-primary)" }}
         >
           {value}
@@ -67,7 +67,7 @@ export function KpiCard({
         )}
       </div>
       {sub && (
-        <p className="text-[12px] tracking-caption text-[var(--text-muted)]">{sub}</p>
+        <p className="type-caption">{sub}</p>
       )}
     </div>
   );

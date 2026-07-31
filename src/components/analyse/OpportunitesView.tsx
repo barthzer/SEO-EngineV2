@@ -21,12 +21,15 @@
 
 import { useMemo, useState, useEffect, type ElementType } from "react";
 import { createPortal } from "react-dom";
-import { DocumentTextIcon, PencilSquareIcon, LinkIcon, WrenchIcon, SparklesIcon } from "@heroicons/react/24/solid";
+import { DocumentTextIcon, PencilSquareIcon, LinkIcon, SparklesIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
+import { GaugeGlyph } from "@/components/icons/GaugeGlyph";
 import { type ActionOwner, type ActionPriorityLevel } from "@/components/ActionCard";
 import { type Status, STATUS_ORDER, STATUS_CONFIG, StatusPillDropdown } from "@/components/StatusPill";
 import { TableWide } from "@/components/TableWide";
 import { PriorityBadge, PRIORITY_LEVELS } from "@/components/PriorityBars";
+import { DatePopover } from "@/components/DatePopover";
 import { CommentThread } from "@/components/CommentThread";
+import { useToast } from "@/context/ToastContext";
 import { SearchInput } from "@/components/SearchInput";
 import { ColPill } from "@/components/ColPill";
 import { ResetFiltersButton } from "@/components/ResetFiltersButton";
@@ -44,14 +47,14 @@ type ActionModule = "onpage" | "contenu" | "netlinking" | "technique" | "geo";
 const MODULE_CONFIG: Record<ActionModule, { label: string; color: string; icon: ElementType }> = {
   onpage:     { label: "On-page",       color: "#3D4FFF", icon: DocumentTextIcon },
   contenu:    { label: "Contenu",       color: "#10B981", icon: PencilSquareIcon },
-  netlinking: { label: "Netlinking",    color: "#F59E0B", icon: LinkIcon },
-  technique:  { label: "Technique",     color: "#8B5CF6", icon: WrenchIcon },
+  netlinking: { label: "Popularité",    color: "#F59E0B", icon: LinkIcon },
+  technique:  { label: "Technique",     color: "#8B5CF6", icon: GaugeGlyph },
   geo:        { label: "Visibilité IA", color: "#EC4899", icon: SparklesIcon },
 };
 const MODULE_ORDER: ActionModule[] = ["onpage", "contenu", "netlinking", "technique", "geo"];
 
 // Owners alignés sur TEAM (/equipe) — mêmes seeds pravatar que le reste de l'app.
-const OWNERS: Record<string, ActionOwner> = {
+export const OWNERS: Record<string, ActionOwner> = {
   bl: { id: "bl", name: "Barthélemy L.", initials: "BL", photoSeed: "barthelemy-l-seo" },
   sm: { id: "sm", name: "Sophie M.",     initials: "SM", photoSeed: "5" },
   tl: { id: "tl", name: "Thomas L.",     initials: "TL", photoSeed: "thomas-l-seo" },
@@ -59,7 +62,7 @@ const OWNERS: Record<string, ActionOwner> = {
 };
 const ALL_OWNERS: ActionOwner[] = Object.values(OWNERS);
 
-type Opportunity = {
+export type Opportunity = {
   id: string;
   module: ActionModule;
   priority: ActionPriorityLevel;
@@ -74,7 +77,7 @@ type Opportunity = {
   status: Status;
 };
 
-const OPPORTUNITIES: Opportunity[] = [
+export const OPPORTUNITIES: Opportunity[] = [
   {
     id: "o1", module: "onpage", priority: "high", status: "todo",
     title: "Réécrire les balises title des 8 pages en page 2",
@@ -154,6 +157,14 @@ const OPPORTUNITIES: Opportunity[] = [
     rationale: "Rafraîchir un contenu existant coûte bien moins cher qu'en créer un nouveau et relance souvent un trafic en déclin en quelques semaines.",
     time: "5 h", impact: "Trafic historique préservé", ownerKey: "mp", deadline: "2026-08-20",
   },
+  {
+    id: "o12", module: "netlinking", priority: "high", status: "todo",
+    title: "Décrocher un backlink presse sur Les Échos",
+    description: "Les Échos lie 3 concurrents mais pas la marque. Cible presse à très forte autorité pour un lien contextuel.",
+    rationale: "Un lien depuis un média de premier plan comme Les Échos apporte une autorité difficile à obtenir autrement et bénéficie à l'ensemble du domaine. C'est le levier le plus impactant du profil de liens.",
+    steps: ["Identifier le desk économie / tech pertinent", "Préparer une donnée exclusive ou une tribune d'expert", "Pitcher l'angle GEO / IA générative", "Suivre la publication et la valeur du lien obtenu"],
+    time: "2 sem", impact: "+1 RefDom très haute autorité", ownerKey: "bl", deadline: "2026-08-01",
+  },
 ];
 
 const PRIORITY_ORDER: ActionPriorityLevel[] = ["high", "mid", "low"];
@@ -204,7 +215,7 @@ function CategoryChip({ module }: { module: ActionModule }) {
   const cfg = MODULE_CONFIG[module];
   const Icon = cfg.icon;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-[12px] font-medium text-[var(--text-primary)]">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2 py-1 type-caption text-[var(--text-primary)]">
       <Icon className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)]" />
       {cfg.label}
     </span>
@@ -220,14 +231,14 @@ function CategoryTab({ label, count, active, onClick }: { label: string; count: 
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-9 items-center justify-between gap-2 rounded-xl px-3 text-[14px] font-medium transition-colors ${
+      className={`flex h-9 items-center justify-between gap-2 rounded-xl px-3 type-body-strong transition-colors ${
         active
           ? "bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]"
           : "text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
       }`}
     >
       <span className="truncate">{label}</span>
-      <span className={`flex-shrink-0 text-[13px] tabular-nums ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"}`}>{count}</span>
+      <span className={`flex-shrink-0 type-label tabular-nums ${active ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"}`}>{count}</span>
     </button>
   );
 }
@@ -239,12 +250,12 @@ function CategoryTab({ label, count, active, onClick }: { label: string; count: 
 /** Tag de portée : page liée (slug) ou action globale au site. */
 function ScopeTag({ pageUrl }: { pageUrl?: string }) {
   return pageUrl ? (
-    <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">
+    <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-[var(--bg-subtle)] px-2 py-0.5 type-micro text-[var(--text-secondary)]">
       <FileText className="h-3 w-3 flex-shrink-0" />
       <span className="truncate">{pageUrl}</span>
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">
+    <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-subtle)] px-2 py-0.5 type-micro text-[var(--text-secondary)]">
       <Globe className="h-3 w-3" />
       Site global
     </span>
@@ -284,12 +295,12 @@ function OpportunityCard({
         </div>
       </div>
       <div>
-        <p className="text-[14px] font-semibold leading-snug text-[var(--text-primary)]">{o.title}</p>
-        <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-[var(--text-muted)]">{o.description}</p>
+        <p className="type-body-strong leading-snug">{o.title}</p>
+        <p className="mt-1 line-clamp-2 type-body-sm leading-relaxed">{o.description}</p>
       </div>
       <div className="flex items-center justify-between gap-2">
         <ScopeTag pageUrl={ACTION_PAGE_URL[o.id]} />
-        <span className="flex flex-shrink-0 items-center gap-1 text-[11px] text-[var(--text-muted)]">
+        <span className="flex flex-shrink-0 items-center gap-1 type-micro">
           <Calendar className="h-3 w-3" />
           {fmtAge(ageDays)}
         </span>
@@ -315,7 +326,7 @@ const recurrenceLabel = (v: string) => RECURRENCE_OPTIONS.find((o) => o.value ==
 function PanelRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-h-[44px] items-center justify-between gap-3 border-b border-[var(--border-subtle)] py-2.5 last:border-0">
-      <span className="flex-shrink-0 text-[13px] text-[var(--text-secondary)]">{label}</span>
+      <span className="flex-shrink-0 type-label">{label}</span>
       <div className="flex min-w-0 items-center justify-end text-right">{children}</div>
     </div>
   );
@@ -328,7 +339,7 @@ function OwnerPickerInline({ owner, onChange }: { owner?: ActionOwner; onChange:
       trigger={
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-full px-1.5 py-1 text-[13px] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
+          className="inline-flex items-center gap-2 rounded-full px-1.5 py-1 type-label text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
         >
           {owner ? (
             <>
@@ -347,7 +358,7 @@ function OwnerPickerInline({ owner, onChange }: { owner?: ActionOwner; onChange:
         <DropdownItem key={c.id} selected={owner?.id === c.id} onClick={() => onChange(c)}>
           <span className="inline-flex items-center gap-2">
             <OwnerAvatar owner={c} size={20} />
-            <span className="text-[13px] text-[var(--text-primary)]">{c.name}</span>
+            <span className="type-label text-[var(--text-primary)]">{c.name}</span>
           </span>
         </DropdownItem>
       ))}
@@ -355,7 +366,7 @@ function OwnerPickerInline({ owner, onChange }: { owner?: ActionOwner; onChange:
         <>
           <div className="my-1 h-px bg-[var(--border-subtle)]" />
           <DropdownItem onClick={() => onChange(undefined)}>
-            <span className="text-[12px] text-[var(--text-muted)]">Retirer l&apos;assignation</span>
+            <span className="type-caption text-[var(--text-muted)]">Retirer l&apos;assignation</span>
           </DropdownItem>
         </>
       )}
@@ -364,41 +375,32 @@ function OwnerPickerInline({ owner, onChange }: { owner?: ActionOwner; onChange:
 }
 
 function DeadlineInline({ deadline, onChange }: { deadline?: string; onChange: (d: string | undefined) => void }) {
-  const [editing, setEditing] = useState(false);
-  if (editing) {
-    return (
-      <input
-        type="date"
-        autoFocus
-        defaultValue={deadline}
-        onChange={(e) => onChange(e.target.value || undefined)}
-        onBlur={() => setEditing(false)}
-        className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2 py-1 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--border-medium)]"
-      />
-    );
-  }
   return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[13px] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
-    >
-      <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-      {deadline ? fmtDeadline(deadline) : <span className="text-[var(--text-muted)]">Ajouter</span>}
-    </button>
+    <DatePopover value={deadline} onChange={onChange} align="right" confirm>
+      {({ toggle }) => (
+        <button
+          type="button"
+          onClick={toggle}
+          className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 type-label text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
+        >
+          <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+          {deadline ? fmtDeadline(deadline) : <span className="text-[var(--text-muted)]">Ajouter</span>}
+        </button>
+      )}
+    </DatePopover>
   );
 }
 
 function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4 pt-6">
-      <h2 className="text-[15px] font-semibold tracking-subheading text-[var(--text-primary)]">{title}</h2>
+      <h2 className="type-title">{title}</h2>
       {children}
     </section>
   );
 }
 
-function OpportunityDetail({
+export function OpportunityDetail({
   o, owner, deadline, status, checked, narrative, recurrence, creator,
   onToggleStep, onStatusChange, onOwnerChange, onDeadlineChange, onNarrativeChange, onRecurrenceChange,
   onBack, index, total, onPrev, onNext,
@@ -425,6 +427,7 @@ function OpportunityDetail({
 }) {
   const [localNarrative, setLocalNarrative] = useState(narrative);
   const [scrolled, setScrolled] = useState(false);
+  const { show: showToast } = useToast();
   // Animation d'apparition (fondu + léger scale), façon PromptModal.
   const [visible, setVisible] = useState(false);
   useEffect(() => { const id = setTimeout(() => setVisible(true), 10); return () => clearTimeout(id); }, []);
@@ -466,8 +469,8 @@ function OpportunityDetail({
           {/* Titre + sous-titre — header fixe (hors scroll) ; bordure + bande d'ombre (même dégradé que les colonnes figées du tableau, adapté vertical) au scroll. */}
           <div className="relative z-10 flex-shrink-0 border-b border-[var(--border-subtle)] px-7 pb-4 pt-1">
             <ScopeTag pageUrl={ACTION_PAGE_URL[o.id]} />
-            <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-heading text-[var(--text-primary)]">{o.title}</h1>
-            <p className="mt-2 text-[14px] leading-relaxed text-[var(--text-secondary)]">{o.description}</p>
+            <h1 className="mt-2 type-h2">{o.title}</h1>
+            <p className="mt-2 type-body leading-relaxed text-[var(--text-secondary)]">{o.description}</p>
             <span
               aria-hidden
               className="pointer-events-none absolute inset-x-0 bottom-0 h-6"
@@ -487,7 +490,7 @@ function OpportunityDetail({
                         className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border transition-colors ${done ? "border-[var(--accent-primary)] bg-[var(--accent-primary)] text-white" : "border-[var(--border-medium)] text-transparent hover:border-[var(--accent-primary)]"}`}>
                         <Check className="h-3 w-3" strokeWidth={3} />
                       </button>
-                      <span className={`text-[14px] leading-relaxed ${done ? "text-[var(--text-muted)] line-through" : "text-[var(--text-primary)]"}`}>{s}</span>
+                      <span className={`type-body leading-relaxed ${done ? "text-[var(--text-muted)] line-through" : ""}`}>{s}</span>
                     </li>
                   );
                 })}
@@ -496,16 +499,16 @@ function OpportunityDetail({
 
             {/* Pourquoi cette action */}
             <DetailSection title="Pourquoi cette action">
-              <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">{o.rationale}</p>
+              <p className="type-body leading-relaxed text-[var(--text-secondary)]">{o.rationale}</p>
             </DetailSection>
 
             {/* Suivi client — narratif */}
             <DetailSection title="Suivi client">
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-medium text-[var(--text-secondary)]">Narratif client (pour le rapport mensuel)</span>
+                <span className="mb-1.5 block type-caption">Narratif client (pour le rapport mensuel)</span>
                 <textarea value={localNarrative} onChange={(e) => setLocalNarrative(e.target.value)} onBlur={() => localNarrative !== narrative && onNarrativeChange(localNarrative)}
                   placeholder="Comment expliquer cette action à votre client en 2 phrases business…" rows={2}
-                  className="w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[13px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]" />
+                  className="w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 type-body-sm leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]" />
               </label>
             </DetailSection>
 
@@ -521,10 +524,10 @@ function OpportunityDetail({
                   <li key={i} className="flex gap-3">
                     {a.who && <OwnerAvatar owner={a.who} size={26} />}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] leading-snug text-[var(--text-secondary)]">
+                      <p className="type-body-sm leading-snug">
                         <span className="font-medium text-[var(--text-primary)]">{a.who?.name}</span> {a.text}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{a.when}</p>
+                      <p className="mt-0.5 type-micro">{a.when}</p>
                     </div>
                   </li>
                 ))}
@@ -544,18 +547,18 @@ function OpportunityDetail({
             <PanelRow label="Statut"><StatusPillDropdown status={status} onChange={onStatusChange} /></PanelRow>
             <PanelRow label="Catégorie"><CategoryChip module={o.module} /></PanelRow>
             <PanelRow label="Assigné à"><OwnerPickerInline owner={owner} onChange={onOwnerChange} /></PanelRow>
-            <PanelRow label="Échéance"><DeadlineInline deadline={deadline} onChange={onDeadlineChange} /></PanelRow>
+            <PanelRow label="Échéance"><DeadlineInline deadline={deadline} onChange={(d) => { onDeadlineChange(d); showToast("Échéance mise à jour", <CheckCircleIcon className="h-5 w-5" />); }} /></PanelRow>
             <PanelRow label="Créateur">
-              <span className="inline-flex items-center gap-2 rounded-full px-1.5 py-1 text-[13px] text-[var(--text-primary)]">
+              <span className="inline-flex items-center gap-2 rounded-full px-1.5 py-1 type-label text-[var(--text-primary)]">
                 <OwnerAvatar owner={creator} size={22} />
                 <span>{creator.name}</span>
               </span>
             </PanelRow>
-            {o.time && <PanelRow label="Effort estimé"><span className="text-[13px] font-medium tabular-nums text-[var(--text-primary)]">{o.time}</span></PanelRow>}
+            {o.time && <PanelRow label="Effort estimé"><span className="type-label tabular-nums text-[var(--text-primary)]">{o.time}</span></PanelRow>}
             <PanelRow label="Priorité"><PriorityBadge level={o.priority} /></PanelRow>
             <PanelRow label="Récurrence">
               <DropdownMenu width={200} trigger={
-                <button type="button" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[13px] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]">
+                <button type="button" className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-label text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]">
                   <Repeat className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                   {recurrenceLabel(recurrence)}
                   <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)]" />
@@ -579,11 +582,14 @@ function OpportunityDetail({
    MAIN VIEW
    ══════════════════════════════════════════════════════════════════════ */
 
-export function OpportunitesView({ domain }: { domain: string }) {
+export function OpportunitesView({ domain, initialModule }: { domain: string; initialModule?: string | null }) {
   void domain; // réservé pour le scope projet (persistance B1b)
 
+  // Filtre catégorie initial (ex. arrivée depuis un audit « voir dans les actions »).
+  const seedModule = initialModule && initialModule in MODULE_CONFIG ? (initialModule as ActionModule) : null;
+
   const [search, setSearch] = useState("");
-  const [activeModule, setActiveModule] = useState<ActionModule | null>(null); // catégorie = sélection unique (onglets)
+  const [activeModule, setActiveModule] = useState<ActionModule | null>(seedModule); // catégorie = sélection unique (onglets)
   const [activePriorities, setActivePriorities] = useState<Set<ActionPriorityLevel>>(new Set());
   const [activeStatuses, setActiveStatuses] = useState<Set<Status>>(new Set());
   const [activeOwners, setActiveOwners] = useState<Set<string>>(new Set());
@@ -736,8 +742,8 @@ export function OpportunitesView({ domain }: { domain: string }) {
 
       {/* Titre de la vue (rendu ici pour laisser le détail prendre toute la page) */}
       <div className="flex-shrink-0">
-        <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">Actions</h1>
-        <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{TAB_SUBTITLES.opportunites}</p>
+        <h1 className="type-h1 leading-none">Actions</h1>
+        <p className="mt-1 type-body text-[var(--text-secondary)]">{TAB_SUBTITLES.opportunites}</p>
       </div>
 
       {/* Toolbar */}
@@ -752,7 +758,7 @@ export function OpportunitesView({ domain }: { domain: string }) {
                   <DropdownItem selected={activeModule === null} onClick={() => setActiveModule(null)}>
                     <span className="flex w-full items-center justify-between gap-3">
                       Toutes les catégories
-                      <span className="text-[12px] opacity-60">{baseFiltered.length}</span>
+                      <span className="type-caption opacity-60">{baseFiltered.length}</span>
                     </span>
                   </DropdownItem>
                   {MODULE_ORDER.map((m) => (
@@ -762,7 +768,7 @@ export function OpportunitesView({ domain }: { domain: string }) {
                           <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: MODULE_CONFIG[m].color }} />
                           {MODULE_CONFIG[m].label}
                         </span>
-                        <span className="text-[12px] opacity-60">{moduleCounts[m]}</span>
+                        <span className="type-caption opacity-60">{moduleCounts[m]}</span>
                       </span>
                     </DropdownItem>
                   ))}
@@ -833,7 +839,7 @@ export function OpportunitesView({ domain }: { domain: string }) {
                   onClick={() => setViewMode(mode)}
                   className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
                     viewMode === mode
-                      ? "bg-[var(--bg-card-static)] text-[var(--text-primary)] shadow-sm"
+                      ? "bg-[var(--bg-secondary)] text-[var(--text-primary)]"
                       : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   }`}
                 >
@@ -845,19 +851,19 @@ export function OpportunitesView({ domain }: { domain: string }) {
 
           {/* Board — vue liste (groupée) ou kanban (colonnes + drag & drop) */}
           {groups.length === 0 ? (
-            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
+            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center type-body text-[var(--text-muted)]">
               {search ? `Aucune action ne contient « ${search} ».` : "Aucune action avec ces filtres."}
             </div>
           ) : viewMode === "list" ? (
             <TableWide<Opportunity>
               columns={[
-                { key: "title", header: "Nom", width: 340, flex: true, render: (o) => <span className="block truncate text-[14px] font-medium text-[var(--text-primary)]" title={o.title}>{o.title}</span> },
+                { key: "title", header: "Nom", width: 340, flex: true, render: (o) => <span className="block truncate type-body-strong" title={o.title}>{o.title}</span> },
                 { key: "module", header: "Catégorie", width: 150, render: (o) => <CategoryChip module={o.module} /> },
                 { key: "status", header: "Statut", width: 160, render: (o) => <span className="inline-flex" onClick={(e) => e.stopPropagation()}><StatusPillDropdown status={statusOf(o)} onChange={(s) => moveAction(o.id, s)} /></span> },
                 { key: "priority", header: "Priorité", width: 120, render: (o) => <PriorityBadge level={o.priority} /> },
                 { key: "scope", header: "Portée", width: 150, render: (o) => <ScopeTag pageUrl={ACTION_PAGE_URL[o.id]} /> },
-                { key: "owner", header: "Assigné à", width: 180, render: (o) => { const ow = ownerOf(o); return ow ? <span className="inline-flex min-w-0 items-center gap-2"><OwnerAvatar owner={ow} size={22} /><span className="truncate text-[13px] text-[var(--text-primary)]">{ow.name}</span></span> : <span className="text-[13px] text-[var(--text-muted)]">Non assigné</span>; } },
-                { key: "age", header: "Créée", width: 120, render: (o) => <span className="whitespace-nowrap text-[13px] text-[var(--text-muted)]">{fmtAge(ACTION_AGE_DAYS[o.id] ?? 30)}</span> },
+                { key: "owner", header: "Assigné à", width: 180, render: (o) => { const ow = ownerOf(o); return ow ? <span className="inline-flex min-w-0 items-center gap-2"><OwnerAvatar owner={ow} size={22} /><span className="truncate type-label text-[var(--text-primary)]">{ow.name}</span></span> : <span className="type-label text-[var(--text-muted)]">Non assigné</span>; } },
+                { key: "age", header: "Créée", width: 120, render: (o) => <span className="whitespace-nowrap type-caption text-[var(--text-muted)]">{fmtAge(ACTION_AGE_DAYS[o.id] ?? 30)}</span> },
               ]}
               data={ordered}
               rowKey={(o) => o.id}
@@ -894,8 +900,8 @@ export function OpportunitesView({ domain }: { domain: string }) {
                       className="relative z-10 flex flex-shrink-0 items-center gap-2 px-3.5 pb-2.5 pt-3 transition-shadow"
                       style={scrolled ? { boxShadow: "0 6px 8px -6px rgba(0,0,0,0.18)" } : undefined}
                     >
-                      <h2 className="text-[14px] font-semibold tracking-subheading text-[var(--text-primary)]">{cfg.label}</h2>
-                      <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[12px] font-medium tabular-nums text-[var(--text-muted)]">
+                      <h2 className="type-body-strong">{cfg.label}</h2>
+                      <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-caption tabular-nums text-[var(--text-muted)]">
                         {col.items.length}
                       </span>
                     </div>
@@ -918,7 +924,7 @@ export function OpportunitesView({ domain }: { domain: string }) {
                         />
                       ))}
                       {col.items.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-[var(--border-subtle)] py-8 text-center text-[12px] text-[var(--text-muted)]">
+                        <div className="rounded-xl border border-dashed border-[var(--border-subtle)] py-8 text-center type-caption text-[var(--text-muted)]">
                           Déposer ici
                         </div>
                       )}

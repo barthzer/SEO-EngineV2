@@ -36,6 +36,12 @@ const IMPORT_TYPES: { key: ImportType; icon: React.ElementType; label: string; d
   { key: "quickwins", icon: BoltIcon,            label: "Quick Wins",         desc: "Sélectionnez une catégorie" },
 ];
 
+const LOT_PALETTE = [
+  "var(--color-danger)", "var(--color-warning)", "#EAB308", "#84CC16",
+  "var(--color-success)", "#14B8A6", "#06B6D4", "#3B82F6",
+  "var(--accent-primary)", "#A855F7", "#EC4899", "#64748B",
+];
+
 const QUICK_WINS_OPTIONS = ["Top 10 articles", "Pages les moins visibles", "Meilleur CTR", "Fort potentiel", "Positions 11–20"];
 const TYPOLOGY_OPTIONS   = ["Articles de blog", "Pages produits", "Pages catégories", "Landing pages", "Pages guides", "Pages FAQ"];
 const SEGMENT_INFO: { label: string; info: ReactNode }[] = [
@@ -46,7 +52,7 @@ const SEGMENT_INFO: { label: string; info: ReactNode }[] = [
         <p className="font-semibold text-white">Vache à lait (Cash Cows)</p>
         <p className="text-white/70">Pages qui rapportent gros, à protéger.</p>
         <div className="space-y-0.5 text-white/80">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
+          <p className="mb-1 type-micro font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
           <p>· Position ≤ 3 (Top 3 Google)</p>
           <p>· Clics ≥ 50 sur la période</p>
           <p>· &gt; 180 jours sans modif → flag "à rafraîchir"</p>
@@ -62,7 +68,7 @@ const SEGMENT_INFO: { label: string; info: ReactNode }[] = [
         <p className="font-semibold text-white">Étoiles montantes (Rising Stars)</p>
         <p className="text-white/70">Quick Wins — pages proches du Top 3.</p>
         <div className="space-y-0.5 text-white/80">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
+          <p className="mb-1 type-micro font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
           <p>· Position 4–10 (page 1 hors Top 3)</p>
           <p>· Impressions ≥ 100</p>
           <p>· ≥ 2 positions gagnées vs N-1 → vraie Rising Star</p>
@@ -78,7 +84,7 @@ const SEGMENT_INFO: { label: string; info: ReactNode }[] = [
         <p className="font-semibold text-white">En chute (Drops)</p>
         <p className="text-white/70">Pages qui perdent du trafic — urgent.</p>
         <div className="space-y-0.5 text-white/80">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères (au moins un)</p>
+          <p className="mb-1 type-micro font-semibold uppercase tracking-wide text-white/40">Critères (au moins un)</p>
           <p>· Clics ↓ ≥ 20 % vs N-1</p>
           <p>· Chute réelle : clics ↓ + position ↓ 3 places</p>
           <p>· Zero-click : clics ↓ mais position stable</p>
@@ -94,7 +100,7 @@ const SEGMENT_INFO: { label: string; info: ReactNode }[] = [
         <p className="font-semibold text-white">Pages zombies</p>
         <p className="text-white/70">Pages mortes — visibles mais sans clic.</p>
         <div className="space-y-0.5 text-white/80">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
+          <p className="mb-1 type-micro font-semibold uppercase tracking-wide text-white/40">Critères cumulatifs</p>
           <p>· Clics ≤ 10</p>
           <p>· CTR ≤ 1 %</p>
           <p>· Impressions ≥ 50 (sinon = invisible)</p>
@@ -157,7 +163,7 @@ function SegmentPill({ label, info, active, onToggle }: { label: string; info: R
   return (
     <button
       onClick={onToggle}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all ${
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 type-caption font-medium transition-all ${
         active
           ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--bg-primary)]"
           : "border-[var(--border-medium)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]"
@@ -221,7 +227,7 @@ function TreeNodeItem({ node, depth = 0, selected, expanded, onSelect, onToggle 
       >
         <ChevronRightIcon className={`h-3 w-3 flex-shrink-0 transition-transform ${hasChildren ? (isExpanded ? "rotate-90" : "") : "opacity-0"}`} />
         <FolderOpenIcon className="h-3.5 w-3.5 flex-shrink-0" />
-        <span className="font-mono text-[12px]">{node.label}</span>
+        <span className="font-mono type-caption text-inherit">{node.label}</span>
       </button>
       {hasChildren && isExpanded && node.children!.map((c) => (
         <TreeNodeItem key={c.id} node={c} depth={depth + 1} selected={selected} expanded={expanded} onSelect={onSelect} onToggle={onToggle} />
@@ -247,6 +253,8 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   const [mustExcludeTags, setMustExcludeTags] = useState<string[]>([]);
   const [mustExcludeInput, setMustExcludeInput] = useState("");
   const [segments, setSegments] = useState<string[]>([]);
+  const [lotName, setLotName] = useState("");
+  const [lotColor, setLotColor] = useState<string>(LOT_PALETTE[8]);
 
   const addTag = (val: string, tags: string[], set: (t: string[]) => void, setInput: (v: string) => void) => {
     const trimmed = val.trim();
@@ -276,12 +284,12 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
     <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]">
 
-        <Stepper steps={3} current={step} onClose={onClose} />
+        <Stepper steps={4} current={step} onClose={onClose} />
 
         {/* ── Step 1 — Méthode ── */}
         {step === 1 && (
           <div>
-            <h2 className="mb-6 text-center font-semibold tracking-tight text-[var(--text-primary)]">Comment voulez-vous importer vos pages ?</h2>
+            <h2 className="mb-6 text-center type-h2">Comment voulez-vous importer vos pages ?</h2>
             <div className="grid grid-cols-2 gap-3">
               {IMPORT_TYPES.map((t) => {
                 const active = importType === t.key;
@@ -297,8 +305,8 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                   >
                     <t.icon className={`h-9 w-9 transition-colors ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`} />
                     <div>
-                      <p className="text-[13px] font-semibold text-[var(--text-primary)]">{t.label}</p>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{t.desc}</p>
+                      <p className="type-label font-semibold text-[var(--text-primary)]">{t.label}</p>
+                      <p className="mt-0.5 type-micro">{t.desc}</p>
                     </div>
                   </button>
                 );
@@ -312,7 +320,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                   <input type="text" value={keywordInput} placeholder="Ajouter un mot-clé…"
                     onChange={(e) => setKeywordInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addTag(keywordInput, keywords, setKeywords, setKeywordInput)}
-                    className="flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] px-3 py-2 text-[14px] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]" />
+                    className="flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] px-3 py-2 type-body outline-none focus:border-[var(--text-primary)]" />
                   <button onClick={() => addTag(keywordInput, keywords, setKeywords, setKeywordInput)}
                     className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] text-[var(--text-muted)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)]">
                     +
@@ -321,7 +329,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 {keywords.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {keywords.map((kw) => (
-                      <span key={kw} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--bg-primary)]">
+                      <span key={kw} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 type-caption font-medium text-[var(--bg-primary)]">
                         {kw}
                         <button onClick={() => setKeywords((p) => p.filter((x) => x !== kw))} className="opacity-60 hover:opacity-100"><XMarkIcon className="h-3 w-3" /></button>
                       </span>
@@ -334,7 +342,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             <AnimateIn show={importType === "typology"}>
               <div className="relative mt-4">
                 <select value={typology} onChange={(e) => setTypology(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] p-2 pr-9 text-[14px] font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]">
+                  className="w-full appearance-none rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] p-2 pr-9 type-body font-semibold outline-none focus:border-[var(--text-primary)]">
                   <option value="">Sélectionner une typologie…</option>
                   {TYPOLOGY_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -353,7 +361,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             <AnimateIn show={importType === "quickwins"}>
               <div className="relative mt-4">
                 <select value={quickWin} onChange={(e) => setQuickWin(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] p-2 pr-9 text-[14px] font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]">
+                  className="w-full appearance-none rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] p-2 pr-9 type-body font-semibold outline-none focus:border-[var(--text-primary)]">
                   <option value="">Sélectionner une catégorie…</option>
                   {QUICK_WINS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -364,7 +372,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             <div className="mt-6 flex items-center justify-between">
               <div />
               <div className="flex items-center gap-3">
-                <button onClick={() => setStep(2)} className="text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+                <button onClick={() => setStep(2)} className="type-body-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
                   Passer cette étape
                 </button>
                 <Button size="md" onClick={() => setStep(2)} disabled={!importType}>
@@ -378,7 +386,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
         {/* ── Step 2 — Filtres ── */}
         {step === 2 && (
           <div>
-            <h2 className="mb-6 text-center font-semibold tracking-tight text-[var(--text-primary)]">Filtrez votre import</h2>
+            <h2 className="mb-6 text-center type-h2">Filtrez votre import</h2>
             <div className="space-y-5">
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -387,7 +395,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                   { key: "posMax",         label: "Position max" },
                 ].map((f) => (
                   <div key={f.key}>
-                    <label className="mb-1.5 block text-[11px] font-medium text-[var(--text-muted)]">{f.label}</label>
+                    <label className="mb-1.5 block type-micro">{f.label}</label>
                     <NumberInput
                       placeholder="—"
                       value={filters[f.key as keyof typeof filters]}
@@ -405,12 +413,12 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                 { label: "La page exclut",         tags: mustExcludeTags, setTags: setMustExcludeTags, input: mustExcludeInput, setInput: setMustExcludeInput, placeholder: "ex : /admin" },
               ].map((f) => (
                 <div key={f.label}>
-                  <label className="mb-1.5 block text-[11px] font-medium text-[var(--text-muted)]">{f.label}</label>
+                  <label className="mb-1.5 block type-micro">{f.label}</label>
                   <div className="flex gap-2">
                     <input type="text" value={f.input} placeholder={f.placeholder}
                       onChange={(e) => f.setInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && addTag(f.input, f.tags, f.setTags, f.setInput)}
-                      className="flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] px-3 py-2 text-[14px] text-[var(--text-primary)] outline-none focus:border-[var(--text-primary)]" />
+                      className="flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] px-3 py-2 type-body outline-none focus:border-[var(--text-primary)]" />
                     <button onClick={() => addTag(f.input, f.tags, f.setTags, f.setInput)}
                       className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-medium)] bg-[var(--input-bg)] text-[var(--text-muted)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)]">
                       +
@@ -419,7 +427,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                   <AnimateIn show={f.tags.length > 0}>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {f.tags.map((tag) => (
-                        <span key={tag} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-medium text-[var(--bg-primary)]">
+                        <span key={tag} className="animate-slide-down flex items-center gap-1 rounded-full bg-[var(--text-primary)] px-3 py-1.5 type-caption font-medium text-[var(--bg-primary)]">
                           {tag}
                           <button onClick={() => f.setTags((p) => p.filter((x) => x !== tag))} className="opacity-60 hover:opacity-100"><XMarkIcon className="h-3 w-3" /></button>
                         </span>
@@ -431,7 +439,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
 
               <div>
                 <div className="mb-2 flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-[var(--text-muted)]">Filtrer par segments GSC</span>
+                  <span className="type-micro">Filtrer par segments GSC</span>
                   <InfoIcon content={SEGMENT_PRIORITY_INFO} />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -448,7 +456,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
 
               <div className="max-w-[160px]">
-                <label className="mb-1.5 block text-[11px] font-medium text-[var(--text-muted)]">Nombre max d'URL</label>
+                <label className="mb-1.5 block type-micro">Nombre max d'URL</label>
                 <NumberInput
                   value={filters.maxUrls}
                   onChange={(val) => setFilters((p) => ({ ...p, maxUrls: val }))}
@@ -459,11 +467,11 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="mt-6 flex items-center justify-between">
-              <button onClick={() => setStep(1)} className="flex items-center gap-1 text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+              <button onClick={() => setStep(1)} className="flex items-center gap-1 type-body-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
                 <ChevronRightIcon className="h-3.5 w-3.5 rotate-180" /> Retour
               </button>
               <div className="flex items-center gap-3">
-                <button onClick={goStep3} className="text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+                <button onClick={goStep3} className="type-body-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
                   Passer cette étape
                 </button>
                 <Button size="md" onClick={goStep3}>
@@ -480,13 +488,13 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="h-14 w-14 animate-spin rounded-full border-[3px] border-[var(--border-subtle)] border-t-[var(--text-primary)]" />
-                <p className="mt-6 text-[26px] font-semibold tracking-tight text-[var(--text-primary)]">Analyse en cours…</p>
+                <p className="mt-6 type-h1">Analyse en cours…</p>
               </div>
             ) : (
               <>
                 <div className="mb-5 animate-slide-down text-center">
-                  <h2 className="font-semibold tracking-tight text-[var(--text-primary)]">{MOCK_PAGES.length} pages correspondent aux filtres !</h2>
-                  <p className="mt-1 text-[12px] text-[var(--text-muted)]">Données du 29/04/2026</p>
+                  <h2 className="type-h2">{MOCK_PAGES.length} pages correspondent aux filtres !</h2>
+                  <p className="mt-1 type-micro">Données du 29/04/2026</p>
                 </div>
                 <div className="animate-slide-up overflow-hidden rounded-2xl border border-[var(--border-subtle)]" style={{ animationDelay: "60ms" }}>
                   {/* Sticky header */}
@@ -498,7 +506,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                       {allSelected && <CheckIcon className="h-2.5 w-2.5 text-[var(--bg-primary)]" />}
                     </button>
                     {["Page", "Clics", "Impr.", "Pos."].map((h, i) => (
-                      <span key={h} className={`text-[10px] font-medium text-[var(--text-muted)] ${i > 0 ? "text-right" : ""}`}>{h}</span>
+                      <span key={h} className={`type-caption ${i > 0 ? "text-right" : ""}`}>{h}</span>
                     ))}
                   </div>
                   <div className="max-h-56 overflow-y-auto">
@@ -515,31 +523,89 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
                           </div>
                           <div className="flex items-center gap-2 min-w-0">
                             <LinkIcon className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)]" />
-                            <span className="truncate font-mono text-[12px] text-[var(--text-secondary)]">{p.url}</span>
+                            <span className="truncate font-mono type-label">{p.url}</span>
                           </div>
-                          <span className="text-right text-[13px] font-medium tabular-nums text-[var(--text-primary)]">{p.clicks.toLocaleString()}</span>
-                          <span className="text-right text-[13px] tabular-nums text-[var(--text-muted)]">{p.impressions.toLocaleString()}</span>
-                          <span className="text-right text-[13px] font-medium tabular-nums text-[var(--text-primary)]">#{p.position}</span>
+                          <span className="text-right type-label tabular-nums text-[var(--text-primary)]">{p.clicks.toLocaleString()}</span>
+                          <span className="text-right type-label tabular-nums">{p.impressions.toLocaleString()}</span>
+                          <span className="text-right type-label tabular-nums text-[var(--text-primary)]">#{p.position}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
                 <div className="mt-6 flex items-center justify-between">
-                  <button onClick={() => setStep(2)} className="flex items-center gap-1 text-[13px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+                  <button onClick={() => setStep(2)} className="flex items-center gap-1 type-body-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
                     <ChevronRightIcon className="h-3.5 w-3.5 rotate-180" /> Retour
                   </button>
                   <div className="flex items-center gap-3">
                     <Button size="md" variant="secondary" onClick={onClose}>
                       Fusionner avec un autre tag
                     </Button>
-                    <Button size="md" onClick={onClose} disabled={selectedPages.size === 0}>
-                      Valider l'import ({selectedPages.size} pages) <ChevronRightIcon className="h-3.5 w-3.5" />
+                    <Button size="md" onClick={() => setStep(4)} disabled={selectedPages.size === 0}>
+                      Continuer ({selectedPages.size} pages) <ChevronRightIcon className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* ── Step 4 — Nommer le lot ── */}
+        {step === 4 && (
+          <div>
+            <div className="mb-6 text-center">
+              <h2 className="type-h2">Nommez votre lot de pages</h2>
+              <p className="mt-1 type-body-sm">{selectedPages.size} pages seront regroupées dans ce lot.</p>
+            </div>
+
+            <div className="mx-auto max-w-md">
+              <label className="mb-1.5 block type-micro">Nom du lot</label>
+              <input
+                autoFocus
+                type="text"
+                value={lotName}
+                onChange={(e) => setLotName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && lotName.trim()) onClose(); }}
+                placeholder="Ex. Lot Mai 2026 — Refonte blog"
+                className="w-full rounded-full border border-[var(--border-medium)] bg-[var(--input-bg)] px-4 py-2.5 type-body text-[var(--text-primary)] placeholder-[var(--text-input)] outline-none focus:border-[var(--accent-primary)]"
+              />
+
+              <div className="mt-5">
+                <p className="mb-2.5 type-caption">Couleur</p>
+                <div className="flex flex-wrap gap-2">
+                  {LOT_PALETTE.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setLotColor(c)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full transition-transform hover:scale-110 active:scale-95"
+                      aria-label={`Choisir la couleur ${c}`}
+                    >
+                      <span className="block h-5 w-5 rounded-full" style={{ backgroundColor: c, boxShadow: c === lotColor ? `0 0 0 2px var(--modal-bg), 0 0 0 3.5px ${c}` : undefined }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aperçu de la pill du lot */}
+              <div className="mt-6 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3.5 py-3">
+                <span className="type-micro">Aperçu</span>
+                <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-primary)] px-2.5 py-1 type-caption font-medium text-[var(--text-primary)]">
+                  <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: lotColor }} />
+                  {lotName.trim() || "Lot sans nom"}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+              <button onClick={() => setStep(3)} className="flex items-center gap-1 type-body-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+                <ChevronRightIcon className="h-3.5 w-3.5 rotate-180" /> Retour
+              </button>
+              <Button size="md" onClick={onClose} disabled={!lotName.trim()}>
+                Créer le lot ({selectedPages.size} pages) <CheckIcon className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         )}
 

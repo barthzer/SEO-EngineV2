@@ -40,7 +40,7 @@ export function Drawer() {
         }}
       >
         <div className="flex h-14 flex-shrink-0 items-center justify-between px-6">
-          <span className="text-[14px] font-medium text-[var(--text-primary)]">{title}</span>
+          <span className="type-body-strong">{title}</span>
           <button
             onClick={close}
             aria-label="Fermer"

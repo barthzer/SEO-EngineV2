@@ -78,7 +78,7 @@ export function VariationPill({
 
   const pill = (
     <span
-      className={`inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums ${className}`}
+      className={`inline-flex items-center gap-1 type-micro tabular-nums ${className}`}
       style={{ color: COLOR[dir] }}
     >
       <Triangle direction={dir} />

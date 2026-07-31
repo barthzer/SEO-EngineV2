@@ -11,6 +11,7 @@ import { Tooltip } from "@/components/Tooltip";
 import { DropdownMenu, DropdownItem, DropdownSeparator } from "@/components/DropdownMenu";
 import { useProjects } from "@/context/ProjectsContext";
 import { useSidebar } from "@/context/SidebarContext";
+import { useToast } from "@/context/ToastContext";
 import {
   Cog6ToothIcon as Cog6ToothOutline,
   UserGroupIcon as UserGroupOutline,
@@ -19,11 +20,10 @@ import {
   ChartBarIcon, ArrowTrendingUpIcon, CurrencyEuroIcon, PresentationChartLineIcon,
   ClockIcon, PencilSquareIcon,
   Squares2X2Icon, EyeIcon, ChatBubbleLeftRightIcon, FaceSmileIcon, LinkIcon, SignalIcon, LightBulbIcon, NewspaperIcon,
-  ScaleIcon, TagIcon,
+  ScaleIcon, TagIcon, ShareIcon,
 } from "@heroicons/react/24/outline";
 import {
   Cog6ToothIcon as Cog6ToothSolid,
-  UserGroupIcon as UserGroupSolid,
   Squares2X2Icon as Squares2X2Solid,
   LinkIcon as LinkSolid,
   DocumentTextIcon as DocumentTextSolid,
@@ -38,6 +38,7 @@ import {
   PencilSquareIcon as PencilSquareSolid,
   DocumentPlusIcon as DocumentPlusSolid,
 } from "@heroicons/react/24/solid";
+import { GaugeGlyph } from "@/components/icons/GaugeGlyph";
 import { HomeGlyph } from "@/components/icons/HomeGlyph";
 import {
   UserCircle,
@@ -67,7 +68,8 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   overview:     Squares2X2Solid,
   urls:         LinkSolid,
   contenu:      DocumentTextSolid,
-  netlinking:   ShareSolid,
+  technique:    GaugeGlyph,
+  netlinking:   TrophySolid,
   performance:  ChartBarSolid,
   geo:          SparklesSolid,
   benchmark:    TrophySolid,
@@ -93,7 +95,7 @@ const SUB_ICONS: Record<string, React.ElementType> = {
   // Suivi
   historique:      ClockIcon,
   notes:           PencilSquareIcon,
-  // Netlinking
+  // Popularité
   autorite:        NewspaperIcon,
   benchmark:       ScaleIcon,
   profil:          TagIcon,
@@ -122,6 +124,7 @@ function NavRow({
   isActive,
   isExpanded,
   disabled,
+  danger,
   badge,
   trailing,
   onClick,
@@ -134,6 +137,8 @@ function NavRow({
   isActive: boolean;
   isExpanded: boolean;
   disabled?: boolean;
+  /** Action destructive : texte rouge + hover rouge soft. */
+  danger?: boolean;
   badge?: ReactNode;
   /** Contenu à droite (ex. chevron pour les sections à sous-onglets). */
   trailing?: ReactNode;
@@ -143,9 +148,11 @@ function NavRow({
   // Couleur de texte : actif = accent bleu, inactif = secondary (primary au survol), disabled = muted
   const colorClass = disabled
     ? "text-[var(--text-muted)] cursor-not-allowed"
-    : isActive
-      ? "text-[var(--accent-primary)]"
-      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
+    : danger
+      ? "text-[var(--color-danger)] hover:text-[var(--color-danger)]"
+      : isActive
+        ? "text-[var(--accent-primary)]"
+        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
 
   // Bg : actif = soft accent (bleuté), inactif = transparent + hover bg-primary
   // (la sidebar est sur fond bg-secondary, donc bg-primary "ressort" comme une petite carte au hover)
@@ -189,7 +196,7 @@ function NavRow({
 
   // gap-2 (8px) entre icône (alignée à droite de son slot) et label.
   // Le slot icône fait 24px en expanded (vs 36px en collapsed) pour rapprocher visuellement icône et titre.
-  const className = `flex h-9 items-center gap-2 rounded-xl text-[14px] font-medium tracking-body transition-colors duration-150 ${
+  const className = `flex h-9 items-center gap-2 rounded-xl type-body-strong transition-colors duration-150 ${
     isExpanded ? "w-full pr-2" : "w-9"
   } ${colorClass} ${bgClass}`;
 
@@ -217,6 +224,7 @@ export function Sidebar() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { show: showToast } = useToast();
   const unreadCount = NOTIFS.filter((n) => n.unread).length;
   const projects = useProjects();
 
@@ -327,7 +335,7 @@ export function Sidebar() {
             <button
               type="button"
               onClick={() => { setNavDir("out"); setOpenSection(null); }}
-              className={`relative flex h-9 items-center justify-center rounded-xl text-[14px] font-medium tracking-body text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] ${isExpanded ? "w-full px-2" : "w-9"}`}
+              className={`relative flex h-9 items-center justify-center rounded-xl type-body-strong text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] ${isExpanded ? "w-full px-2" : "w-9"}`}
             >
               <Tooltip label={`Retour · ${drillSection.label}`} side="right" portal disabled={isExpanded}>
                 <span className={`flex h-9 items-center justify-center ${isExpanded ? "absolute left-2.5 w-4" : "w-9"}`}>
@@ -345,14 +353,14 @@ export function Sidebar() {
                 isActive={sub.isActive}
                 isExpanded={isExpanded}
                 disabled={sub.soon}
-                badge={sub.soon ? <span className="rounded-full bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">bientôt</span> : undefined}
+                badge={sub.soon ? <span className="rounded-full bg-[var(--bg-subtle)] px-1.5 py-0.5 type-micro">bientôt</span> : undefined}
               />
             ))}
           </>
         ) : (
           <>
-            {/* Projets (= Accueil) — toujours présent. Le switch entre projets est dans le Topbar. */}
-            <NavRow icon={HomeGlyph} label="Projets" href="/" isActive={isHome} isExpanded={isExpanded} />
+            {/* Tous les projets (= Accueil) — toujours présent. Le switch entre projets est dans le Topbar. */}
+            <NavRow icon={HomeGlyph} label="Tous les projets" href="/" isActive={isHome} isExpanded={isExpanded} />
 
             {/* Section Projet courant — collapse animé sur la page d'accueil */}
             <div
@@ -365,172 +373,54 @@ export function Sidebar() {
                     Chaque groupe a son libellé (menu étendu) ou un séparateur (menu réduit). */}
                 {NAV_GROUPS.map((grp) => (
                   <div key={grp.id}>
-                    {isExpanded ? (
-                      <p className="mt-4 px-3 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">{grp.label}</p>
+                    {/* Groupe sans libellé (entrées principales) : pas d'en-tête ni de séparateur. */}
+                    {grp.label && (isExpanded ? (
+                      <p className="mt-4 px-3 pb-1 type-micro">{grp.label}</p>
                     ) : (
                       <div className="my-2 h-px w-full bg-[var(--border-subtle)]" />
-                    )}
+                    ))}
                     <div className={`flex flex-col gap-1 ${isExpanded ? "" : "items-center"}`}>
                       {NAV_SECTIONS.filter((s) => s.group === grp.id).map(renderSection)}
                     </div>
                   </div>
                 ))}
+
+                {/* ── Lot « Projet » : réglages & actions propres au projet (hors système ?tab=) ── */}
+                {isExpanded ? (
+                  <p className="mt-4 px-3 pb-1 type-micro">Projet</p>
+                ) : (
+                  <div className="my-2 h-px w-full bg-[var(--border-subtle)]" />
+                )}
+                <div className={`flex flex-col gap-1 ${isExpanded ? "" : "items-center"}`}>
+                  <NavRow
+                    icon={Cog6ToothOutline}
+                    iconActive={Cog6ToothSolid}
+                    label="Paramètres du projet"
+                    href={`${base}/parametres`}
+                    isActive={isProjectPage && pathname.endsWith("/parametres")}
+                    isExpanded={isExpanded}
+                    disabled={isHome}
+                  />
+                  <NavRow
+                    icon={ShareIcon}
+                    label="Partage avec le client"
+                    href="#"
+                    isActive={false}
+                    isExpanded={isExpanded}
+                    disabled={isHome}
+                    onClick={() => showToast("Partage avec le client — bientôt disponible", <ShareIcon className="h-5 w-5" />)}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Raccourcis globaux — Équipe + Paramètres sous le bloc projet */}
-            {isExpanded && (
-              <p className="mt-4 px-3 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">Compte</p>
-            )}
-            {!isExpanded && <div className="my-2 h-px w-full bg-[var(--border-subtle)]" />}
-
-            <NavRow icon={UserGroupOutline} iconActive={UserGroupSolid} label="Équipe" href="/equipe" isActive={pathname === "/equipe"} isExpanded={isExpanded} />
-            <NavRow icon={Cog6ToothOutline} iconActive={Cog6ToothSolid} label="Paramètres" href="/parametres" isActive={pathname === "/parametres"} isExpanded={isExpanded} />
+            {/* Section « Compte » retirée : Équipe + Paramètres du compte sont
+                accessibles depuis le menu utilisateur (avatar en bas de sidebar). */}
           </>
         )}
         </div>
       </nav>
 
-      {/* ── Bottom : Notifications + Mode + Compte (dropdown) + Réduire ── */}
-      <div className="border-t border-[var(--border-subtle)]">
-        <div className={`flex flex-col gap-1 py-3 ${isExpanded ? "px-2" : "items-center"}`}>
-
-          {/* Notifications — bouton avec liste en dropdown */}
-          <DropdownMenu
-            upward
-            align="left"
-            width={320}
-            trigger={(open) => (
-              <Tooltip label="Notifications" side="right" portal disabled={isExpanded}>
-                <button
-                  aria-label="Notifications"
-                  className={`relative flex h-9 items-center gap-2 rounded-xl text-[14px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 ${
-                    isExpanded ? "w-full pr-2" : "w-9"
-                  } ${open ? "bg-[var(--bg-primary)]" : "hover:bg-[var(--bg-card-hover)]"}`}
-                >
-                  <span className={`relative flex h-9 flex-shrink-0 items-center ${isExpanded ? "w-6 justify-end" : "w-9 justify-center"}`}>
-                    <BellLucide className="h-4 w-4" />
-                    {unreadCount > 0 && (
-                      <span className="absolute right-0 top-2 h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
-                    )}
-                  </span>
-                  <span
-                    className="overflow-hidden whitespace-nowrap transition-all duration-300"
-                    style={{
-                      maxWidth: isExpanded ? "160px" : "0px",
-                      opacity: isExpanded ? 1 : 0,
-                      transitionTimingFunction: "var(--ease-expo)",
-                    }}
-                  >
-                    Notifications
-                  </span>
-                  {isExpanded && unreadCount > 0 && (
-                    <span className="ml-auto rounded-full bg-[var(--accent-primary-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent-primary)]">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-              </Tooltip>
-            )}
-          >
-            <div className="px-3 pb-1 pt-2">
-              <p className="text-[13px] font-semibold text-[var(--text-primary)]">Notifications</p>
-            </div>
-            <DropdownSeparator />
-            {NOTIFS.map((n) => (
-              <button
-                key={n.id}
-                className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--bg-secondary)]"
-              >
-                <span className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${n.unread ? "bg-[var(--accent-primary)]" : "bg-transparent"}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium leading-snug text-[var(--text-primary)]">{n.text}</p>
-                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{n.time}</p>
-                </div>
-              </button>
-            ))}
-            <DropdownSeparator />
-            <DropdownItem>Voir toutes les notifications</DropdownItem>
-          </DropdownMenu>
-
-          {/* Mode clair / sombre — toggle direct */}
-          <Tooltip label={theme === "dark" ? "Mode clair" : "Mode sombre"} side="right" portal disabled={isExpanded}>
-            <button
-              onClick={toggleTheme}
-              aria-label="Changer de thème"
-              className={`flex h-9 items-center gap-2 rounded-xl text-[14px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 hover:bg-[var(--bg-card-hover)] ${
-                isExpanded ? "w-full pr-2" : "w-9"
-              }`}
-            >
-              <span className={`flex h-9 flex-shrink-0 items-center ${isExpanded ? "w-6 justify-end" : "w-9 justify-center"}`}>
-                {theme === "dark"
-                  ? <SunLucide className="h-4 w-4" />
-                  : <MoonLucide className="h-4 w-4" />}
-              </span>
-              <span
-                className="overflow-hidden whitespace-nowrap transition-all duration-300"
-                style={{
-                  maxWidth: isExpanded ? "160px" : "0px",
-                  opacity: isExpanded ? 1 : 0,
-                  transitionTimingFunction: "var(--ease-expo)",
-                }}
-              >
-                {theme === "dark" ? "Mode clair" : "Mode sombre"}
-              </span>
-            </button>
-          </Tooltip>
-
-          {/* Compte — bouton avec nom utilisateur, ouvre dropdown Profil/Déconnexion */}
-          <DropdownMenu
-            upward
-            align="left"
-            width={240}
-            trigger={(open) => (
-              <Tooltip label={USER.name} side="right" portal disabled={isExpanded}>
-                <button
-                  aria-label="Mon compte"
-                  className={`flex h-9 items-center gap-2 rounded-xl text-[14px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 ${
-                    isExpanded ? "w-full px-2" : "w-9"
-                  } ${open ? "bg-[var(--bg-primary)]" : "hover:bg-[var(--bg-card-hover)]"}`}
-                >
-                  <span className={`flex h-9 flex-shrink-0 items-center justify-center ${isExpanded ? "w-7" : "w-9"}`}>
-                    <span
-                      className="block h-7 w-7 rounded-full"
-                      style={{ background: "linear-gradient(to bottom, #3D4FFF, #6877FF)" }}
-                    />
-                  </span>
-                  <span
-                    className="overflow-hidden whitespace-nowrap transition-all duration-300"
-                    style={{
-                      maxWidth: isExpanded ? "160px" : "0px",
-                      opacity: isExpanded ? 1 : 0,
-                      transitionTimingFunction: "var(--ease-expo)",
-                    }}
-                  >
-                    {USER.name}
-                  </span>
-                </button>
-              </Tooltip>
-            )}
-          >
-            <div className="flex items-center gap-3 px-3 py-2.5">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--accent-primary)] text-[13px] font-semibold text-white">
-                {USER.initial}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{USER.name}</p>
-                <p className="truncate text-[11px] text-[var(--text-muted)]">{USER.email}</p>
-              </div>
-            </div>
-            <DropdownSeparator />
-            <DropdownItem icon={UserCircle} onClick={() => router.push("/parametres")}>Mon profil</DropdownItem>
-            <DropdownItem icon={UserGroupOutline} onClick={() => router.push("/equipe")}>Équipe</DropdownItem>
-            <DropdownItem icon={Cog6ToothOutline} onClick={() => router.push("/parametres")}>Paramètres</DropdownItem>
-            <DropdownSeparator />
-            <DropdownItem icon={LogOut} danger onClick={() => router.push("/")}>Se déconnecter</DropdownItem>
-          </DropdownMenu>
-        </div>
-      </div>
     </aside>
   );
 }

@@ -22,7 +22,7 @@ export function FilterTabs<T extends string = string>({ tabs, value, onChange }:
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 type-label transition-all"
             style={
               active
                 ? { color: "var(--text-primary)", fontWeight: 600, backgroundColor: "var(--bg-pill-active)" }
@@ -34,7 +34,7 @@ export function FilterTabs<T extends string = string>({ tabs, value, onChange }:
             {tab.color && <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tab.color }} />}
             {tab.label}
             {tab.count !== undefined && (
-              <span className="text-[11px] opacity-60">{tab.count}</span>
+              <span className="type-micro opacity-60">{tab.count}</span>
             )}
           </button>
         );

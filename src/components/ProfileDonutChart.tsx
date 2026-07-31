@@ -94,17 +94,17 @@ export function ProfileDonutChart({
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[24px] font-semibold tracking-heading leading-none text-[var(--text-primary)]">
+          <span className="type-h1 leading-none">
             {centerValue ?? total}
           </span>
           {centerLabel && (
-            <span className="mt-0.5 text-[11px] tracking-caption text-[var(--text-muted)]">{centerLabel}</span>
+            <span className="mt-0.5 type-micro">{centerLabel}</span>
           )}
         </div>
         {hovered && (
           <ChartTooltip x={hovered.x} y={hovered.y}>
-            <p className="text-[12px] font-semibold text-white">{hovered.label}</p>
-            <p className="text-[11px] text-white/60">
+            <p className="type-caption text-white">{hovered.label}</p>
+            <p className="type-micro text-white/60">
               <span className="font-semibold text-white">{hovered.value}</span>
               {" — "}{Math.round(hovered.value / total * 100)}%
             </p>
@@ -115,7 +115,7 @@ export function ProfileDonutChart({
         {data.map((d) => (
           <div key={d.label} className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
-            <span className="text-[13px] tracking-body text-[var(--text-secondary)]">{d.label}</span>
+            <span className="type-label">{d.label}</span>
           </div>
         ))}
       </div>

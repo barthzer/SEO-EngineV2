@@ -26,8 +26,8 @@ export function TrafficChart({
       fillHeight={fillHeight}
       formatTooltip={(p) => (
         <div className="flex flex-col gap-0.5">
-          <span className="text-[11px] text-white/60">{p.label}</span>
-          <span className="text-[13px] font-semibold text-white tabular-nums">
+          <span className="type-micro text-white/60">{p.label}</span>
+          <span className="type-label font-semibold text-white tabular-nums">
             {p.value.toLocaleString("fr-FR")} visites
           </span>
         </div>

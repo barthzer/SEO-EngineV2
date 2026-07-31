@@ -91,7 +91,7 @@ export function OnboardingShell({
               {onSkipStep && (
                 <button
                   onClick={onSkipStep}
-                  className="rounded-full bg-[var(--bg-card-hover)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+                  className="rounded-full bg-[var(--bg-card-hover)] px-4 py-2 type-label transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
                 >
                   {skipLabel}
                 </button>

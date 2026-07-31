@@ -11,6 +11,8 @@ import { AreaChart } from "@/components/AreaChart";
 import { DonutChart } from "@/components/DonutChart";
 import { Callout } from "@/components/Callout";
 import { DeltaBadge } from "@/components/DeltaBadge";
+import { KpiCard } from "@/components/KpiCard";
+import { KpiGroup } from "@/components/KpiGroup";
 import { Pill } from "@/components/Pill";
 import { ScoreRing } from "@/components/ScoreRing";
 import { TableWide } from "@/components/TableWide";
@@ -261,8 +263,8 @@ function RadarChart() {
           return (
             <ChartTooltip x={tipPos.x} y={tipPos.y}>
               <div className="flex flex-col gap-1.5" style={{ minWidth: 140 }}>
-                <span className="text-[11px] font-semibold text-white">{raw.label}</span>
-                <div className="flex flex-col gap-0.5 text-[11px]">
+                <span className="type-micro font-semibold text-white">{raw.label}</span>
+                <div className="type-micro flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-5 text-white">
                     <span className="opacity-60">Vous</span>
                     <strong>{radarFmt(hoveredAxis, raw.you)}{raw.unit}</strong>
@@ -282,7 +284,7 @@ function RadarChart() {
         })()}
       </div>
       {/* Legend */}
-      <div className="flex items-center gap-5 text-[12px] text-[var(--text-muted)]">
+      <div className="type-caption flex items-center gap-5">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent-primary)]" />
           Vous <strong className="ml-0.5 text-[var(--text-primary)]">48%</strong>
@@ -329,98 +331,102 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
   return (
     <div className="flex flex-col gap-5">
 
-        {/* ── HERO ──────────────────────────────────────────────────────── */}
+        {/* Chiffres clés — composant DS KpiGroup/KpiCard (cohérence inter-pages) */}
+        <KpiGroup columns={4}>
+          {[
+            { label: "Trust Flow",         val: "16",  bench: `conc. moy. ${COMP_AVG_TF}`,                         delta: 16 - Math.round(COMP_AVG_TF), icon: ArrowTrendingUpIcon },
+            { label: "Domaines référents", val: "281", bench: `conc. moy. ${COMP_AVG_RD.toLocaleString("fr-FR")}`, delta: 281 - COMP_AVG_RD,            icon: LinkIcon },
+            { label: "Position TF",        val: "3e",  bench: "conc. 1er",                                         delta: -2,                           icon: TrophyIcon },
+            { label: "Ratio TF/CF",        val: "51%", bench: "conc. moy. 53%",                                    delta: -2, suffix: "pp",             icon: Squares2X2Icon },
+          ].map((kpi) => (
+            <KpiCard
+              bare
+              key={kpi.label}
+              label={kpi.label}
+              value={kpi.val}
+              sub={kpi.bench}
+              icon={kpi.icon}
+              delta={`${kpi.delta > 0 ? "+" : ""}${kpi.delta}${kpi.suffix ?? ""}`}
+            />
+          ))}
+        </KpiGroup>
+
+        {/* ── HERO (résumé + note) ──────────────────────────────────────── */}
         <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] p-8">
           <div className="grid grid-cols-[2fr_1fr] items-center gap-8">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Pill color="var(--color-warning)" bg="var(--color-warning-bg)">Netlinking · rapport Majestic</Pill>
-                <span className="text-[13px] text-[var(--text-muted)]">il y a 3 jours</span>
+                <Pill color="var(--color-warning)" bg="var(--color-warning-bg)">Popularité · rapport Majestic</Pill>
+                <span className="type-micro">il y a 3 jours</span>
               </div>
-              <p className="text-[15px] font-semibold leading-relaxed tracking-tight text-[var(--text-primary)]">
+              <p className="type-title leading-relaxed">
                 Profil de liens fragile face aux concurrents
               </p>
-              <p className="mt-0 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
+              <p className="type-body mt-0 max-w-xl leading-relaxed text-[var(--text-secondary)]">
                 Le TF est 2× inférieur à la médiane concurrents et le nombre de domaines référents est limité. Le ratio TF/CF reste correct mais la masse globale manque.
               </p>
             </div>
             {/* Score ring */}
             <div className="flex flex-col items-center gap-3">
-              <ScoreRing score={score} size={160} color={color48} />
-              <p className="text-[13px] font-medium text-[var(--text-muted)]">Score netlinking</p>
-              <p className="text-[12px] text-[var(--text-muted)]">Grade <strong style={{ color: color48 }}>C</strong> · benchmark 10 sites</p>
+              <ScoreRing score={score} size={160} strokeWidth={7} color={color48} />
+              <p className="type-label">Score popularité</p>
+              <p className="type-caption">Grade <strong style={{ color: color48 }}>C</strong> · benchmark 10 sites</p>
             </div>
           </div>
         </div>
 
-        {/* KPI row */}
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: "Trust Flow",         val: "16",  bench: `conc. moy. ${COMP_AVG_TF}`,                         delta: 16 - Math.round(COMP_AVG_TF) },
-            { label: "Domaines référents", val: "281", bench: `conc. moy. ${COMP_AVG_RD.toLocaleString("fr-FR")}`, delta: 281 - COMP_AVG_RD },
-            { label: "Position TF",        val: "3e",  bench: "conc. 1er",                                         delta: -2 },
-            { label: "Ratio TF/CF",        val: "51%", bench: "conc. moy. 53%",                                    delta: -2, suffix: "pp" },
-          ].map((kpi) => (
-            <div key={kpi.label} className="rounded-2xl border border-[var(--border-subtle)] px-5 py-4">
-              <p className="text-[12px] text-[var(--text-muted)]">{kpi.label}</p>
-              <p className="mt-1 text-[28px] font-semibold leading-none text-[var(--text-primary)]">{kpi.val}</p>
-              <p className="mt-2 text-[11px] text-[var(--text-muted)]">{kpi.bench}</p>
-              <p className={`mt-0.5 text-[11px] font-medium ${kpi.delta < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"}`}>
-                {kpi.delta > 0 ? "+" : ""}{kpi.delta}{kpi.suffix ?? ""}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── 01. BENCHMARK CONCURRENTS ─────────────────────────────────── */}
-        <AuditSection id="net-benchmark" icon={TrophyIcon} num="01." title="Benchmark" em="concurrents"
-            meta={`${COMPETITORS.length - 1} concurrents · source Majestic`}>
+        {/* ── 01. BACKLINKS ─────────────────────────────────────────────── */}
+        <AuditSection id="net-backlinks" icon={ArrowsRightLeftIcon} num="01." title="Backlinks" em="entrants"
+            meta={`${BACKLINKS.length} liens · Mis à jour 04/05/2026`}>
           <div className="flex flex-col gap-5">
 
-          {/* Table */}
           <div className={`overflow-hidden ${CARD_SM}`}>
-            <TableWide<Competitor>
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
+              <p className="type-caption">
+                Liste des pages qui font un lien vers votre domaine
+              </p>
+              <span className="type-caption tabular-nums">
+                1 – {BACKLINKS.length} / {BACKLINKS.length}
+              </span>
+            </div>
+            <TableWide<BacklinkRow>
               hidePagination
-              rowKey={(c) => c.domain}
-              data={COMPETITORS}
-              isRowActive={(c) => !!c.isYou}
+              rowKey={(row) => `${row.domain}-${row.url}`}
+              data={BACKLINKS}
               columns={[
-                { key: "domain", header: "Domaine", width: 220, flex: true,
-                  render: (c) => (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <img src={`https://www.google.com/s2/favicons?domain=${c.domain}&sz=32`} alt="" width={16} height={16}
-                        className="h-4 w-4 flex-shrink-0 rounded-sm"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                      <span className={`truncate font-mono text-[12px] ${c.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
-                        {c.domain}{c.isYou ? " (vous)" : ""}
-                      </span>
+                { key: "source", header: "Source", width: 240, flex: true,
+                  render: (row) => (
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <img src={`https://www.google.com/s2/favicons?domain=${row.domain}&sz=32`} alt="" width={14} height={14}
+                          className="h-3.5 w-3.5 flex-shrink-0 rounded-sm"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        <span className="type-label truncate font-mono text-[var(--text-primary)]">{row.domain}</span>
+                        <span className="type-micro flex-shrink-0 rounded bg-[var(--bg-subtle)] px-1 py-0.5 font-semibold">{row.country}</span>
+                      </div>
+                      <span className="type-caption truncate font-mono">{row.url}</span>
                     </div>
                   ) },
-                { key: "tf", header: "TF", width: 60, align: "right", sortable: true, sortValue: (c) => c.tf,
-                  render: (c) => <span className={`text-[13px] font-semibold tabular-nums ${c.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{c.tf}</span> },
-                { key: "cf", header: "CF", width: 60, align: "right", sortable: true, sortValue: (c) => c.cf,
-                  render: (c) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{c.cf}</span> },
-                { key: "rd", header: "RefDom", width: 80, align: "right", sortable: true, sortValue: (c) => c.refDomains,
-                  render: (c) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{c.refDomains.toLocaleString("fr-FR")}</span> },
-                { key: "bl", header: "Backlinks", width: 90, align: "right", sortable: true, sortValue: (c) => c.backlinks,
-                  render: (c) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{c.backlinks.toLocaleString("fr-FR")}</span> },
-                { key: "gaptf", header: "Gap TF", width: 80, align: "right",
-                  render: (c) => c.isYou ? <span className="text-[13px] text-[var(--text-muted)]">—</span> : <DeltaBadge value={c.tf - you.tf} /> },
-                { key: "gaprd", header: "Gap RefDom", width: 96, align: "right",
-                  render: (c) => c.isYou ? <span className="text-[13px] text-[var(--text-muted)]">—</span> : <DeltaBadge value={c.refDomains - you.refDomains} /> },
+                { key: "tf", header: "TF", width: 56, align: "right", sortable: true, sortValue: (row) => row.tf,
+                  render: (row) => <span className="type-label font-semibold tabular-nums text-[var(--text-primary)]">{row.tf}</span> },
+                { key: "cf", header: "CF", width: 56, align: "right", sortable: true, sortValue: (row) => row.cf,
+                  render: (row) => <span className="type-label tabular-nums">{row.cf}</span> },
+                { key: "rd", header: "RefDom", width: 72, align: "right", sortable: true, sortValue: (row) => row.rd,
+                  render: (row) => <span className="type-label tabular-nums">{row.rd.toLocaleString("fr-FR")}</span> },
+                { key: "ancre", header: "Ancre", width: 200, flex: true,
+                  render: (row) => <span className="type-label truncate font-mono" title={row.ancre}>{row.ancre}</span> },
+                { key: "type", header: "Type", width: 80, align: "right",
+                  render: (row) => <Pill color="var(--text-muted)" bg="var(--bg-subtle)">{row.type}</Pill> },
+                { key: "statut", header: "Statut", width: 96, align: "right",
+                  render: (row) => (
+                    <Pill
+                      color={row.statut === "Follow" ? "var(--color-success)" : row.statut === "Sponsored" ? "var(--color-warning)" : "var(--text-muted)"}
+                      bg={row.statut === "Follow" ? "var(--color-success-bg)" : row.statut === "Sponsored" ? "var(--color-warning-bg)" : "var(--bg-subtle)"}>
+                      {row.statut}
+                    </Pill>
+                  ) },
               ]}
             />
-          </div>
-
-          {/* Radar with context */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-            <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Vue radar — 5 axes normalisés</p>
-            <p className="mt-1 mb-5 text-[12px] text-[var(--text-muted)]">
-              Chaque axe est normalisé par rapport au maximum observé parmi les 11 sites. Plus la surface est grande, meilleur est le profil netlinking.
-            </p>
-            <div className="flex justify-center">
-              <RadarChart />
-            </div>
           </div>
           </div>
         </AuditSection>
@@ -433,14 +439,14 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
           <div className="grid grid-cols-2 gap-4">
             {/* Follow/Nofollow */}
             <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-              <p className="mb-5 text-[13px] font-semibold text-[var(--text-secondary)]">Follow vs Nofollow</p>
+              <p className="mb-5 type-label font-semibold">Follow vs Nofollow</p>
               <div className="flex flex-col gap-5">
                 {[
                   { label: "Vous",              follow: 70.9, nofollow: 29.1 },
                   { label: "Concurrents (moy.)", follow: 76,   nofollow: 24   },
                 ].map((row) => (
                   <div key={row.label} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-[12px]">
+                    <div className="type-caption flex items-center justify-between">
                       <span className="text-[var(--text-muted)]">{row.label}</span>
                       <span className="flex items-center gap-3 text-[var(--text-muted)]">
                         <span className="flex items-center gap-1">
@@ -463,14 +469,14 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             </div>
             {/* Texte/Image */}
             <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-              <p className="mb-5 text-[13px] font-semibold text-[var(--text-secondary)]">Texte vs Image</p>
+              <p className="mb-5 type-label font-semibold">Texte vs Image</p>
               <div className="flex flex-col gap-5">
                 {[
                   { label: "Vous",              texte: 96.7, image: 3.3 },
                   { label: "Concurrents (moy.)", texte: 80,   image: 20  },
                 ].map((row) => (
                   <div key={row.label} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-[12px]">
+                    <div className="type-caption flex items-center justify-between">
                       <span className="text-[var(--text-muted)]">{row.label}</span>
                       <span className="flex items-center gap-3 text-[var(--text-muted)]">
                         <span className="flex items-center gap-1">
@@ -497,13 +503,13 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
           <div className="grid grid-cols-2 gap-4">
             {/* Pays */}
             <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-              <p className="mb-4 text-[13px] font-semibold text-[var(--text-secondary)]">Distribution pays</p>
-              <table className="w-full text-[13px]">
+              <p className="mb-4 type-label font-semibold">Distribution pays</p>
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    <th className="pb-2 text-left text-[11px] font-semibold text-[var(--text-muted)]">Pays</th>
-                    <th className="pb-2 text-right text-[11px] font-semibold text-[var(--text-muted)]">Vous</th>
-                    <th className="pb-2 text-right text-[11px] font-semibold text-[var(--text-muted)]">Delta</th>
+                  <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+                    <th className="pb-2 text-left type-caption">Pays</th>
+                    <th className="pb-2 text-right type-caption">Vous</th>
+                    <th className="pb-2 text-right type-caption">Delta</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -515,10 +521,10 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                     { pays: "Suisse",   you: 4.2,  delta: +0.1  },
                   ].map((row) => (
                     <tr key={row.pays} className="transition-colors hover:bg-[var(--bg-card-hover)]">
-                      <td className="py-2.5 text-[var(--text-secondary)]">{row.pays}</td>
-                      <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
+                      <td className="type-label py-2.5">{row.pays}</td>
+                      <td className="type-label py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-success-bg)] text-[var(--color-success)]"}`}>
+                        <span className={`type-caption rounded-full px-2 py-1 font-semibold ${row.delta < 0 ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-success-bg)] text-[var(--color-success)]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -529,13 +535,13 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
             </div>
             {/* Langue */}
             <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-              <p className="mb-4 text-[13px] font-semibold text-[var(--text-secondary)]">Distribution langue</p>
-              <table className="w-full text-[13px]">
+              <p className="mb-4 type-label font-semibold">Distribution langue</p>
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    <th className="pb-2 text-left text-[11px] font-semibold text-[var(--text-muted)]">Langue</th>
-                    <th className="pb-2 text-right text-[11px] font-semibold text-[var(--text-muted)]">Vous</th>
-                    <th className="pb-2 text-right text-[11px] font-semibold text-[var(--text-muted)]">Delta</th>
+                  <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+                    <th className="pb-2 text-left type-caption">Langue</th>
+                    <th className="pb-2 text-right type-caption">Vous</th>
+                    <th className="pb-2 text-right type-caption">Delta</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -546,10 +552,10 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                     { langue: "Allemand",  you: 2.1,  delta: -0.7 },
                   ].map((row) => (
                     <tr key={row.langue} className="transition-colors hover:bg-[var(--bg-card-hover)]">
-                      <td className="py-2.5 text-[var(--text-secondary)]">{row.langue}</td>
-                      <td className="py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
+                      <td className="type-label py-2.5">{row.langue}</td>
+                      <td className="type-label py-2.5 text-right font-semibold text-[var(--text-primary)]">{row.you}%</td>
                       <td className="py-2.5 text-right">
-                        <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${row.delta < 0 ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-success-bg)] text-[var(--color-success)]"}`}>
+                        <span className={`type-caption rounded-full px-2 py-1 font-semibold ${row.delta < 0 ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-success-bg)] text-[var(--color-success)]"}`}>
                           {row.delta > 0 ? "+" : ""}{row.delta}pp
                         </span>
                       </td>
@@ -564,16 +570,138 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
           </div>
         </AuditSection>
 
-        {/* ── 03. ÉVOLUTION TRUST FLOW ──────────────────────────────────── */}
-        <AuditSection id="net-evolution" icon={ArrowTrendingUpIcon} num="03." title="Évolution" em="Trust Flow" meta="Source Majestic · historique mensuel">
+        {/* ── 03. DISTRIBUTION DES ANCRES ──────────────────────────────── */}
+        <AuditSection id="net-ancres" icon={TagIcon} num="03." title="Distribution" em="des ancres"
+            meta={`${TOP_ANCHORS.reduce((s, a) => s + a.n, 0)} ancres analysées · risque élevé`}>
+          <div className="flex flex-col gap-5">
+
+          <div className="grid grid-cols-[auto_1fr] gap-6 items-start">
+            {/* Donut + risk */}
+            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5 flex flex-col items-center gap-4 min-w-[220px]">
+              <div className="flex w-full items-center justify-between">
+                <p className="type-label font-semibold">Répartition</p>
+                <span className="type-caption rounded-full bg-[var(--color-danger-bg)] px-3 py-1.5 font-semibold text-[var(--color-danger)]">
+                  Risque élevé
+                </span>
+              </div>
+              <DonutChart
+                slices={ANCHOR_DONUT_SLICES}
+                size={112}
+                strokeWidth={7}
+                center={
+                  <div className="flex flex-col items-center">
+                    <span className="type-h3 leading-none">{anchorTotal}</span>
+                    <span className="type-micro">ancres</span>
+                  </div>
+                }
+                formatTooltip={(s, pct) => (
+                  <span className="type-caption text-white">{s.label} · <strong>{pct}%</strong> ({s.value})</span>
+                )}
+              />
+              <div className="flex flex-col gap-1.5 self-stretch">
+                {ANCHOR_SEGS.map((s) => (
+                  <div key={s.label} className="type-caption flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-[var(--text-secondary)]">
+                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                      {s.label}
+                    </span>
+                    <span className="font-semibold text-[var(--text-primary)]">{s.pct}%</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex w-full items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-3.5 py-2.5">
+                <span className="type-caption">Score ancres</span>
+                <span className="type-h3 text-[var(--color-danger)]">22<span className="type-caption font-medium text-[var(--text-muted)]">/100</span></span>
+              </div>
+            </div>
+
+            {/* Top anchors table */}
+            <div className="rounded-2xl border border-[var(--border-subtle)]">
+              <p className="px-6 py-4 type-label font-semibold">Top ancres</p>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+                    <th className="px-6 pb-3 text-left type-caption">Texte d'ancre</th>
+                    <th className="pr-6 pb-3 text-right type-caption">Occurrences</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {TOP_ANCHORS.map((a) => (
+                    <tr key={a.text} className="transition-colors hover:bg-[var(--bg-card-hover)]">
+                      <td className="type-label px-6 py-3 font-mono">{a.text}</td>
+                      <td className="type-label pr-6 py-3 text-right font-semibold tabular-nums text-[var(--text-primary)]">{a.n}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[var(--bg-secondary)]">
+                    <td className="type-caption px-6 py-3 font-semibold">Total</td>
+                    <td className="type-label pr-6 py-3 text-right font-semibold text-[var(--text-primary)]">
+                      {TOP_ANCHORS.reduce((s, a) => s + a.n, 0)} ancres
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <Callout variant="warning">59% d'ancres de marque est élevé (idéal : 30–40%). Un sur-ancrage exact-match de marque peut diluer la valeur thématique transmise. Diversifier vers des ancres de type « agence marketing digital Paris » ou « formation SEO certifiée ».</Callout>
+          </div>
+        </AuditSection>
+
+        {/* ── 04. TOPICAL TRUST FLOW ────────────────────────────────────── */}
+        <AuditSection id="net-topical" icon={Squares2X2Icon} num="04." title="Topical" em="Trust Flow" meta="Thématiques identifiées par Majestic">
+          <div className="flex flex-col gap-5">
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Vos thématiques */}
+            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
+              <p className="mb-4 type-label font-semibold">Vos thématiques</p>
+              <div className="flex flex-wrap gap-2">
+                {YOUR_TOPICS.map((t) => (
+                  <span key={t.label}
+                    className="type-label rounded-full px-3.5 py-1.5 font-medium text-white"
+                    style={{ backgroundColor: t.color }}>
+                    {t.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* Thématiques concurrents */}
+            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
+              <p className="mb-4 type-label font-semibold">Thématiques concurrents</p>
+              <div className="flex flex-col gap-2.5">
+                {COMP_TOPICS.map((t) => {
+                  const isYours = YOUR_TOPICS.some((y) => y.label === t.label);
+                  return (
+                    <div key={t.label} className="flex items-center gap-3">
+                      <span className={`type-caption w-28 flex-shrink-0 font-medium truncate ${isYours ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
+                        {t.label}
+                      </span>
+                      <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-card-hover)]">
+                        <div className="h-full rounded-full transition-all"
+                          style={{ width: `${(t.count / t.max) * 100}%`, backgroundColor: isYours ? "var(--accent-primary)" : "var(--text-muted)" }} />
+                      </div>
+                      <span className="type-micro w-8 flex-shrink-0 text-right">{t.count}/{t.max}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <Callout variant="info">La thématique « Actualités Web » est présente chez 7/10 concurrents mais absente de votre profil. Des liens depuis des médias tech/marketing (BDM, FrenchWeb, JDN) renforceraient cette dimension et diversifieraient les sources thématiques.</Callout>
+          </div>
+        </AuditSection>
+
+        {/* ── 05. ÉVOLUTION TRUST FLOW ──────────────────────────────────── */}
+        <AuditSection id="net-evolution" icon={ArrowTrendingUpIcon} num="05." title="Évolution" em="Trust Flow" meta="Source Majestic · historique mensuel">
           <div className="flex flex-col gap-5">
 
           <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
             <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-4 text-[13px] text-[var(--text-muted)]">
+              <div className="type-caption flex items-center gap-4">
                 <span>Min <strong className="text-[var(--text-primary)]">{tfMin}</strong></span>
                 <span>Max <strong className="text-[var(--text-primary)]">{tfMax}</strong></span>
-                <span className={`rounded-full px-2 py-1 text-[12px] font-semibold ${tfDelta < 0 ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-success-bg)] text-[var(--color-success)]"}`}>
+                <span className={`type-caption rounded-full px-2 py-1 font-semibold ${tfDelta < 0 ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-success-bg)] text-[var(--color-success)]"}`}>
                   Delta {tfDelta > 0 ? "+" : ""}{tfDelta} ({tfDelta > 0 ? "+" : ""}{Math.round(tfDelta / tfData[0].value * 100)}%)
                 </span>
               </div>
@@ -591,8 +719,8 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                 data={tfData}
                 formatTooltip={(p) => (
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[11px] text-white/60">{p.label}</span>
-                    <span className="text-[13px] font-semibold text-white">TF {p.value}</span>
+                    <span className="type-micro text-white/60">{p.label}</span>
+                    <span className="type-label font-semibold text-white">TF {p.value}</span>
                   </div>
                 )}
               />
@@ -600,130 +728,61 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
           </div>
         </AuditSection>
 
-        {/* ── 04. TOPICAL TRUST FLOW ────────────────────────────────────── */}
-        <AuditSection id="net-topical" icon={Squares2X2Icon} num="04." title="Topical" em="Trust Flow" meta="Thématiques identifiées par Majestic">
+        {/* ── 06. BENCHMARK CONCURRENTS ─────────────────────────────────── */}
+        <AuditSection id="net-benchmark" icon={TrophyIcon} num="06." title="Benchmark" em="concurrents"
+            meta={`${COMPETITORS.length - 1} concurrents · source Majestic`}>
           <div className="flex flex-col gap-5">
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Vos thématiques */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-              <p className="mb-4 text-[13px] font-semibold text-[var(--text-secondary)]">Vos thématiques</p>
-              <div className="flex flex-wrap gap-2">
-                {YOUR_TOPICS.map((t) => (
-                  <span key={t.label}
-                    className="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-white"
-                    style={{ backgroundColor: t.color }}>
-                    {t.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-            {/* Thématiques concurrents */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
-              <p className="mb-4 text-[13px] font-semibold text-[var(--text-secondary)]">Thématiques concurrents</p>
-              <div className="flex flex-col gap-2.5">
-                {COMP_TOPICS.map((t) => {
-                  const isYours = YOUR_TOPICS.some((y) => y.label === t.label);
-                  return (
-                    <div key={t.label} className="flex items-center gap-3">
-                      <span className={`w-28 flex-shrink-0 text-[12px] font-medium truncate ${isYours ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
-                        {t.label}
+          {/* Table */}
+          <div className={`overflow-hidden ${CARD_SM}`}>
+            <TableWide<Competitor>
+              hidePagination
+              rowKey={(c) => c.domain}
+              data={COMPETITORS}
+              isRowActive={(c) => !!c.isYou}
+              columns={[
+                { key: "domain", header: "Domaine", width: 220, flex: true,
+                  render: (c) => (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <img src={`https://www.google.com/s2/favicons?domain=${c.domain}&sz=32`} alt="" width={16} height={16}
+                        className="h-4 w-4 flex-shrink-0 rounded-sm"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      <span className={`type-label truncate font-mono ${c.isYou ? "font-semibold text-[var(--accent-primary)]" : ""}`}>
+                        {c.domain}{c.isYou ? " (vous)" : ""}
                       </span>
-                      <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-card-hover)]">
-                        <div className="h-full rounded-full transition-all"
-                          style={{ width: `${(t.count / t.max) * 100}%`, backgroundColor: isYours ? "var(--accent-primary)" : "var(--text-muted)" }} />
-                      </div>
-                      <span className="w-8 flex-shrink-0 text-right text-[11px] text-[var(--text-muted)]">{t.count}/{t.max}</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  ) },
+                { key: "tf", header: "TF", width: 60, align: "right", sortable: true, sortValue: (c) => c.tf,
+                  render: (c) => <span className={`type-label font-semibold tabular-nums ${c.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{c.tf}</span> },
+                { key: "cf", header: "CF", width: 60, align: "right", sortable: true, sortValue: (c) => c.cf,
+                  render: (c) => <span className="type-label tabular-nums">{c.cf}</span> },
+                { key: "rd", header: "RefDom", width: 80, align: "right", sortable: true, sortValue: (c) => c.refDomains,
+                  render: (c) => <span className="type-label tabular-nums">{c.refDomains.toLocaleString("fr-FR")}</span> },
+                { key: "bl", header: "Backlinks", width: 90, align: "right", sortable: true, sortValue: (c) => c.backlinks,
+                  render: (c) => <span className="type-label tabular-nums">{c.backlinks.toLocaleString("fr-FR")}</span> },
+                { key: "gaptf", header: "Gap TF", width: 80, align: "right",
+                  render: (c) => c.isYou ? <span className="type-label text-[var(--text-muted)]">—</span> : <DeltaBadge value={c.tf - you.tf} /> },
+                { key: "gaprd", header: "Gap RefDom", width: 96, align: "right",
+                  render: (c) => c.isYou ? <span className="type-label text-[var(--text-muted)]">—</span> : <DeltaBadge value={c.refDomains - you.refDomains} /> },
+              ]}
+            />
           </div>
 
-          <Callout variant="info">La thématique « Actualités Web » est présente chez 7/10 concurrents mais absente de votre profil. Des liens depuis des médias tech/marketing (BDM, FrenchWeb, JDN) renforceraient cette dimension et diversifieraient les sources thématiques.</Callout>
+          {/* Radar with context */}
+          <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5">
+            <p className="type-h3">Vue radar — 5 axes normalisés</p>
+            <p className="type-caption mt-1 mb-5">
+              Chaque axe est normalisé par rapport au maximum observé parmi les 11 sites. Plus la surface est grande, meilleur est le profil netlinking.
+            </p>
+            <div className="flex justify-center">
+              <RadarChart />
+            </div>
+          </div>
           </div>
         </AuditSection>
 
-        {/* ── 05. DISTRIBUTION DES ANCRES ──────────────────────────────── */}
-        <AuditSection id="net-ancres" icon={TagIcon} num="05." title="Distribution" em="des ancres"
-            meta={`${TOP_ANCHORS.reduce((s, a) => s + a.n, 0)} ancres analysées · risque élevé`}>
-          <div className="flex flex-col gap-5">
-
-          <div className="grid grid-cols-[auto_1fr] gap-6 items-start">
-            {/* Donut + risk */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-5 flex flex-col items-center gap-4 min-w-[220px]">
-              <div className="flex w-full items-center justify-between">
-                <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Répartition</p>
-                <span className="rounded-full bg-[var(--color-danger-bg)] px-3 py-1.5 text-[12px] font-semibold text-[var(--color-danger)]">
-                  Risque élevé
-                </span>
-              </div>
-              <DonutChart
-                slices={ANCHOR_DONUT_SLICES}
-                size={112}
-                strokeWidth={9}
-                center={
-                  <div className="flex flex-col items-center">
-                    <span className="text-[18px] font-bold leading-none text-[var(--text-primary)]">{anchorTotal}</span>
-                    <span className="text-[11px] text-[var(--text-muted)]">ancres</span>
-                  </div>
-                }
-                formatTooltip={(s, pct) => (
-                  <span className="text-[12px] text-white">{s.label} · <strong>{pct}%</strong> ({s.value})</span>
-                )}
-              />
-              <div className="flex flex-col gap-1.5 self-stretch">
-                {ANCHOR_SEGS.map((s) => (
-                  <div key={s.label} className="flex items-center justify-between text-[12px]">
-                    <span className="flex items-center gap-2 text-[var(--text-secondary)]">
-                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
-                      {s.label}
-                    </span>
-                    <span className="font-semibold text-[var(--text-primary)]">{s.pct}%</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex w-full items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] px-3.5 py-2.5">
-                <span className="text-[12px] text-[var(--text-muted)]">Score ancres</span>
-                <span className="text-[18px] font-semibold text-[var(--color-danger)]">22<span className="text-[12px] font-medium text-[var(--text-muted)]">/100</span></span>
-              </div>
-            </div>
-
-            {/* Top anchors table */}
-            <div className="rounded-2xl border border-[var(--border-subtle)]">
-              <p className="px-6 py-4 text-[13px] font-semibold text-[var(--text-secondary)]">Top ancres</p>
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    <th className="px-6 pb-3 text-left text-[11px] font-semibold text-[var(--text-muted)]">Texte d'ancre</th>
-                    <th className="pr-6 pb-3 text-right text-[11px] font-semibold text-[var(--text-muted)]">Occurrences</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border-subtle)]">
-                  {TOP_ANCHORS.map((a) => (
-                    <tr key={a.text} className="transition-colors hover:bg-[var(--bg-card-hover)]">
-                      <td className="px-6 py-3 font-mono text-[12px] text-[var(--text-secondary)]">{a.text}</td>
-                      <td className="pr-6 py-3 text-right font-semibold tabular-nums text-[var(--text-primary)]">{a.n}</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-[var(--bg-secondary)]">
-                    <td className="px-6 py-3 text-[12px] font-semibold text-[var(--text-muted)]">Total</td>
-                    <td className="pr-6 py-3 text-right text-[13px] font-semibold text-[var(--text-primary)]">
-                      {TOP_ANCHORS.reduce((s, a) => s + a.n, 0)} ancres
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <Callout variant="warning">59% d'ancres de marque est élevé (idéal : 30–40%). Un sur-ancrage exact-match de marque peut diluer la valeur thématique transmise. Diversifier vers des ancres de type « agence marketing digital Paris » ou « formation SEO certifiée ».</Callout>
-          </div>
-        </AuditSection>
-
-        {/* ── 06. BENCHMARK VISIBILITÉ SEO ─────────────────────────────── */}
-        <AuditSection id="net-visibilite" icon={EyeIcon} num="06." title="Benchmark" em="visibilité SEO"
+        {/* ── 07. BENCHMARK VISIBILITÉ SEO ─────────────────────────────── */}
+        <AuditSection id="net-visibilite" icon={EyeIcon} num="07." title="Benchmark" em="visibilité SEO"
             meta="Source SEObserver · snapshot 5 mai 2026">
           <div className="flex flex-col gap-5">
 
@@ -740,91 +799,35 @@ export function AuditNetlinkingTab({ domain }: { domain: string }) {
                       <img src={`https://www.google.com/s2/favicons?domain=${row.domain}&sz=32`} alt="" width={16} height={16}
                         className="h-4 w-4 flex-shrink-0 rounded-sm"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                      <span className={`truncate font-mono text-[12px] ${row.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>
+                      <span className={`type-label truncate font-mono ${row.isYou ? "font-semibold text-[var(--accent-primary)]" : ""}`}>
                         {row.domain}{row.isYou ? " (vous)" : ""}
                       </span>
                     </div>
                   ) },
                 { key: "vis", header: "Visibilité", width: 80, align: "right",
-                  render: (row) => <span className={`text-[13px] font-semibold tabular-nums ${row.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{row.vis}</span> },
+                  render: (row) => <span className={`type-label font-semibold tabular-nums ${row.isYou ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>{row.vis}</span> },
                 { key: "top3", header: "Top 3", width: 64, align: "right", sortable: true, sortValue: (row) => row.top3,
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.top3}</span> },
+                  render: (row) => <span className="type-label tabular-nums">{row.top3}</span> },
                 { key: "top10", header: "Top 10", width: 64, align: "right", sortable: true, sortValue: (row) => row.top10,
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.top10}</span> },
+                  render: (row) => <span className="type-label tabular-nums">{row.top10}</span> },
                 { key: "top50", header: "Top 50", width: 70, align: "right",
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.top50.toLocaleString("fr-FR")}</span> },
+                  render: (row) => <span className="type-label tabular-nums">{row.top50.toLocaleString("fr-FR")}</span> },
                 { key: "top100", header: "Top 100", width: 72, align: "right",
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.top100.toLocaleString("fr-FR")}</span> },
+                  render: (row) => <span className="type-label tabular-nums">{row.top100.toLocaleString("fr-FR")}</span> },
                 { key: "kws", header: "Mots-clés", width: 80, align: "right",
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.kws}</span> },
+                  render: (row) => <span className="type-label tabular-nums">{row.kws}</span> },
                 { key: "traffic", header: "Trafic est.", width: 84, align: "right",
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.traffic}</span> },
+                  render: (row) => <span className="type-label tabular-nums">{row.traffic}</span> },
                 { key: "gap", header: "Gap", width: 80, align: "right",
                   render: (row) => (row.gap === "—" || row.gap === "0")
-                    ? <span className="text-[13px] text-[var(--text-muted)]">{row.gap}</span>
-                    : <span className="text-[13px] font-semibold tabular-nums text-[var(--color-success)]">{row.gap}</span> },
+                    ? <span className="type-label text-[var(--text-muted)]">{row.gap}</span>
+                    : <span className="type-label font-semibold tabular-nums text-[var(--color-success)]">{row.gap}</span> },
               ]}
             />
           </div>
-          <p className="text-[12px] text-[var(--text-muted)]">
+          <p className="type-caption">
             Visibilité SEObserver = part de clics organiques estimée sur l'ensemble des mots-clés du marché. Trafic estimé en visiteurs/mois.
           </p>
-          </div>
-        </AuditSection>
-
-        {/* ── 07. BACKLINKS ─────────────────────────────────────────────── */}
-        <AuditSection id="net-backlinks" icon={ArrowsRightLeftIcon} num="07." title="Backlinks" em="entrants"
-            meta={`${BACKLINKS.length} liens · Mis à jour 04/05/2026`}>
-          <div className="flex flex-col gap-5">
-
-          <div className={`overflow-hidden ${CARD_SM}`}>
-            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
-              <p className="text-[12px] text-[var(--text-muted)]">
-                Liste des pages qui font un lien vers votre domaine
-              </p>
-              <span className="text-[12px] tabular-nums text-[var(--text-muted)]">
-                1 – {BACKLINKS.length} / {BACKLINKS.length}
-              </span>
-            </div>
-            <TableWide<BacklinkRow>
-              hidePagination
-              rowKey={(row) => `${row.domain}-${row.url}`}
-              data={BACKLINKS}
-              columns={[
-                { key: "source", header: "Source", width: 240, flex: true,
-                  render: (row) => (
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <img src={`https://www.google.com/s2/favicons?domain=${row.domain}&sz=32`} alt="" width={14} height={14}
-                          className="h-3.5 w-3.5 flex-shrink-0 rounded-sm"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                        <span className="truncate font-mono text-[12px] font-medium text-[var(--text-primary)]">{row.domain}</span>
-                        <span className="flex-shrink-0 rounded bg-[var(--bg-subtle)] px-1 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">{row.country}</span>
-                      </div>
-                      <span className="truncate font-mono text-[11px] text-[var(--text-muted)]">{row.url}</span>
-                    </div>
-                  ) },
-                { key: "tf", header: "TF", width: 56, align: "right", sortable: true, sortValue: (row) => row.tf,
-                  render: (row) => <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{row.tf}</span> },
-                { key: "cf", header: "CF", width: 56, align: "right", sortable: true, sortValue: (row) => row.cf,
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.cf}</span> },
-                { key: "rd", header: "RefDom", width: 72, align: "right", sortable: true, sortValue: (row) => row.rd,
-                  render: (row) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{row.rd.toLocaleString("fr-FR")}</span> },
-                { key: "ancre", header: "Ancre", width: 200, flex: true,
-                  render: (row) => <span className="truncate font-mono text-[12px] text-[var(--text-secondary)]" title={row.ancre}>{row.ancre}</span> },
-                { key: "type", header: "Type", width: 80, align: "right",
-                  render: (row) => <Pill color="var(--text-muted)" bg="var(--bg-subtle)">{row.type}</Pill> },
-                { key: "statut", header: "Statut", width: 96, align: "right",
-                  render: (row) => (
-                    <Pill
-                      color={row.statut === "Follow" ? "var(--color-success)" : row.statut === "Sponsored" ? "var(--color-warning)" : "var(--text-muted)"}
-                      bg={row.statut === "Follow" ? "var(--color-success-bg)" : row.statut === "Sponsored" ? "var(--color-warning-bg)" : "var(--bg-subtle)"}>
-                      {row.statut}
-                    </Pill>
-                  ) },
-              ]}
-            />
-          </div>
           </div>
         </AuditSection>
 

@@ -16,8 +16,8 @@ export function AddUrlModal({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 font-semibold tracking-tight text-[var(--text-primary)]">Ajouter une URL manuellement</h2>
-      <p className="mt-1 text-[13px] text-[var(--text-muted)]">Pour les pages hors GSC (nouvelle page, concurrent, etc.)</p>
+      <h2 className="pr-10 type-h2">Ajouter une URL manuellement</h2>
+      <p className="mt-1 type-body-sm">Pour les pages hors GSC (nouvelle page, concurrent, etc.)</p>
       <div className="mt-6 flex flex-col gap-4">
         <FormField label="URL" required>
           <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://exemple.com/ma-page" autoFocus className={fieldCls} />
@@ -30,7 +30,7 @@ export function AddUrlModal({ onClose }: { onClose: () => void }) {
         </FormField>
       </div>
       <div className="mt-6 flex items-center justify-end gap-3">
-        <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
+        <button onClick={onClose} className="rounded-full px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
         <Button disabled={!url.trim() || !keyword.trim()} onClick={onClose}>Ajouter et Analyser</Button>
       </div>
     </ModalShell>

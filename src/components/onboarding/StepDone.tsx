@@ -12,10 +12,10 @@ export function StepDone({ data, update }: { data: OnboardingData; update: (p: P
       </div>
 
       <header className="flex flex-col gap-3">
-        <h1 className="font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h1">
           Votre workspace est prêt
         </h1>
-        <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="type-body text-[var(--text-secondary)]">
           Analyse de <strong className="text-[var(--text-primary)]">{data.firstProjectDomain || "votre site"}</strong> en cours. On vous emmène sur le dashboard.
         </p>
       </header>
@@ -28,7 +28,7 @@ export function StepDone({ data, update }: { data: OnboardingData; update: (p: P
           className="sr-only"
         />
         <CheckBox checked={data.newsletterOptIn} size={18} className="mt-0.5" />
-        <span className="text-[13px] leading-snug text-[var(--text-primary)]">
+        <span className="type-body-sm text-[var(--text-primary)]">
           Recevoir 1 email par mois sur les nouveautés produit.
           <span className="ml-1 text-[var(--text-muted)]">Désinscription en 1 clic.</span>
         </span>

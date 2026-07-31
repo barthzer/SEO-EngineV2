@@ -78,7 +78,7 @@ export const SUGGESTED_LISTS: TopicList[] = [
   },
   {
     id: "list-netlinking",
-    name: "Netlinking",
+    name: "Popularité",
     source: "suggested",
     selected: false,
     prompts: [

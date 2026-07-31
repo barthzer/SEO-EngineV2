@@ -241,6 +241,24 @@
 .page-enter {
   animation: t-tab-enter var(--page-slide-dur) var(--page-slide-ease) backwards;
 }
+
+/* ── Élément interactif imbriqué dans un conteneur déjà cliquable ─────────────
+   (bouton d'options sur une carte/ligne cliquable, etc.)
+   Le hover d'un `--bg-subtle` disparaît quand le parent est déjà survolé
+   (fonds gris quasi identiques). Cette règle garantit une affordance visible :
+   fond plus contrasté (`--bg-secondary`) + bordure de délimitation inset +
+   anneau de focus clavier — conforme RGAA 1.4.11 (contraste des composants). */
+@layer components {
+  .action-nested {
+    @apply text-[var(--text-muted)] transition-[background-color,color,box-shadow] duration-150;
+  }
+  .action-nested:hover {
+    @apply bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--border-medium)];
+  }
+  .action-nested:focus-visible {
+    @apply outline-2 outline-offset-2 outline-[var(--accent-primary)];
+  }
+}
 .t-page {
   opacity: 1;
   transform: translateX(0);
@@ -418,6 +436,12 @@
   from { opacity: 0; transform: translate(-4px, -50%) scale(0.92); }
   to   { opacity: 1; transform: translate(0, -50%)    scale(1);    }
 }
+/* Tooltip portail (positionné par left/top clampés au viewport) : anim scale+opacity
+   sans translate — le transform-origin est posé selon le côté résolu. */
+@keyframes tooltip-appear {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1);    }
+}
 
 /* Dropdown panel — slide dans la direction d'ouverture + opacity, rapide pour UX fluide */
 @keyframes dropdown-down {
@@ -454,6 +478,27 @@ svg[stroke="currentColor"][fill="none"] {
 .tracking-body       { letter-spacing: var(--tracking-body); }
 .tracking-caption    { letter-spacing: var(--tracking-caption); }
 .tracking-micro      { letter-spacing: var(--tracking-micro); }
+
+/* ──────────────── Type scale (source de vérité typographique) ────────────────
+   Classes sémantiques : chacune embarque taille + graisse + line-height +
+   kerning + couleur par défaut. En @layer components → surchargeables par les
+   utilitaires Tailwind inline (text-[…], font-…, text-[var(--text-…)]).
+   Hiérarchie couleur : primary → secondary → tertiary(muted). */
+@layer components {
+  /* font-family volontairement non défini : les balises h1/h2/h3 gardent la
+     police display, les autres éléments la police body. */
+  .type-display     { font-size: 32px; font-weight: 600; line-height: 1.1;  letter-spacing: var(--tracking-display);    color: var(--text-primary); }
+  .type-h1          { font-size: 24px; font-weight: 600; line-height: 1.2;  letter-spacing: var(--tracking-heading);    color: var(--text-primary); }
+  .type-h2          { font-size: 20px; font-weight: 600; line-height: 1.25; letter-spacing: var(--tracking-heading);    color: var(--text-primary); }
+  .type-h3          { font-size: 16px; font-weight: 600; line-height: 1.35; letter-spacing: var(--tracking-subheading); color: var(--text-primary); }
+  .type-title       { font-size: 15px; font-weight: 600; line-height: 1.4;  letter-spacing: var(--tracking-subheading); color: var(--text-primary); }
+  .type-body        { font-size: 14px; font-weight: 400; line-height: 1.55; letter-spacing: var(--tracking-body);       color: var(--text-primary); }
+  .type-body-strong { font-size: 14px; font-weight: 500; line-height: 1.55; letter-spacing: var(--tracking-body);       color: var(--text-primary); }
+  .type-body-sm     { font-size: 13px; font-weight: 400; line-height: 1.5;  letter-spacing: var(--tracking-body);       color: var(--text-secondary); }
+  .type-label       { font-size: 13px; font-weight: 500; line-height: 1.4;  letter-spacing: var(--tracking-body);       color: var(--text-secondary); }
+  .type-caption     { font-size: 12px; font-weight: 400; line-height: 1.4;  letter-spacing: var(--tracking-caption);    color: var(--text-secondary); }
+  .type-micro       { font-size: 11px; font-weight: 500; line-height: 1.35; letter-spacing: var(--tracking-caption);    color: var(--text-muted); }
+}
 
 /* ──────────────── Card system ────────────────
    Convention DS :

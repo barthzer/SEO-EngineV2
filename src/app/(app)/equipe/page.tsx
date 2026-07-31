@@ -6,10 +6,10 @@
  * - Vraies photos via pravatar.cc (déterministes par seed).
  * - KPI cards via le composant DS `KpiCard`.
  * - Tableau dense : pas de bg distinct sur le header (respect convention DS).
- * - Modale détail : Drawer latéral (DS) — pas une modale centrée.
+ * - Modale détail : modale centrée arrondie (DS `ModalShell`).
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ChevronRightIcon,
@@ -22,8 +22,9 @@ import {
 import { SearchInput } from "@/components/SearchInput";
 import { pravatarUrl } from "@/lib/avatar";
 import { KpiCard } from "@/components/KpiCard";
+import { KpiGroup } from "@/components/KpiGroup";
 import { VariationPill } from "@/components/VariationPill";
-import { useDrawer } from "@/context/DrawerContext";
+import { ModalShell } from "@/components/analyse/modals/shared";
 
 /* ─────────────────────────────────────────────────────────────────────
    MOCK DATA — pilotage
@@ -287,16 +288,23 @@ function Favicon({ domain }: { domain: string }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   DRAWER CONTENT — détail consultant (side panel via DS Drawer)
+   MODALE DÉTAIL — consultant (modale centrée via DS ModalShell)
    ───────────────────────────────────────────────────────────────────── */
 
-function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
+function ConsultantModal({
+  consultant,
+  onClose,
+}: {
+  consultant: Consultant;
+  onClose: () => void;
+}) {
   const wl = workloadPct(consultant);
   const wlColor = workloadColor(wl);
   const activeCount = activeProjectsCount(consultant);
 
   return (
-    <div className="flex flex-col gap-6">
+    <ModalShell onClose={onClose} maxWidth={640}>
+      <div className="flex max-h-[80vh] flex-col gap-6 overflow-y-auto pr-1">
       {/* Identité — photo XL + nom + rôle */}
       <div className="flex items-center gap-4">
         <PhotoAvatar seed={consultant.photoSeed} initials={initialsOf(consultant.name)} size={72} />
@@ -326,39 +334,34 @@ function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
         </a>
       </div>
 
-      {/* Stats — 2×2 dense */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Projets actifs</p>
-          <p className="mt-1 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">
-            {activeCount}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">/ {consultant.projects.length} total</p>
-        </div>
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Actions ouvertes</p>
-          <p className="mt-1 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">
-            {totalActions(consultant)}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">à traiter</p>
-        </div>
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Briefs en cours</p>
-          <p className="mt-1 text-[22px] font-semibold leading-none text-[var(--text-primary)] tabular-nums">
-            {totalBriefs(consultant)}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">en rédaction</p>
-        </div>
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Charge semaine</p>
-          <p className="mt-1 text-[22px] font-semibold leading-none tabular-nums" style={{ color: wlColor }}>
-            {consultant.hoursThisWeek}h
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            / {consultant.hoursBudget}h · {wl}%
-          </p>
-        </div>
-      </div>
+      {/* Stats — chiffres clés (KpiGroup) */}
+      <KpiGroup columns={2}>
+        <KpiCard
+          bare
+          label="Projets actifs"
+          value={activeCount}
+          sub={`/ ${consultant.projects.length} total`}
+        />
+        <KpiCard
+          bare
+          label="Actions ouvertes"
+          value={totalActions(consultant)}
+          sub="à traiter"
+        />
+        <KpiCard
+          bare
+          label="Briefs en cours"
+          value={totalBriefs(consultant)}
+          sub="en rédaction"
+        />
+        <KpiCard
+          bare
+          label="Charge semaine"
+          value={`${consultant.hoursThisWeek}h`}
+          valueColor={wlColor}
+          sub={`/ ${consultant.hoursBudget}h · ${wl}%`}
+        />
+      </KpiGroup>
 
       {/* Alerts */}
       {consultant.alerts.length > 0 && (
@@ -458,7 +461,8 @@ function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -468,7 +472,7 @@ function ConsultantDrawerContent({ consultant }: { consultant: Consultant }) {
 
 export default function EquipePage() {
   const [search, setSearch] = useState("");
-  const drawer = useDrawer();
+  const [selected, setSelected] = useState<Consultant | null>(null);
 
   const q = search.trim().toLowerCase();
   const filtered = useMemo(
@@ -490,17 +494,6 @@ export default function EquipePage() {
       overloaded: TEAM.filter((c) => workloadPct(c) > 110).length,
       underutilized: TEAM.filter((c) => workloadPct(c) < 70).length,
     };
-  }, []);
-
-  function openDrawer(c: Consultant) {
-    // Title vide : le nom est affiché dans le corps du drawer (évite le doublon).
-    drawer.open("", <ConsultantDrawerContent consultant={c} />);
-  }
-
-  // Fermer le drawer au démontage si encore ouvert
-  useEffect(() => {
-    return () => drawer.close();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -577,7 +570,7 @@ export default function EquipePage() {
               return (
                 <button
                   key={c.id}
-                  onClick={() => openDrawer(c)}
+                  onClick={() => setSelected(c)}
                   className={`grid w-full grid-cols-[1.6fr_0.9fr_0.6fr_0.7fr_0.7fr_1.2fr_auto] items-center gap-4 px-6 py-4 text-left transition-colors hover:bg-[var(--bg-card-hover)] ${
                     ci < filtered.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                   }`}
@@ -630,6 +623,10 @@ export default function EquipePage() {
         </div>
 
       </div>
+
+      {selected && (
+        <ConsultantModal consultant={selected} onClose={() => setSelected(null)} />
+      )}
     </div>
   );
 }

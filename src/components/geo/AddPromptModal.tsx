@@ -83,7 +83,7 @@ export function AddPromptModal({ setup, lists, tags, onCreate, onClose }: {
       type="button"
       onClick={() => setTab(key)}
       className={`flex-1 rounded-lg px-4 py-2 text-[14px] font-medium transition-colors ${
-        tab === key ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        tab === key ? "bg-[var(--bg-card)] text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
       }`}
     >
       {label}

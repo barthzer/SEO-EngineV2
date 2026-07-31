@@ -113,8 +113,8 @@ export function ScoreRing({ score, lg = false, md = false }: { score: number; lg
         <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`font-semibold leading-none text-[var(--text-primary)] ${lg ? "text-[22px]" : md ? "text-[17px]" : "text-[15px]"}`}>{score}</span>
-        <span className={`text-[var(--text-muted)] ${lg ? "text-[11px]" : "text-[9px]"}`}>/100</span>
+        <span className={`leading-none ${lg ? "type-h2" : md ? "type-h3" : "type-title"}`}>{score}</span>
+        <span className="type-micro">/100</span>
       </div>
     </div>
   );

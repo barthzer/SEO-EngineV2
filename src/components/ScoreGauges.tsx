@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ScoreGauges — 3 jauges verticales (Technique / Contenu / Netlinking).
+ * ScoreGauges — 3 jauges verticales (Technique / Contenu / Popularité).
  *
  * Tooltip unique au survol du groupe (rich) qui résume les 3 scores.
  * Sous chaque jauge : mini encart T/C/N.
@@ -13,8 +13,9 @@
  */
 
 import type { ElementType } from "react";
-import { WrenchIcon, DocumentTextIcon, LinkIcon, SparklesIcon } from "@heroicons/react/24/solid";
+import { DocumentTextIcon, LinkIcon, SparklesIcon } from "@heroicons/react/24/solid";
 import { Tooltip } from "@/components/Tooltip";
+import { GaugeGlyph } from "@/components/icons/GaugeGlyph";
 
 type Props = {
   technique: number | null;
@@ -67,7 +68,7 @@ function Gauge({
       </div>
       {/* Mini encart T/C/N */}
       {!compact && (
-        <span className="flex h-4 w-4 items-center justify-center rounded-[5px] border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] text-[9px] font-bold uppercase leading-none text-[var(--text-secondary)]">
+        <span className="flex h-4 w-4 items-center justify-center rounded-[5px] border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] type-micro uppercase leading-none text-[var(--text-secondary)]">
           {label}
         </span>
       )}
@@ -87,9 +88,9 @@ function GaugeTooltipContent({
   geo?: number | null;
 }) {
   const lines: { label: string; value: number | null; icon: ElementType }[] = [
-    { label: "Technique",  value: technique,  icon: WrenchIcon },
+    { label: "Technique",  value: technique,  icon: GaugeGlyph },
     { label: "Contenu",    value: contenu,    icon: DocumentTextIcon },
-    { label: "Netlinking", value: netlinking, icon: LinkIcon },
+    { label: "Popularité", value: netlinking, icon: LinkIcon },
     ...(geo !== undefined ? [{ label: "Visibilité IA", value: geo ?? null, icon: SparklesIcon }] : []),
   ];
   return (
@@ -100,9 +101,9 @@ function GaugeTooltipContent({
           <div key={l.label} className="flex items-center justify-between gap-4">
             <span className="inline-flex items-center gap-2">
               <Icon className="h-3.5 w-3.5 text-white/60" />
-              <span className="text-[12px] text-white/80">{l.label}</span>
+              <span className="type-caption text-white/80">{l.label}</span>
             </span>
-            <span className="tabular-nums text-[12px] font-semibold" style={{ color: gaugeColor(l.value) }}>
+            <span className="tabular-nums type-caption" style={{ color: gaugeColor(l.value) }}>
               {l.value == null ? "—" : `${l.value} / 100`}
             </span>
           </div>

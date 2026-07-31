@@ -238,13 +238,13 @@ export function CommandPalette() {
         {/* Results */}
         <div ref={listRef} className="flex-1 overflow-y-auto p-1.5">
           {flat.length === 0 ? (
-            <div className="px-3 py-10 text-center text-[13px] text-[var(--text-muted)]">
+            <div className="px-3 py-10 text-center type-body-sm">
               Aucun résultat pour « {query} ».
             </div>
           ) : (
             grouped.map((g) => (
               <div key={g.section} className="mb-1 last:mb-0">
-                <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
+                <p className="px-3 pt-2 pb-1 type-micro">
                   {g.section}
                 </p>
                 {g.items.map((c) => {
@@ -262,11 +262,11 @@ export function CommandPalette() {
                       }`}
                     >
                       <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center">{c.icon}</span>
-                      <span className="flex-1 truncate text-[14px] font-medium text-[var(--text-primary)]">
+                      <span className="flex-1 truncate type-body-strong">
                         {c.label}
                       </span>
                       {c.hint && (
-                        <span className="flex-shrink-0 text-[12px] text-[var(--text-muted)]">{c.hint}</span>
+                        <span className="flex-shrink-0 type-caption">{c.hint}</span>
                       )}
                     </button>
                   );
@@ -277,7 +277,7 @@ export function CommandPalette() {
         </div>
 
         {/* Footer hint */}
-        <div className="flex flex-shrink-0 items-center gap-3 border-t border-[var(--border-subtle)] px-4 py-2 text-[11px] text-[var(--text-muted)]">
+        <div className="flex flex-shrink-0 items-center gap-3 border-t border-[var(--border-subtle)] px-4 py-2 type-micro">
           <span className="flex items-center gap-1"><Kbd>↑</Kbd><Kbd>↓</Kbd> naviguer</span>
           <span className="flex items-center gap-1"><Kbd>↵</Kbd> ouvrir</span>
         </div>

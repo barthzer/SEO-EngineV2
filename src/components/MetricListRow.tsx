@@ -57,11 +57,11 @@ export function MetricListRow({
       }`}
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">
+        <p className="truncate type-label text-[var(--text-primary)]">
           {label}
         </p>
         {sub && (
-          <p className="mt-0.5 truncate text-[10px] text-[var(--text-muted)] tabular-nums">
+          <p className="mt-0.5 truncate type-micro tabular-nums">
             {sub}
           </p>
         )}
@@ -69,12 +69,12 @@ export function MetricListRow({
 
       {rightSlot ?? (
         <div className="flex flex-shrink-0 items-baseline gap-2">
-          <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+          <span className="type-label tabular-nums text-[var(--text-primary)]">
             {value}
           </span>
           {delta !== undefined && deltaPositive !== undefined && (
             <span
-              className="text-[10px] font-semibold tabular-nums"
+              className="type-micro tabular-nums"
               style={{
                 color: deltaPositive ? "var(--color-success)" : "var(--color-danger)",
               }}

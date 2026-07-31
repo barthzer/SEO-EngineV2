@@ -48,7 +48,7 @@ export function AuditToc({ items }: { items: TocItem[] }) {
 
   return (
     <nav ref={navRef} className="sticky top-[76px] flex flex-col gap-0">
-      <p className="mb-2 px-3 text-[12px] font-semibold text-[var(--text-muted)]">
+      <p className="type-caption mb-2 px-3 font-semibold text-[var(--text-muted)]">
         Sur cette page
       </p>
 
@@ -79,7 +79,7 @@ export function AuditToc({ items }: { items: TocItem[] }) {
             }`}
           >
             <span className="w-0.5 flex-shrink-0" />
-            <span className="text-[13px] font-medium leading-snug">{item.label}</span>
+            <span className="type-label leading-snug [color:inherit]">{item.label}</span>
           </button>
         ))}
       </div>

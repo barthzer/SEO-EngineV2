@@ -80,7 +80,7 @@ export function HorizontalBarChart({
               className="relative flex flex-1 items-center gap-2"
             >
               <span
-                className="flex-shrink-0 text-[13px] tracking-body text-[var(--text-secondary)]"
+                className="flex-shrink-0 type-label"
                 style={{ width: labelWidth }}
               >
                 {d.label}
@@ -96,7 +96,7 @@ export function HorizontalBarChart({
                     }}
                   >
                     <span
-                      className={`px-3 text-[12px] font-semibold tabular-nums ${textWhite ? "text-white" : "text-[var(--text-primary)]"}`}
+                      className={`px-3 type-caption tabular-nums ${textWhite ? "text-white" : "text-[var(--text-primary)]"}`}
                     >
                       {formatValue(d.value)}
                     </span>
@@ -107,7 +107,7 @@ export function HorizontalBarChart({
                     )}
                   </div>
                 ) : (
-                  <span className={`relative pl-1 text-[12px] tabular-nums text-[var(--text-muted)] ${tooltip ? "group cursor-default" : ""}`}>
+                  <span className={`relative pl-1 type-caption tabular-nums text-[var(--text-primary)] ${tooltip ? "group cursor-default" : ""}`}>
                     {formatValue(d.value)}
                     {tooltip && (
                       <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl bg-[rgba(20,20,20,0.92)] px-3.5 py-2.5 opacity-0 shadow-[var(--shadow-floating)] backdrop-blur-md transition-opacity duration-150 group-hover:opacity-100 dark:border dark:border-[var(--border-subtle)] dark:bg-[rgba(40,40,42,0.92)]">

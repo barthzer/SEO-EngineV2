@@ -10,7 +10,7 @@
  */
 export function DeltaIndicator({ value, ref: refValue }: { value: number; ref: number }) {
   if (value === refValue) {
-    return <span className="ml-1.5 inline-block w-2 text-center text-[10px] tracking-micro text-[var(--text-muted)]">—</span>;
+    return <span className="ml-1.5 inline-block w-2 text-center type-micro">—</span>;
   }
   const isUp = value > refValue;
   // « plus haut = concurrent devant = mauvais » → up = rouge, down = vert.

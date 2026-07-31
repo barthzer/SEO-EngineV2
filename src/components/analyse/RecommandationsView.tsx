@@ -63,6 +63,15 @@ const STUDY_ROWS: StudyRow[] = [
   { keyword: "prix google ads",          cluster: "SEA / Ads",     volume: 170,  kd: null, kei: null,   score: 0,  trafic: null, position: null, intent: "Transactionnel", priority: "P2", pageCible: null },
 ];
 
+/* Nouveaux mots-clés « découverts » à chaque relance de l'étude. */
+const EXTRA_STUDY_ROWS: StudyRow[] = [
+  { keyword: "agence seo lyon",         cluster: "SEO",       volume: 1600, kd: 66,   kei: 24242, score: 70, trafic: null, position: null, intent: "Commercial",     priority: "P2", pageCible: null },
+  { keyword: "tarif agence seo",        cluster: "SEO",       volume: 590,  kd: null, kei: null,  score: 0,  trafic: null, position: null, intent: "Transactionnel", priority: "P1", pageCible: null },
+  { keyword: "agence seo saas",         cluster: "SEO",       volume: 480,  kd: 60,   kei: 8000,  score: 70, trafic: null, position: null, intent: "Commercial",     priority: "P2", pageCible: null },
+  { keyword: "agence google shopping",  cluster: "SEA / Ads", volume: 720,  kd: null, kei: null,  score: 0,  trafic: null, position: null, intent: "Commercial",     priority: "P2", pageCible: null },
+  { keyword: "agence seo international", cluster: "SEO",       volume: 390,  kd: 55,   kei: 5000,  score: 70, trafic: null, position: null, intent: "Commercial",     priority: "P2", pageCible: null },
+];
+
 const CLUSTER_COLOR: Record<string, string> = {
   "SEO":           "var(--accent-primary)",
   "SEA / Ads":     "var(--color-warning)",
@@ -107,6 +116,7 @@ export function RecommandationsView({
   const [studyState, setStudyState] = useState<"empty" | "loading" | "done">("done");
   const [loadingStep, setLoadingStep] = useState(0);
   const [briefKeyword, setBriefKeyword] = useState<string | null>(null);
+  const [studyRows, setStudyRows] = useState<StudyRow[]>(STUDY_ROWS);
   /* Filters & search on the recommandations table */
   const [search, setSearch] = useState("");
   const [filterPriority, setFilterPriority] = useState<"all" | StudyPrio>("all");
@@ -129,17 +139,25 @@ export function RecommandationsView({
       acc += ms;
       timersRef.current.push(setTimeout(() => setLoadingStep(i + 1), acc));
     });
-    timersRef.current.push(setTimeout(() => setStudyState("done"), acc + 250));
+    timersRef.current.push(setTimeout(() => {
+      setStudyState("done");
+      // Relance : on ajoute les nouveaux mots-clés découverts (non déjà présents) en tête.
+      setStudyRows((prev) => {
+        const have = new Set(prev.map((r) => r.keyword));
+        const found = EXTRA_STUDY_ROWS.filter((r) => !have.has(r.keyword)).slice(0, 3);
+        return [...found, ...prev];
+      });
+    }, acc + 250));
   }
 
   /* KPIs */
-  const totalOpps = STUDY_ROWS.length;
-  const actionnables = STUDY_ROWS.filter((r) => r.priority === "P1" || r.priority === "P2").length;
-  const clusters = new Set(STUDY_ROWS.map((r) => r.cluster)).size;
+  const totalOpps = studyRows.length;
+  const actionnables = studyRows.filter((r) => r.priority === "P1" || r.priority === "P2").length;
+  const clusters = new Set(studyRows.map((r) => r.cluster)).size;
 
   /* Filtered rows */
-  const uniqueClusters = Array.from(new Set(STUDY_ROWS.map((r) => r.cluster)));
-  const filteredRows = STUDY_ROWS.filter((r) => {
+  const uniqueClusters = Array.from(new Set(studyRows.map((r) => r.cluster)));
+  const filteredRows = studyRows.filter((r) => {
     if (search && !r.keyword.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterPriority !== "all" && r.priority !== filterPriority) return false;
     if (filterCluster !== "all" && r.cluster !== filterCluster) return false;
@@ -222,6 +240,15 @@ export function RecommandationsView({
           </button>
         )
         : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+    { key: "analyser", header: "", width: 130, align: "right",
+      render: (r) => (
+        <span className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); setBriefKeyword(r.keyword); }}>
+            Analyser
+            <ChevronRightIcon className="h-3.5 w-3.5" />
+          </Button>
+        </span>
+      ) },
   ];
 
   return (
@@ -243,7 +270,7 @@ export function RecommandationsView({
               <Download className="h-4 w-4" />
               Exporter
             </Button>
-            <Button variant="secondary" onClick={() => setStudyOpen(true)}>
+            <Button variant="secondary" onClick={startStudy}>
               <RefreshCw className="h-4 w-4" />
               Relancer
             </Button>
@@ -370,17 +397,10 @@ export function RecommandationsView({
             data={filteredRows}
             rowKey={(r) => r.keyword}
             emptyState="Aucun mot-clé pour ces filtres."
-            minWidth={1400}
+            minWidth={1520}
             pageSize={25}
+            stickyLeft
             bordered
-            edgePadding="24px"
-            trailingAction={(r) => (
-              <Button size="sm" onClick={(e) => { e.stopPropagation(); setBriefKeyword(r.keyword); }}>
-                Analyser
-                <ChevronRightIcon className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            trailingActionWidth={120}
           />
         </>
       )}

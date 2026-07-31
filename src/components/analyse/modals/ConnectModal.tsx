@@ -60,10 +60,10 @@ export function ConnectModal({ tool, onClose, onConnect }: { tool: Tool; onClose
           </button>
         </div>
 
-        <h2 className="mt-5 font-semibold tracking-tight text-[var(--text-primary)]">
+        <h2 className="mt-5 type-h2">
           Connecter {config.name}
         </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-muted)]">{config.description}</p>
+        <p className="mt-2 type-body-sm leading-relaxed">{config.description}</p>
 
         <div className="mt-6 flex flex-col gap-2">
           <Button

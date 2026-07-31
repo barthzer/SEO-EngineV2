@@ -30,7 +30,7 @@ export function ProgressBar({
         />
       </div>
       {showLabel && (
-        <span className="shrink-0 font-mono text-[12px] tabular-nums text-[var(--text-secondary)]">
+        <span className="shrink-0 font-mono type-caption tabular-nums">
           {Math.round(pct)}%
         </span>
       )}

@@ -53,7 +53,7 @@ export function ModalShell({
 export function FormField({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[12px] font-medium text-[var(--text-secondary)]">
+      <label className="mb-1.5 block type-caption font-medium">
         {label}
         {required && <span className="ml-0.5 text-[var(--color-danger)]">*</span>}
         {hint && <span className="ml-1.5 font-normal text-[var(--text-muted)]">({hint})</span>}
@@ -63,4 +63,4 @@ export function FormField({ label, required, hint, children }: { label: string; 
   );
 }
 
-export const fieldCls = "w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card-inner-bg)] px-3.5 py-2.5 text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)] transition-colors";
+export const fieldCls = "w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card-inner-bg)] px-3.5 py-2.5 type-body text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)] transition-colors";

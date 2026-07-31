@@ -120,12 +120,12 @@ export function TaskRow({
           style={{ backgroundColor: statusColor }}
           aria-hidden
         />
-        <p className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--text-primary)]">
+        <p className="min-w-0 flex-1 truncate type-label text-[var(--text-primary)]">
           {title}
         </p>
         {owner && <MiniAvatar name={owner.name} photoSeed={owner.photoSeed} />}
         {date && (
-          <span className="flex-shrink-0 text-[11px] tabular-nums text-[var(--text-muted)]">
+          <span className="flex-shrink-0 type-micro tabular-nums">
             {date}
           </span>
         )}
@@ -141,7 +141,7 @@ export function TaskRow({
       {expanded && canExpand && (
         <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-5 py-4">
           {description && (
-            <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            <p className="type-body-sm leading-relaxed">
               {description}
             </p>
           )}

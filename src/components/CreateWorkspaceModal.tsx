@@ -33,18 +33,18 @@ export function CreateWorkspaceModal({
   return (
     <ModalShell onClose={onClose} maxWidth={440}>
       <div className="mb-6">
-        <h2 className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">
+        <h2 className="type-h3">
           Créer un workspace
         </h2>
-        <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+        <p className="mt-1 type-body-sm text-[var(--text-muted)]">
           Un espace séparé pour organiser vos projets et vos collaborateurs.
         </p>
       </div>
 
       {/* Aperçu live */}
-      <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-3">
+      <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-4 py-3">
         <span
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-[15px] font-semibold text-white"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full type-title text-white"
           style={{
             background: `linear-gradient(135deg, ${accentColor}, color-mix(in oklab, ${accentColor} 55%, #000))`,
           }}
@@ -53,10 +53,10 @@ export function CreateWorkspaceModal({
           {initials.slice(0, 2)}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">
+          <p className="truncate type-title">
             {trimmed || "Nom du workspace"}
           </p>
-          <p className="text-[12px] text-[var(--text-muted)]">Plan Hobby</p>
+          <p className="type-caption text-[var(--text-muted)]">Plan Hobby</p>
         </div>
       </div>
 

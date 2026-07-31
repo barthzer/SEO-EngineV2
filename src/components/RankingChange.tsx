@@ -28,11 +28,11 @@ export function RankingChange({ before, after, showDelta = true }: RankingChange
   return (
     <div className="flex items-center gap-1.5">
       {/* Pills avant/après neutres — le signal couleur vit dans la VariationPill du delta. */}
-      <span className="rounded-full bg-[var(--bg-card-static)] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--text-muted)]">
+      <span className="rounded-full bg-[var(--bg-card-static)] px-1.5 py-0.5 type-micro tabular-nums text-[var(--text-primary)]">
         #{before}
       </span>
       <ArrowRightIcon className="h-3 w-3 text-[var(--text-muted)]" />
-      <span className="rounded-full bg-[var(--bg-card-static)] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--text-primary)]">
+      <span className="rounded-full bg-[var(--bg-card-static)] px-1.5 py-0.5 type-micro tabular-nums text-[var(--text-primary)]">
         #{after}
       </span>
       {showDelta && delta !== 0 && (

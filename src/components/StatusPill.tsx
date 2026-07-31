@@ -75,7 +75,7 @@ export function StatusPill({ status }: { status: Status }) {
   const cfg = STATUS_CONFIG[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium"
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-micro"
       style={{
         color: cfg.text,
         backgroundColor: cfg.bg,
@@ -105,7 +105,7 @@ export function StatusPillDropdown({
       width={200}
       trigger={
         <button
-          className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-80"
+          className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-micro transition-opacity hover:opacity-80"
           style={{
             color: cfg.text,
             backgroundColor: cfg.bg,
@@ -130,7 +130,7 @@ export function StatusPillDropdown({
             selected={status === s}
           >
             <span
-              className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium"
+              className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-micro"
               style={{
                 color: c.text,
                 backgroundColor: c.bg,

@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 export function InfoNote({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-2xl bg-[var(--bg-card-static)] p-3.5 text-[13px] leading-relaxed text-[var(--text-primary)] ${className}`}
+      className={`rounded-2xl bg-[var(--bg-card-static)] p-3.5 type-body-sm leading-relaxed text-[var(--text-primary)] ${className}`}
     >
       {children}
     </div>

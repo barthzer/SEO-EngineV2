@@ -77,6 +77,21 @@ export function VisibilityLineChart({ title, subtitle }: { title?: string; subti
     y: tm + chartH * (1 - (d.value - yMin) / (yMax - yMin)),
   }));
 
+  // Repères verticaux (grille + labels) : au plus 6, à espacement CONSTANT et
+  // bornés aux extrêmes (1er repère au bord gauche, dernier au bord droit). On place
+  // K positions uniformes sur toute la largeur, puis on étiquette avec le mois le plus
+  // proche — écart identique quelle que soit la période, pas de décalage en fin de graph.
+  const monthPts = pts.filter((pt) => pt.isMonth);
+  const MAX_TICKS = 6;
+  const K = Math.min(MAX_TICKS, monthPts.length);
+  const firstX = monthPts[0].x;
+  const lastX = monthPts[monthPts.length - 1].x;
+  const tickPts = Array.from({ length: K }, (_, k) => {
+    const x = K === 1 ? firstX : firstX + (k / (K - 1)) * (lastX - firstX);
+    const month = monthPts.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)).month;
+    return { x, month };
+  });
+
   let linePath = `M ${pts[0].x} ${pts[0].y}`;
   for (let i = 1; i < pts.length; i++) {
     const cpX = (pts[i - 1].x + pts[i].x) / 2;
@@ -107,8 +122,8 @@ export function VisibilityLineChart({ title, subtitle }: { title?: string; subti
       <div className={`mb-4 flex gap-3 ${title ? "items-start justify-between" : "justify-end"}`}>
         {title && (
           <div className="min-w-0">
-            <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">{title}</p>
-            {subtitle && <p className="mt-1.5 text-[14px] leading-snug tracking-caption text-[var(--text-secondary)]">{subtitle}</p>}
+            <p className="type-h3">{title}</p>
+            {subtitle && <p className="mt-1.5 type-body leading-snug text-[var(--text-secondary)]">{subtitle}</p>}
           </div>
         )}
         <FilterTabs
@@ -124,29 +139,44 @@ export function VisibilityLineChart({ title, subtitle }: { title?: string; subti
             <stop offset="0%" style={{ stopColor: "var(--accent-primary)", stopOpacity: 0.12 }} />
             <stop offset="100%" style={{ stopColor: "var(--accent-primary)", stopOpacity: 0 }} />
           </linearGradient>
+          {/* Fade des extrémités : la courbe + l'aire s'estompent aux bords gauche/droit. */}
+          <linearGradient id="vis-edge-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="white" stopOpacity="0" />
+            <stop offset="0.08" stopColor="white" stopOpacity="1" />
+            <stop offset="0.92" stopColor="white" stopOpacity="1" />
+            <stop offset="1" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <mask id="vis-edge-mask">
+            <rect x={lm} y={0} width={chartW} height={svgH} fill="url(#vis-edge-fade)" />
+          </mask>
         </defs>
+        {/* Grille verticale — repères thinés (≤ 6) pour ne pas surcharger sur « 1 an » */}
+        {tickPts.map((pt, i) => (
+          <line key={`grid-${i}`} x1={pt.x} y1={tm} x2={pt.x} y2={tm + chartH} stroke="var(--border-subtle)" strokeWidth="1" />
+        ))}
+        {/* Y labels */}
         {[11, 36, 61, 86, 111].map((v) => {
           const y = tm + chartH * (1 - (v - yMin) / (yMax - yMin));
           return (
-            <g key={v}>
-              <line x1={lm} y1={y} x2={lm + chartW} y2={y} stroke="var(--border-subtle)" strokeWidth="1" />
-              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{v}</text>
-            </g>
+            <text key={v} x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{v}</text>
           );
         })}
-        {pts.filter(pt => pt.isMonth).map((pt, i) => (
+        {/* X labels — mêmes repères thinés que la grille */}
+        {tickPts.map((pt, i) => (
           <text key={i} x={pt.x} y={tm + chartH + 18} textAnchor="middle" fontSize={12} fill="var(--text-muted)">{pt.month}</text>
         ))}
-        <path d={areaPath} fill="url(#vis-grad)" />
-        <path d={linePath} fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <g mask="url(#vis-edge-mask)">
+          <path d={areaPath} fill="url(#vis-grad)" />
+          <path d={linePath} fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
         {hovPt && (
           <circle cx={hovPt.x} cy={hovPt.y} r={4} fill="var(--accent-primary)" stroke="var(--bg-card)" strokeWidth="2" />
         )}
       </svg>
       {hovered && hovPt && (
         <ChartTooltip x={hovered.mouseX} y={hovered.mouseY - 8}>
-          {hovMonth && <p className="text-[11px] font-medium text-white/60">{hovMonth}</p>}
-          <p className="text-[13px] font-semibold text-white">{hovPt.value}</p>
+          {hovMonth && <p className="type-micro text-white/60">{hovMonth}</p>}
+          <p className="type-label font-semibold text-white">{hovPt.value}</p>
         </ChartTooltip>
       )}
       </div>

@@ -31,7 +31,7 @@ export type TemplateTag =
   | "B2B"
   | "Éditorial"
   | "Technique"
-  | "Netlinking"
+  | "Popularité"
   | "Refresh"
   | "Cluster";
 export type TemplateLLM = "gpt-4o" | "claude-sonnet" | "gemini" | "perplexity";
@@ -120,7 +120,7 @@ export const TAG_META: Record<TemplateTag, { color: string }> = {
   B2B: { color: "#0EA5E9" },
   Éditorial: { color: "#10B981" },
   Technique: { color: "#64748B" },
-  Netlinking: { color: "#EC4899" },
+  Popularité: { color: "#EC4899" },
   Refresh: { color: "#06B6D4" },
   Cluster: { color: "#6366F1" },
 };

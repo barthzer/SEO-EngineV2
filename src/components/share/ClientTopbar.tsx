@@ -49,10 +49,10 @@ export function ClientTopbar({
           </div>
         )}
         <div>
-          <p className="text-[16px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
+          <p className="type-h3 leading-none">
             {clientName}
           </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">{domain}</p>
+          <p className="mt-1 type-micro text-[var(--text-muted)]">{domain}</p>
         </div>
       </div>
 
@@ -66,17 +66,17 @@ export function ClientTopbar({
           className="group -mx-1 flex items-center gap-3 rounded-xl px-1.5 py-1 transition-colors duration-150 hover:bg-[var(--bg-card-hover)]"
         >
           <div className="text-right">
-            <p className="text-[12px] font-medium leading-tight text-[var(--text-primary)]">
+            <p className="type-caption font-medium leading-tight text-[var(--text-primary)]">
               {consultant.name}
             </p>
-            <p className="text-[11px] text-[var(--text-muted)]">votre consultant</p>
+            <p className="type-micro text-[var(--text-muted)]">votre consultant</p>
           </div>
           {/* Avatar — au hover bg accent + ArrowUpRight (affordance "ouvrir vue"), rounded-full conservé */}
           <div
             className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full transition-colors duration-200 ease-out group-hover:bg-[var(--accent-primary-soft)]"
           >
             {imgErr ? (
-              <div className="flex h-full w-full items-center justify-center bg-[var(--bg-secondary)] text-[11px] font-semibold text-[var(--text-secondary)] transition-opacity duration-200 group-hover:opacity-0">
+              <div className="flex h-full w-full items-center justify-center bg-[var(--bg-secondary)] type-micro font-semibold text-[var(--text-secondary)] transition-opacity duration-200 group-hover:opacity-0">
                 {consultant.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()}
               </div>
             ) : (

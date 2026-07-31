@@ -164,7 +164,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
           <button
             ref={triggerRef}
             onClick={toggle}
-            className={`group flex h-9 w-full items-center gap-2 rounded-xl pr-2 text-[14px] font-medium tracking-body text-[var(--text-primary)] transition-colors duration-150 ${open ? "bg-[var(--bg-pill-active)]" : "hover:bg-[var(--bg-pill-active)]"}`}
+            className={`group flex h-9 w-full items-center gap-2 rounded-xl pr-2 type-body-strong transition-colors duration-150 ${open ? "bg-[var(--bg-pill-active)]" : "hover:bg-[var(--bg-pill-active)]"}`}
           >
             <span className="flex h-9 w-6 flex-shrink-0 items-center justify-end">
               <ProjectFavicon domain={project.domain} logo={project.logo} size={18} />
@@ -195,7 +195,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
           className="group inline-flex h-9 items-center gap-2 rounded-full bg-[var(--bg-pill-active)] px-3 transition-colors hover:bg-[var(--bg-pill-active-hover)]"
         >
           <ProjectFavicon domain={project.domain} logo={project.logo} size={18} />
-          <span className="text-[14px] font-semibold tracking-body text-[var(--text-primary)]">
+          <span className="type-body-strong">
             {project.domain}
           </span>
           <ChevronDownIcon className="h-3.5 w-3.5 text-[var(--text-muted)] transition-transform group-hover:text-[var(--text-primary)]" />
@@ -217,7 +217,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un projet…"
-              className="flex-1 bg-transparent text-[14px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              className="flex-1 bg-transparent type-body outline-none placeholder:text-[var(--text-muted)]"
             />
             <Kbd>⌘P</Kbd>
           </div>
@@ -227,7 +227,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
             {/* Recents */}
             {recentProjects.length > 0 && (
               <>
-                <p className="px-3 pt-1.5 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">Récents</p>
+                <p className="px-3 pt-1.5 pb-1 type-micro">Récents</p>
                 {recentProjects.map((p) => (
                   <ProjectRow key={`recent-${p.domain}`} project={p} onClick={() => navigate(p)} />
                 ))}
@@ -236,11 +236,11 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
             )}
 
             {/* All projects */}
-            <p className="px-3 pt-1.5 pb-1 text-[11px] font-medium tracking-caption text-[var(--text-muted)]">
+            <p className="px-3 pt-1.5 pb-1 type-micro">
               {q ? `${filtered.length} résultat${filtered.length > 1 ? "s" : ""}` : "Tous les projets"}
             </p>
             {filtered.length === 0 ? (
-              <div className="px-3 py-6 text-center text-[12px] text-[var(--text-muted)]">Aucun projet trouvé.</div>
+              <div className="px-3 py-6 text-center type-caption">Aucun projet trouvé.</div>
             ) : (
               filtered.map((p) => (
                 <ProjectRow
@@ -258,7 +258,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
             <Link
               href="/"
               onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[14px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--dropdown-hover)]"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 type-body-strong transition-colors hover:bg-[var(--dropdown-hover)]"
             >
               <HomeGlyph className="h-4 w-4 flex-shrink-0 text-[var(--text-secondary)]" />
               Voir tous les projets
@@ -269,7 +269,7 @@ export function ProjectSwitcher({ currentDomain, sidebarExpanded }: Props) {
                 setOpen(false);
                 router.push("/?new=1");
               }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[14px] font-medium text-[var(--accent-primary)] transition-colors hover:bg-[var(--accent-primary-soft)]"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left type-body-strong text-[var(--accent-primary)] transition-colors hover:bg-[var(--accent-primary-soft)]"
             >
               <PlusIcon className="h-4 w-4 flex-shrink-0" />
               Nouveau projet
@@ -290,10 +290,10 @@ function ProjectRow({ project, active, onClick }: { project: Project; active?: b
     >
       <ProjectFavicon domain={project.domain} logo={project.logo} size={20} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-medium text-[var(--text-primary)]">{project.domain}</p>
+        <p className="truncate type-body-strong">{project.domain}</p>
       </div>
       {project.status === "archive" && (
-        <span className="rounded bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">
+        <span className="rounded bg-[var(--bg-subtle)] px-1.5 py-0.5 type-micro">
           Archivé
         </span>
       )}

@@ -27,7 +27,7 @@ interface DonutChartProps {
 export function DonutChart({
   slices,
   size = 112,
-  strokeWidth = 10,
+  strokeWidth = 7,
   center,
   gap = 6,
   gapPercent,
@@ -132,8 +132,8 @@ export function DonutChart({
             ? formatTooltip(hovered.slice, hovered.pct)
             : (
               <div className="flex flex-col gap-0.5">
-                <span className="text-[12px] font-semibold text-white">{hovered.slice.label}</span>
-                <span className="text-[11px] text-white/60">
+                <span className="type-caption text-white">{hovered.slice.label}</span>
+                <span className="type-micro text-white/60">
                   <span className="font-semibold text-white">{hovered.slice.value}</span> — {hovered.pct}%
                 </span>
               </div>

@@ -10,7 +10,7 @@ const GOALS: { key: OnboardingGoal; icon: React.ElementType; title: string; desc
   { key: "geo",        icon: Bot,       title: "Visibilité IA",         desc: "Citations Perplexity, ChatGPT, Claude" },
   { key: "missing",    icon: FilePlus,  title: "Pages manquantes",      desc: "Étude de mots-clés vs concurrents" },
   { key: "tracking",   icon: Target,    title: "Tracker positions",     desc: "Suivi SERP automatisé" },
-  { key: "netlinking", icon: Network,   title: "Netlinking",            desc: "Profil backlinks et outreach" },
+  { key: "netlinking", icon: Network,   title: "Popularité",            desc: "Profil backlinks et outreach" },
 ];
 
 export function StepEntry({ data, update }: { data: OnboardingData; update: (p: Partial<OnboardingData>) => void }) {
@@ -24,10 +24,10 @@ export function StepEntry({ data, update }: { data: OnboardingData; update: (p: 
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <h1 className="font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h1">
           Qu'est-ce qui vous amène ?
         </h1>
-        <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="type-body text-[var(--text-secondary)]">
           Sélectionnez tout ce qui s'applique. On adapte le dashboard en conséquence.
         </p>
       </header>
@@ -59,8 +59,8 @@ export function StepEntry({ data, update }: { data: OnboardingData; update: (p: 
               </span>
 
               <div>
-                <p className="text-[14px] font-medium leading-snug text-[var(--text-primary)]">{title}</p>
-                <p className="mt-1 text-[12.5px] leading-snug text-[var(--text-muted)]">{desc}</p>
+                <p className="type-body-strong">{title}</p>
+                <p className="mt-1 type-caption">{desc}</p>
               </div>
 
               {/* Checkmark top-right — composant partagé */}

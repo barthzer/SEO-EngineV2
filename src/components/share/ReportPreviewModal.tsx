@@ -88,20 +88,20 @@ export function ReportPreviewModal({
         {/* Header */}
         <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-5">
           <div className="flex items-center gap-2.5">
-            <span className="rounded-full bg-[var(--bg-pill-active)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            <span className="rounded-full bg-[var(--bg-pill-active)] px-2 py-0.5 type-micro font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               Aperçu
             </span>
-            <span className="text-[13px] font-medium text-[var(--text-primary)]">
+            <span className="type-label text-[var(--text-primary)]">
               Rapport {report.month}
             </span>
-            <span className="text-[12px] text-[var(--text-muted)] tabular-nums">
+            <span className="type-caption tabular-nums text-[var(--text-muted)]">
               · {report.pages} pages · {fileSize}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onDownload}
-              className="flex h-8 items-center gap-1.5 rounded-full bg-[var(--bg-card-static)] px-3 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-pill-active-hover)]"
+              className="flex h-8 items-center gap-1.5 rounded-full bg-[var(--bg-card-static)] px-3 type-caption font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-pill-active-hover)]"
             >
               <DocumentArrowDownIcon className="h-3.5 w-3.5" />
               Télécharger
@@ -131,17 +131,17 @@ export function ReportPreviewModal({
                   />
                 ) : (
                   <div
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-semibold text-white"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg type-micro font-semibold text-white"
                     style={{ backgroundColor: accent }}
                   >
                     {branding.initials ?? "AG"}
                   </div>
                 )}
-                <span className="text-[13px] font-semibold tracking-tight text-slate-900">
+                <span className="type-label font-semibold text-slate-900">
                   {agencyName}
                 </span>
               </div>
-              <span className="text-[11px] tabular-nums text-slate-500">
+              <span className="type-micro tabular-nums text-slate-500">
                 Publié le {publishedAt}
               </span>
             </div>
@@ -149,7 +149,7 @@ export function ReportPreviewModal({
             {/* Couverture */}
             <header className="flex flex-col gap-2">
               <p
-                className="text-[12px] font-semibold uppercase tracking-[0.14em]"
+                className="type-caption font-semibold uppercase tracking-[0.14em]"
                 style={{ color: accent }}
               >
                 Rapport mensuel
@@ -157,17 +157,17 @@ export function ReportPreviewModal({
               <h1 className="text-[40px] font-semibold leading-[1.05] tracking-tight text-slate-900">
                 {report.month}
               </h1>
-              <p className="mt-1 text-[14px] text-slate-600">
+              <p className="mt-1 type-body text-slate-600">
                 Préparé pour <span className="font-semibold text-slate-900">{clientName}</span>
               </p>
             </header>
 
             {/* Synthèse */}
             <section className="flex flex-col gap-3">
-              <h2 className="text-[14px] font-semibold uppercase tracking-wider text-slate-500">
+              <h2 className="type-body font-semibold uppercase tracking-wider text-slate-500">
                 Synthèse du mois
               </h2>
-              <p className="text-[15px] leading-relaxed text-slate-800">
+              <p className="type-body text-slate-800">
                 {report.summary}
               </p>
             </section>
@@ -175,7 +175,7 @@ export function ReportPreviewModal({
             {/* Highlights */}
             {report.highlights.length > 0 && (
               <section className="flex flex-col gap-3">
-                <h2 className="flex items-center gap-2 text-[14px] font-semibold uppercase tracking-wider text-slate-500">
+                <h2 className="flex items-center gap-2 type-body font-semibold uppercase tracking-wider text-slate-500">
                   <ChartBarIcon className="h-4 w-4" />
                   Points clés
                 </h2>
@@ -183,7 +183,7 @@ export function ReportPreviewModal({
                   {report.highlights.map((h, i) => (
                     <li
                       key={i}
-                      className="flex items-baseline gap-3 rounded-xl bg-slate-50 px-4 py-3 text-[14px] text-slate-800"
+                      className="flex items-baseline gap-3 rounded-xl bg-slate-50 px-4 py-3 type-body text-slate-800"
                     >
                       <span
                         className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full"
@@ -199,7 +199,7 @@ export function ReportPreviewModal({
 
             {/* Pages skeleton — donne l'illusion d'un PDF multi-pages */}
             <section className="flex flex-col gap-3">
-              <h2 className="text-[14px] font-semibold uppercase tracking-wider text-slate-500">
+              <h2 className="type-body font-semibold uppercase tracking-wider text-slate-500">
                 Détail dans le rapport complet
               </h2>
               <div className="grid grid-cols-2 gap-3">
@@ -213,8 +213,8 @@ export function ReportPreviewModal({
                     key={label}
                     className="rounded-xl border border-slate-200 bg-white p-4"
                   >
-                    <p className="text-[12px] font-medium text-slate-500">Section</p>
-                    <p className="mt-1 text-[14px] font-semibold leading-tight text-slate-900">
+                    <p className="type-caption font-medium text-slate-500">Section</p>
+                    <p className="mt-1 type-body font-semibold leading-tight text-slate-900">
                       {label}
                     </p>
                     <div className="mt-3 flex flex-col gap-1.5">
@@ -230,14 +230,14 @@ export function ReportPreviewModal({
             {/* Signature consultant */}
             <footer className="flex items-center justify-between border-t border-slate-200 pt-5">
               <div>
-                <p className="text-[11px] uppercase tracking-wider text-slate-400">
+                <p className="type-micro uppercase tracking-wider text-slate-400">
                   Préparé par
                 </p>
-                <p className="mt-1 text-[13px] font-semibold text-slate-900">
+                <p className="mt-1 type-label font-semibold text-slate-900">
                   {consultantName}
                 </p>
               </div>
-              <span className="text-[11px] tabular-nums text-slate-400">
+              <span className="type-micro tabular-nums text-slate-400">
                 Page 1 / {report.pages}
               </span>
             </footer>

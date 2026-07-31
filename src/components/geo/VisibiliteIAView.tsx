@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { SparklesIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { SparklesIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/Button";
+import { RangeCalendar } from "@/components/RangeCalendar";
 import { ColPill } from "@/components/ColPill";
 import { DropdownHeader, DropdownItem } from "@/components/DropdownMenu";
 import { ResetFiltersButton } from "@/components/ResetFiltersButton";
@@ -20,7 +21,6 @@ import { OverviewView } from "@/components/geo/views/OverviewView";
 import { VisibilityView } from "@/components/geo/views/VisibilityView";
 import { ConcurrentsView } from "@/components/geo/views/ConcurrentsView";
 import { PromptsView } from "@/components/geo/views/PromptsView";
-import { PlatformsView } from "@/components/geo/views/PlatformsView";
 import { SentimentView } from "@/components/geo/views/SentimentView";
 import { CitationsView } from "@/components/geo/views/CitationsView";
 import { GeoSettingsView } from "@/components/geo/views/GeoSettingsView";
@@ -93,10 +93,10 @@ export function VisibiliteIAView({ domain }: { domain: string }) {
             />
           ))}
         </div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h2">
           Suivez votre présence dans les réponses IA
         </h1>
-        <p className="mt-2 max-w-md text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="mt-2 max-w-md type-body text-[var(--text-secondary)]">
           Mesurez si {domain} est cité par ChatGPT, Perplexity, Gemini ou Claude, comparez-vous à vos concurrents, et identifiez les opportunités de visibilité.
         </p>
         <div className="mt-6">
@@ -114,7 +114,6 @@ export function VisibiliteIAView({ domain }: { domain: string }) {
     view === "visibility" ? <VisibilityView setup={setup} domain={domain} /> :
     view === "concurrents" ? <ConcurrentsView setup={setup} domain={domain} /> :
     view === "prompts"    ? <PromptsView    setup={setup} domain={domain} filters={filters} setFilter={setFilter} /> :
-    view === "platforms"  ? <PlatformsView  setup={setup} domain={domain} /> :
     view === "sentiment"  ? <SentimentView  setup={setup} domain={domain} /> :
     view === "citations"  ? <CitationsView  setup={setup} domain={domain} /> :
     view === "settings"   ? <GeoSettingsView setup={setup} onSave={setSetup} onReconfigure={() => setConfiguring(true)} /> :
@@ -131,12 +130,15 @@ export function VisibiliteIAView({ domain }: { domain: string }) {
       )}
 
       {/* En-tête : titre de la vue active (la nav des sous-vues est dans la sidebar ;
-          la reconfiguration se fait depuis Paramètres → « Réinitialiser mon analyse »). */}
-      <div className="flex items-center gap-3">
-        <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">
-          {GEO_VIEWS.find((v) => v.key === view)?.label}
-        </h1>
-      </div>
+          la reconfiguration se fait depuis Paramètres → « Réinitialiser mon analyse »).
+          Masqué pour la vue Paramètres, qui gère son propre layout façon page de réglages. */}
+      {view !== "settings" && (
+        <div className="flex items-center gap-3">
+          <h1 className="type-h1 leading-none">
+            {GEO_VIEWS.find((v) => v.key === view)?.label}
+          </h1>
+        </div>
+      )}
 
       {/* Vue active */}
       <div key={view} className="page-enter">{ActiveView}</div>
@@ -198,8 +200,8 @@ function ComingSoon({ label }: { label: string }) {
       <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">
         <SparklesIcon className="h-6 w-6" />
       </span>
-      <p className="text-[16px] font-semibold text-[var(--text-primary)]">{label} — bientôt</p>
-      <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-[var(--text-secondary)]">
+      <p className="type-h3">{label} — bientôt</p>
+      <p className="mt-1.5 max-w-md type-body text-[var(--text-secondary)]">
         Cette vue arrive dans une prochaine étape. La Vue d'ensemble, la Visibilité et les Prompts sont déjà disponibles.
       </p>
     </div>
@@ -222,10 +224,10 @@ function GeoFilterBar({ setup, filters, setFilter }: { setup: GeoSetup; filters:
     ? `${fmtDate(filters.dateStart)} – ${fmtDate(filters.dateEnd ?? filters.dateStart)}`
     : GEO_PERIODS.find((p) => p.value === filters.period)?.label ?? "Période";
 
-  const platformLabel = filters.platforms.length === 0 ? "Tous les modèles"
+  const platformLabel = filters.platforms.length === 0 ? "Toutes les modèles IA"
     : filters.platforms.length === 1 ? PLATFORM_LABEL(filters.platforms[0] as LlmPlatform)
     : `${filters.platforms.length} modèles`;
-  const listLabel = filters.lists.length === 0 ? "Toutes les listes"
+  const listLabel = filters.lists.length === 0 ? "Tous les sujets"
     : filters.lists.length === 1 ? (setup.lists.find((l) => l.id === filters.lists[0])?.name ?? "Liste")
     : `${filters.lists.length} listes`;
   const compLabel = filters.competitors.length === 0 ? "Tous les concurrents"
@@ -292,14 +294,8 @@ function GeoFilterBar({ setup, filters, setFilter }: { setup: GeoSetup; filters:
 function PeriodBody({ filters, setFilter, close }: { filters: GeoFilters; setFilter: (patch: Partial<GeoFilters>) => void; close: () => void }) {
   const [start, setStart] = useState<string | undefined>(filters.dateStart);
   const [end, setEnd] = useState<string | undefined>(filters.dateEnd);
-  const [month, setMonth] = useState(() => { const d = filters.dateStart ? new Date(filters.dateStart) : new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
 
   const preset = (p: string) => { setFilter({ period: p, dateStart: undefined, dateEnd: undefined }); close(); };
-  function pick(iso: string) {
-    if (!start || (start && end)) { setStart(iso); setEnd(undefined); }
-    else if (iso < start) { setEnd(start); setStart(iso); }
-    else setEnd(iso);
-  }
   const apply = () => { if (start) { setFilter({ period: "custom", dateStart: start, dateEnd: end ?? start }); close(); } };
 
   return (
@@ -308,58 +304,19 @@ function PeriodBody({ filters, setFilter, close }: { filters: GeoFilters; setFil
         const on = filters.period === p.value && !filters.dateStart;
         return (
           <button key={p.value} type="button" onClick={() => preset(p.value)}
-            className={`flex items-center justify-between rounded-xl px-3 py-2 text-[14px] font-medium transition-colors hover:bg-[var(--dropdown-hover)] ${on ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+            className={`flex items-center justify-between rounded-xl px-3 py-2 type-body-strong transition-colors hover:bg-[var(--dropdown-hover)] ${on ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
             {p.label}{on && <CheckIcon className="h-4 w-4" strokeWidth={2.5} />}
           </button>
         );
       })}
       <div className="my-1.5 border-t border-[var(--border-subtle)]" />
-      <p className="px-2 pb-1 text-[12px] font-medium text-[var(--text-muted)]">Dates personnalisées</p>
-      <Calendar month={month} setMonth={setMonth} start={start} end={end} onPick={pick} />
+      <p className="px-2 pb-1 type-caption">Dates personnalisées</p>
+      <RangeCalendar from={start} to={end} onChange={(f, t) => { setStart(f); setEnd(t); }} />
       <div className="mt-1 flex items-center justify-between px-1">
-        <span className="text-[12px] text-[var(--text-muted)]">{start ? `${fmtDate(start)}${end && end !== start ? ` – ${fmtDate(end)}` : ""}` : "Choisir une plage"}</span>
+        <span className="type-caption text-[var(--text-muted)]">{start ? `${fmtDate(start)}${end && end !== start ? ` – ${fmtDate(end)}` : ""}` : "Choisir une plage"}</span>
         <Button size="sm" onClick={apply} disabled={!start}>Appliquer</Button>
       </div>
     </div>
   );
 }
 
-const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
-
-function Calendar({ month, setMonth, start, end, onPick }: {
-  month: Date; setMonth: (d: Date) => void; start?: string; end?: string; onPick: (iso: string) => void;
-}) {
-  const y = month.getFullYear(), m = month.getMonth();
-  const startDow = (new Date(y, m, 1).getDay() + 6) % 7; // lundi = 0
-  const days = new Date(y, m + 1, 0).getDate();
-  const cells: (string | null)[] = [];
-  for (let i = 0; i < startDow; i++) cells.push(null);
-  for (let d = 1; d <= days; d++) cells.push(`${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
-
-  const inRange = (iso: string) => !!(start && end && iso > start && iso < end);
-  const isEdge = (iso: string) => iso === start || iso === end;
-
-  return (
-    <div className="px-1">
-      <div className="mb-1 flex items-center justify-between">
-        <button type="button" onClick={() => setMonth(new Date(y, m - 1, 1))} aria-label="Mois précédent"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--dropdown-hover)]"><ChevronLeftIcon className="h-4 w-4" /></button>
-        <span className="text-[13px] font-medium capitalize text-[var(--text-primary)]">{month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</span>
-        <button type="button" onClick={() => setMonth(new Date(y, m + 1, 1))} aria-label="Mois suivant"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--dropdown-hover)]"><ChevronRightIcon className="h-4 w-4" /></button>
-      </div>
-      <div className="grid grid-cols-7 gap-0.5">
-        {WEEKDAYS.map((w, i) => <span key={i} className="flex h-7 items-center justify-center text-[11px] text-[var(--text-muted)]">{w}</span>)}
-        {cells.map((iso, i) => iso === null ? <span key={i} /> : (
-          <button key={i} type="button" onClick={() => onPick(iso)}
-            className={`flex aspect-square w-full items-center justify-center rounded-lg text-[13px] tabular-nums transition-colors ${
-              isEdge(iso) ? "bg-[var(--accent-primary)] font-medium text-white"
-                : inRange(iso) ? "bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]"
-                  : "text-[var(--text-primary)] hover:bg-[var(--dropdown-hover)]"}`}>
-            {Number(iso.slice(-2))}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}

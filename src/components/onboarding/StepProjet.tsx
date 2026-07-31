@@ -31,16 +31,16 @@ export function StepProjet({ data, update }: { data: OnboardingData; update: (p:
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <h1 className="font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h1">
           Lançons votre première analyse
         </h1>
-        <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="type-body text-[var(--text-secondary)]">
           Indiquez le domaine à analyser. Vous pourrez en ajouter d'autres ensuite.
         </p>
       </header>
 
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Domaine</label>
+        <label className="type-label text-[var(--text-primary)]">Domaine</label>
         <div
           className={`flex items-center gap-3 rounded-xl border bg-[var(--bg-card)] px-3.5 py-2.5 transition-colors ${
             isValid
@@ -68,14 +68,14 @@ export function StepProjet({ data, update }: { data: OnboardingData; update: (p:
             value={data.firstProjectDomain}
             onChange={(e) => update({ firstProjectDomain: e.target.value })}
             placeholder="exemple.com"
-            className="flex-1 bg-transparent text-[15px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+            className="flex-1 bg-transparent type-body outline-none placeholder:text-[var(--text-muted)]"
           />
           {isValid && <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[var(--color-success)]" />}
         </div>
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Fréquence d'analyse</label>
+        <label className="type-label text-[var(--text-primary)]">Fréquence d'analyse</label>
         <div className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--bg-subtle)] p-1">
           {FREQUENCIES.map(({ key, label }) => {
             const selected = data.analysisFrequency === key;
@@ -84,7 +84,7 @@ export function StepProjet({ data, update }: { data: OnboardingData; update: (p:
                 key={key}
                 type="button"
                 onClick={() => update({ analysisFrequency: key })}
-                className={`rounded-full px-4 py-1.5 text-[12.5px] font-medium transition-colors ${
+                className={`rounded-full px-4 py-1.5 type-label transition-colors ${
                   selected
                     ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -98,7 +98,7 @@ export function StepProjet({ data, update }: { data: OnboardingData; update: (p:
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">
+        <label className="type-label text-[var(--text-primary)]">
           Connecter vos données <span className="ml-1.5 font-normal text-[var(--text-muted)]">(optionnel)</span>
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -139,8 +139,8 @@ function Connector({ label, sub, connected, onClick, dotColor }: { label: string
         style={{ backgroundColor: connected ? "var(--color-success)" : dotColor }}
       />
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-medium text-[var(--text-primary)]">{label}</span>
-        <span className={`block text-[11px] ${connected ? "text-[var(--color-success)]" : "text-[var(--text-muted)]"}`}>
+        <span className="block type-label text-[var(--text-primary)]">{label}</span>
+        <span className={`block type-micro ${connected ? "text-[var(--color-success)]" : "text-[var(--text-muted)]"}`}>
           {sub}
         </span>
       </span>

@@ -65,16 +65,16 @@ export function TemplateCard({
       {/* Corps cliquable → preview */}
       <button onClick={onPreview} className="flex flex-1 flex-col items-start text-left">
         <div className="flex items-center gap-2">
-          <h3 className="text-[15px] font-semibold tracking-subheading text-[var(--text-primary)]">
+          <h3 className="type-title">
             {template.name}
           </h3>
           {template.updateAvailable && (
-            <span className="rounded-full bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
+            <span className="rounded-full bg-[var(--bg-subtle)] px-1.5 py-0.5 type-micro text-[var(--text-secondary)]">
               MàJ dispo
             </span>
           )}
         </div>
-        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="mt-1.5 line-clamp-2 type-body-sm">
           {template.description}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -82,13 +82,13 @@ export function TemplateCard({
             <TemplateTagPill key={t} tag={t} />
           ))}
           {extra > 0 && (
-            <span className="text-[11px] font-medium text-[var(--text-muted)]">+{extra}</span>
+            <span className="type-micro">+{extra}</span>
           )}
         </div>
       </button>
 
       {/* Méta */}
-      <div className="mt-4 flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
+      <div className="mt-4 flex items-center gap-1.5 type-caption text-[var(--text-muted)]">
         <span className="truncate">{template.author}</span>
         <span>·</span>
         <span className="whitespace-nowrap">{template.usageCount} utilisations</span>

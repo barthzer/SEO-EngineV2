@@ -33,7 +33,7 @@ export function ColPill({ label, active, name, items, value, onChange, children,
   const trigger = (
     <button
       type="button"
-      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium text-[var(--text-primary)] transition-colors ${
+      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 type-label text-[var(--text-primary)] transition-colors ${
         active
           ? "border-[var(--border-medium)] bg-[var(--bg-subtle)]"
           : "border-[var(--border-subtle)] hover:border-[var(--border-medium)] hover:bg-[var(--bg-subtle)]"

@@ -144,7 +144,8 @@ export function TableWide<T>({
   function headerInner(col: ColumnDef<T>) {
     const isSortable = !!col.sortable && !!col.sortValue;
     const active = sortKey === col.key;
-    const labelClass = `text-[12px] font-medium ${active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`;
+    // En-tête standard : type-caption (12px/500/secondary). Colonne triée active → primary.
+    const labelClass = `type-caption ${active ? "text-[var(--text-primary)]" : ""}`;
     if (isSortable) {
       return (
         <button type="button" onClick={() => toggleSort(col.key)}
@@ -173,14 +174,31 @@ export function TableWide<T>({
      le sticky-left au conteneur horizontal. ════════════════════════════ */
   if (stickyLeft) {
     const [firstCol, ...restCols] = columns;
+    // Largeur du contenu :
+    //  - avec une colonne `flex` : `w-full` (largeur définie = parent) pour que la
+    //    colonne flex absorbe l'espace libre sur écran large ; le scroll horizontal
+    //    en vue étroite est assuré par `min-width` (bodyStyle). `w-max` ne marcherait
+    //    pas ici (max-content ne laisse aucun espace libre pour flex-grow).
+    //  - sans colonne `flex` : `w-max` pour que le contenu atteigne toute la largeur
+    //    scrollable (lignes qui vont jusqu'au bout, pas d'arrêt prématuré).
+    const contentWidthClass = columns.some((c) => c.flex) ? "w-full" : "w-max min-w-full";
+    // Plancher de scroll horizontal : au moins la somme des largeurs de colonnes
+    // (+ marges/gaps), sinon la colonne `flex` (min-width) déborde et se superpose
+    // aux colonnes fixes en vue étroite. On prend le max avec le `minWidth` fourni.
+    const stickyMinWidth = Math.max(
+      minWidth ?? 0,
+      columns.reduce((sum, c) => sum + c.width, 0) + 12 * columns.length + 80
+    );
     const pageKeys = pageRows.map(rowKey);
     const allSelected = selectable && pageKeys.length > 0 && pageKeys.every((k) => selected?.has(k));
     const someSelected = selectable && pageKeys.some((k) => selected?.has(k));
 
     // Fond TOUJOURS opaque (le contenu défilant passe dessous) ; ombre droite au scroll.
-    const StickyGroup = ({ children, header, active }: { children: ReactNode; header?: boolean; active?: boolean }) => (
+    // `grow` : la colonne épinglée absorbe l'espace libre (colonne `flex`) au lieu
+    // d'une largeur fixe — sinon sur écran large les colonnes se tassent à gauche.
+    const StickyGroup = ({ children, header, active, grow }: { children: ReactNode; header?: boolean; active?: boolean; grow?: boolean }) => (
       <div
-        className={`sticky left-0 z-[3] relative flex flex-shrink-0 items-center gap-3 self-stretch transition-colors ${
+        className={`sticky left-0 z-[3] relative flex items-center gap-3 self-stretch transition-colors ${grow ? "flex-1 min-w-0" : "flex-shrink-0"} ${
           header ? headerBgClass
             : active ? "bg-[var(--bg-card-hover-flat)]"
               : "bg-[var(--bg-primary)] group-hover:bg-[var(--bg-card-hover-flat)]"
@@ -201,14 +219,14 @@ export function TableWide<T>({
     return (
       <div className={`flex flex-col ${bordered ? "overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]" : ""} ${className}`}>
         <div className="overflow-x-auto overflow-y-clip" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
-          <div style={bodyStyle} className="w-max min-w-full">
+          <div style={{ minWidth: stickyMinWidth }} className={contentWidthClass}>
             {/* Header */}
             <div className={`sticky top-0 z-[15] flex h-10 items-center border-b border-[var(--border-subtle)] ${headerBgClass}`}>
-              <StickyGroup header>
+              <StickyGroup header grow={firstCol.flex}>
                 {selectable && <Checkbox checked={!!allSelected} indeterminate={!!someSelected && !allSelected} onChange={() => onToggleAll?.(pageKeys, !!allSelected)} />}
-                <div className="min-w-0" style={{ width: firstCol.width }}>{headerInner(firstCol)}</div>
+                <div className={`min-w-0 ${firstCol.flex ? "flex-1" : ""}`} style={firstCol.flex ? { minWidth: firstCol.width, maxWidth: firstCol.maxWidth } : { width: firstCol.width }}>{headerInner(firstCol)}</div>
               </StickyGroup>
-              <div className="flex items-center gap-3 pr-4" style={{ paddingLeft: 12 }}>
+              <div className="flex flex-shrink-0 items-center gap-3 pr-4" style={{ paddingLeft: 12 }}>
                 {restCols.map((col) => (
                   <div key={col.key} className="flex-shrink-0 min-w-0" style={{ width: col.width }}>{headerInner(col)}</div>
                 ))}
@@ -234,11 +252,11 @@ export function TableWide<T>({
                     onKeyDown={onRowClick ? (e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onRowClick(row, idx); } } : undefined}
                     className={`group flex w-full items-stretch text-left transition-colors ${onRowClick ? "cursor-pointer" : ""} ${i < pageRows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""} ${rowBg}`}
                   >
-                    <StickyGroup active={active}>
+                    <StickyGroup active={active} grow={firstCol.flex}>
                       {selectable && <Checkbox checked={isSel} onChange={() => onToggleRow?.(k)} />}
-                      <div className="min-w-0 self-center py-3 font-normal text-[var(--text-secondary)]" style={{ width: firstCol.width }}>{firstCol.render(row, idx)}</div>
+                      <div className={`min-w-0 self-center py-3 font-normal text-[var(--text-secondary)] ${firstCol.flex ? "flex-1" : ""}`} style={firstCol.flex ? { minWidth: firstCol.width, maxWidth: firstCol.maxWidth } : { width: firstCol.width }}>{firstCol.render(row, idx)}</div>
                     </StickyGroup>
-                    <div className="flex items-center gap-3 py-3 pr-4" style={{ paddingLeft: 12 }}>
+                    <div className="flex flex-shrink-0 items-center gap-3 py-3 pr-4" style={{ paddingLeft: 12 }}>
                       {restCols.map((col) => (
                         <div key={col.key} className={`flex-shrink-0 min-w-0 font-normal text-[var(--text-secondary)] ${col.align === "right" ? "text-right" : ""}`} style={{ width: col.width }}>
                           {col.render(row, idx)}

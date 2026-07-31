@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { PlusIcon, XMarkIcon, ChevronDownIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, ChevronDownIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon, ArrowPathIcon, ArrowDownTrayIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { useToast } from "@/context/ToastContext";
 import { VariationPill } from "@/components/VariationPill";
 import { Upload, FileSpreadsheet, Plus, Trophy, Medal, Target, Activity } from "lucide-react";
 import { Button } from "@/components/Button";
@@ -10,6 +11,7 @@ import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 import { SearchInput } from "@/components/SearchInput";
 import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
+import { SourcePill } from "@/components/SourcePill";
 import { Sparkline } from "@/components/Sparkline";
 import { AreaChart } from "@/components/AreaChart";
 import { KpiCard } from "@/components/KpiCard";
@@ -191,15 +193,15 @@ function PosCell({ pos }: { pos: number | null }) {
     pos <= 10    ? "var(--color-warning)" :
     pos <= 30    ? "#6B7280" : "var(--text-muted)";
   return (
-    <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>
+    <span className="type-label tabular-nums" style={{ color }}>
       {pos === null ? "N/R" : `#${pos}`}
     </span>
   );
 }
 
 function DeltaCell({ delta }: { delta: number | null }) {
-  if (delta === null) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
-  if (delta === 0)    return <span className="text-[13px] text-[var(--text-muted)]">=</span>;
+  if (delta === null) return <span className="type-label text-[var(--text-muted)]">—</span>;
+  if (delta === 0)    return <span className="type-label text-[var(--text-muted)]">=</span>;
   // delta < 0 = gain de position (meilleur) → up/vert.
   const gain = delta < 0;
   return (
@@ -235,8 +237,8 @@ function PositionChart({ history }: { history: HistoryPoint[] }) {
       gradientId="pos-history-grad"
       formatTooltip={(p) => (
         <div className="flex flex-col gap-0.5">
-          <span className="text-[11px] text-white/60">{p.label}</span>
-          <span className="text-[13px] font-semibold text-white">#{p.value}</span>
+          <span className="type-micro text-white/60">{p.label}</span>
+          <span className="type-label text-white">#{p.value}</span>
         </div>
       )}
     />
@@ -286,31 +288,31 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
         {/* Header — sticky */}
         <div className="flex flex-shrink-0 items-start justify-between gap-4 px-6 py-5">
           <div className="min-w-0">
-            <h2 className="truncate font-semibold tracking-heading text-[var(--text-primary)]">
+            <h2 className="truncate type-h2">
               {kw.keyword}
             </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <PosCell pos={kw.pos} />
               <DeltaCell delta={kw.delta} />
               {kw.tag && (
-                <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">
+                <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 type-micro text-[var(--text-secondary)]">
                   {kw.tag}
                 </span>
               )}
               {kw.volume !== null && (
-                <span className="text-[12px] text-[var(--text-muted)]">
+                <span className="type-caption text-[var(--text-muted)]">
                   {kw.volume.toLocaleString("fr-FR")} rech./mois
                 </span>
               )}
               {kw.url && (
-                <span className="truncate font-mono text-[11px] text-[var(--text-muted)]">{kw.url}</span>
+                <span className="truncate type-caption font-mono">{kw.url}</span>
               )}
             </div>
           </div>
 
           {/* Counter + close */}
           <div className="flex flex-shrink-0 items-center gap-2">
-            <span className="text-[12px] text-[var(--text-muted)]">{index + 1}/{kws.length}</span>
+            <span className="type-caption text-[var(--text-muted)]">{index + 1}/{kws.length}</span>
             <button
               onClick={onClose}
               className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-secondary)]"
@@ -323,7 +325,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
         {/* Chart section — sticky, not scrollable */}
         <div className="flex-shrink-0 px-6 pb-5">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Historique de position</p>
+            <p className="type-h3">Historique de position</p>
             <FilterTabs tabs={TIME_RANGE_TABS} value={timeRange} onChange={setTimeRange} />
           </div>
           <PositionChart history={visibleHistory} />
@@ -334,7 +336,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
           {kw.serp.length > 0 ? (
             <>
               <div className="px-6 pb-3 pt-2">
-                <p className="text-[13px] font-semibold text-[var(--text-secondary)]">Résultats SERP actuels</p>
+                <p className="type-label">Résultats SERP actuels</p>
               </div>
               <table className="w-full table-fixed border-collapse">
                 <colgroup>
@@ -344,11 +346,11 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
                   <col style={{ width: "12%" }} />
                 </colgroup>
                 <thead>
-                  <tr className="border-y border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)]">
-                    <th className="pl-6 pr-4 py-2 text-left font-semibold">#</th>
-                    <th className="px-4 py-2 text-left font-semibold">URL</th>
-                    <th className="px-4 py-2 text-center font-semibold">Pos. desktop</th>
-                    <th className="pl-4 pr-6 py-2 text-center font-semibold">Delta</th>
+                  <tr className="border-y border-[var(--border-subtle)] type-caption">
+                    <th className="pl-6 pr-4 py-2 text-left">#</th>
+                    <th className="px-4 py-2 text-left">URL</th>
+                    <th className="px-4 py-2 text-center">Pos. desktop</th>
+                    <th className="pl-4 pr-6 py-2 text-center">Delta</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -361,7 +363,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
                         key={s.rank}
                         className={`transition-colors hover:bg-[var(--bg-secondary)] ${isOurs ? "bg-[var(--accent-primary-soft)]" : ""}`}
                       >
-                        <td className="pl-6 pr-4 py-2.5 text-[13px] font-semibold text-[var(--text-muted)]">{s.rank}</td>
+                        <td className="pl-6 pr-4 py-2.5 type-label font-semibold text-[var(--text-primary)]">{s.rank}</td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <img
@@ -373,7 +375,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
                             <a
                               href={s.url} target="_blank" rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
-                              className={`block truncate font-mono text-[12px] transition-colors hover:underline ${isOurs ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}
+                              className={`block truncate font-mono type-caption transition-colors hover:underline ${isOurs ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}
                             >
                               {s.url}
                             </a>
@@ -390,7 +392,7 @@ function KwDetailModal({ kws, index, onClose, onNavigate }: {
             </>
           ) : (
             <div className="px-6 py-8 text-center">
-              <p className="text-[13px] text-[var(--text-muted)]">Aucune donnée SERP disponible pour ce mot-clé.</p>
+              <p className="type-body-sm text-[var(--text-muted)]">Aucune donnée SERP disponible pour ce mot-clé.</p>
             </div>
           )}
         </div>
@@ -436,10 +438,10 @@ function AddKwModal({ onClose, onAdd }: {
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]">
 
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
-          <h2 className="font-semibold text-[var(--text-primary)]">Ajouter des mots-clés</h2>
+          <h2 className="type-h2">Ajouter des mots-clés</h2>
           <button onClick={onClose}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-secondary)]">
             <XMarkIcon className="h-4 w-4 text-[var(--text-muted)]" />
@@ -448,7 +450,7 @@ function AddKwModal({ onClose, onAdd }: {
 
         <div className="flex flex-col gap-4 px-6 py-5">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-[var(--text-secondary)]">Mot-clé</label>
+            <label className="type-label">Mot-clé</label>
             <input
               autoFocus
               value={keyword}
@@ -460,7 +462,7 @@ function AddKwModal({ onClose, onAdd }: {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-[var(--text-secondary)]">
+            <label className="type-label">
               Tag <span className="text-[var(--text-muted)]">(optionnel)</span>
             </label>
             <div className="relative">
@@ -475,7 +477,7 @@ function AddKwModal({ onClose, onAdd }: {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-[var(--text-secondary)]">Fréquence de vérification</label>
+            <label className="type-label">Fréquence de vérification</label>
             <DropdownMenu
               matchTrigger
               trigger={
@@ -563,10 +565,10 @@ function ImportCsvModal({ onClose, onImport }: {
   return createPortal(
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-floating)]">
+      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--modal-bg)] shadow-[var(--shadow-floating)]">
 
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
-          <h2 className="font-semibold tracking-subheading text-[var(--text-primary)]">Importer des mots-clés depuis un CSV</h2>
+          <h2 className="type-h2">Importer des mots-clés depuis un CSV</h2>
           <button onClick={onClose}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--bg-secondary)]">
             <XMarkIcon className="h-4 w-4 text-[var(--text-muted)]" />
@@ -590,16 +592,16 @@ function ImportCsvModal({ onClose, onImport }: {
             {file ? (
               <>
                 <FileSpreadsheet className="h-8 w-8 text-[var(--color-success)]" />
-                <p className="text-[14px] font-medium text-[var(--text-primary)]">{file.name}</p>
-                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">
+                <p className="type-body-strong">{file.name}</p>
+                <p className="type-caption text-[var(--text-muted)]">
                   {parsed.length} mot{parsed.length > 1 ? "s" : ""}-clé{parsed.length > 1 ? "s" : ""} détecté{parsed.length > 1 ? "s" : ""} · cliquez pour changer
                 </p>
               </>
             ) : (
               <>
                 <Upload className="h-8 w-8 text-[var(--text-muted)]" />
-                <p className="text-[14px] font-medium text-[var(--text-primary)]">Glissez un fichier CSV ou cliquez pour parcourir</p>
-                <p className="text-[12px] tracking-caption text-[var(--text-muted)]">Format attendu : une colonne <code className="font-mono text-[11px]">keyword</code>, optionnellement une colonne <code className="font-mono text-[11px]">tag</code></p>
+                <p className="type-body-strong">Glissez un fichier CSV ou cliquez pour parcourir</p>
+                <p className="type-caption text-[var(--text-muted)]">Format attendu : une colonne <code className="type-micro font-mono">keyword</code>, optionnellement une colonne <code className="type-micro font-mono">tag</code></p>
               </>
             )}
             <input
@@ -612,13 +614,13 @@ function ImportCsvModal({ onClose, onImport }: {
           </div>
 
           {error && (
-            <p className="text-[12px] tracking-caption text-[var(--color-danger)]">{error}</p>
+            <p className="type-caption text-[var(--color-danger)]">{error}</p>
           )}
 
           {/* Defaults — applied to rows without explicit tag */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-[var(--text-secondary)]">
+              <label className="type-label">
                 Tag par défaut <span className="text-[var(--text-muted)]">(optionnel)</span>
               </label>
               <input
@@ -629,7 +631,7 @@ function ImportCsvModal({ onClose, onImport }: {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-[var(--text-secondary)]">Fréquence</label>
+              <label className="type-label">Fréquence</label>
               <DropdownMenu
                 matchTrigger
                 trigger={
@@ -651,13 +653,13 @@ function ImportCsvModal({ onClose, onImport }: {
           {/* Preview */}
           {parsed.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <p className="text-[13px] font-medium text-[var(--text-secondary)]">Aperçu ({Math.min(5, parsed.length)} premier{parsed.length > 1 ? "s" : ""} sur {parsed.length})</p>
+              <p className="type-label">Aperçu ({Math.min(5, parsed.length)} premier{parsed.length > 1 ? "s" : ""} sur {parsed.length})</p>
               <div className="rounded-xl border border-[var(--border-subtle)] divide-y divide-[var(--border-subtle)]">
                 {parsed.slice(0, 5).map((p, i) => (
-                  <div key={i} className="flex items-center justify-between px-3 py-2 text-[13px]">
-                    <span className="truncate text-[var(--text-primary)]">{p.keyword}</span>
+                  <div key={i} className="flex items-center justify-between px-3 py-2">
+                    <span className="truncate type-label text-[var(--text-primary)]">{p.keyword}</span>
                     {p.tag && (
-                      <span className="ml-3 flex-shrink-0 rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] tracking-caption text-[var(--text-muted)]">{p.tag}</span>
+                      <span className="ml-3 flex-shrink-0 rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-micro">{p.tag}</span>
                     )}
                   </div>
                 ))}
@@ -705,15 +707,18 @@ function VisibilityChart() {
     <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6">
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Visibilité organique</p>
-          <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">90 derniers jours</p>
+          <div className="flex items-center gap-2">
+            <p className="type-h3">Visibilité organique</p>
+            <SourcePill source="Haloscan" href="https://haloscan.com" />
+          </div>
+          <p className="mt-0.5 type-caption">90 derniers jours</p>
         </div>
         <div className="text-right">
-          <p className="text-[24px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
+          <p className="type-h1 leading-none">
             {vals[vals.length - 1]}
-            <span className="ml-1 text-[13px] font-medium text-[var(--color-success)]">{deltaLabel}</span>
+            <span className="ml-1 type-label text-[var(--color-success)]">{deltaLabel}</span>
           </p>
-          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">score de visibilité</p>
+          <p className="mt-0.5 type-micro">score de visibilité</p>
         </div>
       </div>
       <AreaChart
@@ -722,8 +727,8 @@ function VisibilityChart() {
         gradientId="vis-tracker-grad"
         formatTooltip={(p) => (
           <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-semibold text-white">{p.value}</span>
-            <span className="text-[11px] text-white/60">{p.label}</span>
+            <span className="type-label text-white">{p.value}</span>
+            <span className="type-micro text-white/60">{p.label}</span>
           </div>
         )}
       />
@@ -740,7 +745,7 @@ const TRACKED_COLUMNS: ColumnDef<TrackedKw>[] = [
     width: 240,
     flex: true,
     render: (kw) => (
-      <span className="block truncate text-[13px] font-medium text-[var(--text-primary)]">{kw.keyword}</span>
+      <span className="block truncate type-label text-[var(--text-primary)]">{kw.keyword}</span>
     ),
   },
   {
@@ -759,15 +764,15 @@ const TRACKED_COLUMNS: ColumnDef<TrackedKw>[] = [
     width: 260,
     render: (kw) => (
       kw.url
-        ? <span className="block truncate font-mono text-[12px] text-[var(--text-muted)]">{kw.url}</span>
-        : <span className="text-[13px] text-[var(--text-muted)]">—</span>
+        ? <span className="block truncate type-label font-mono text-[var(--text-primary)]">{kw.url}</span>
+        : <span className="type-label text-[var(--text-muted)]">—</span>
     ),
   },
   {
     key: "volume", header: "Volume", width: 90, align: "right",
     sortable: true, sortValue: (kw) => kw.volume ?? -1,
     render: (kw) => (
-      <span className="text-[13px] tabular-nums text-[var(--text-muted)]">
+      <span className="type-label tabular-nums text-[var(--text-primary)]">
         {kw.volume !== null ? kw.volume.toLocaleString("fr-FR") : "—"}
       </span>
     ),
@@ -776,7 +781,7 @@ const TRACKED_COLUMNS: ColumnDef<TrackedKw>[] = [
     key: "freq",
     header: "Fréq.",
     width: 70,
-    render: (kw) => <span className="text-[13px] text-[var(--text-muted)]">{kw.freq}</span>,
+    render: (kw) => <span className="type-label text-[var(--text-primary)]">{kw.freq}</span>,
   },
   {
     key: "tag",
@@ -784,8 +789,8 @@ const TRACKED_COLUMNS: ColumnDef<TrackedKw>[] = [
     width: 100,
     render: (kw) => (
       kw.tag
-        ? <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">{kw.tag}</span>
-        : <span className="text-[13px] text-[var(--text-muted)]">—</span>
+        ? <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 type-micro text-[var(--text-secondary)]">{kw.tag}</span>
+        : <span className="type-label text-[var(--text-muted)]">—</span>
     ),
   },
   {
@@ -804,6 +809,7 @@ const TRACKED_COLUMNS: ColumnDef<TrackedKw>[] = [
 /* ── Main component ── */
 
 export function RankTracker({ title, subtitle }: { title?: string; subtitle?: string } = {}) {
+  const { show: showToast } = useToast();
   const [kws,      setKws]      = useState<TrackedKw[]>(INITIAL_KWS);
   const [filter,   setFilter]   = useState<RankFilter>("all");
   const [search,   setSearch]   = useState("");
@@ -837,6 +843,40 @@ export function RankTracker({ title, subtitle }: { title?: string; subtitle?: st
     return true;
   });
 
+  // Export CSV des positions actuellement filtrées.
+  function exportCsv() {
+    const esc = (v: string | number | null) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["Mot-clé", "Position", "Évolution", "URL", "Volume", "Fréquence", "Lot"];
+    const rows = filtered.map((k) =>
+      [
+        k.keyword,
+        k.pos ?? "",
+        k.delta === null ? "" : k.delta > 0 ? `+${k.delta}` : k.delta,
+        k.url ?? "",
+        k.volume ?? "",
+        k.freq,
+        k.tag ?? "",
+      ].map(esc).join(";"),
+    );
+    const csv = ["﻿" + header.join(";"), ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `positions-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(
+      `${filtered.length} position${filtered.length > 1 ? "s" : ""} exportée${filtered.length > 1 ? "s" : ""}`,
+      <CheckCircleIcon className="h-5 w-5" />,
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
 
@@ -844,17 +884,24 @@ export function RankTracker({ title, subtitle }: { title?: string; subtitle?: st
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           {title && (
-            <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">{title}</h1>
+            <h1 className="type-h1 leading-none">{title}</h1>
           )}
           {subtitle && (
-            <p className="mt-1 text-[14px] tracking-body text-[var(--text-secondary)]">{subtitle}</p>
+            <p className="mt-1 type-body-sm">{subtitle}</p>
           )}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Button variant="secondary">Export</Button>
-          <Button variant="secondary">Checker</Button>
+          <Button variant="secondary" onClick={exportCsv}>
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            Export
+          </Button>
+          <Button variant="secondary">
+            <ArrowPathIcon className="h-4 w-4" />
+            Actualiser
+          </Button>
           <DropdownMenu
             width={200}
+            align="right"
             trigger={
               <Button>
                 <PlusIcon className="h-4 w-4" />

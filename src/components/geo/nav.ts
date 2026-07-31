@@ -7,11 +7,10 @@ export type GeoView =
 export const GEO_VIEWS: { key: GeoView; label: string; soon?: boolean }[] = [
   { key: "overview",      label: "Vue d'ensemble" },
   { key: "visibility",    label: "Visibilité" },
-  { key: "concurrents",   label: "Concurrents" },
   { key: "prompts",       label: "Prompts" },
-  { key: "platforms",     label: "Plateformes" },
-  { key: "sentiment",     label: "Sentiment" },
+  { key: "concurrents",   label: "Concurrents" },
   { key: "citations",     label: "Citations" },
+  { key: "sentiment",     label: "Sentiment" },
   { key: "volume",        label: "Volume",       soon: true },
   { key: "opportunities", label: "Opportunités", soon: true },
   { key: "settings",      label: "Paramètres" },

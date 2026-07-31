@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useModalTransition } from "@/hooks/useModalTransition";
 import { SuccessCheck } from "@/components/SuccessCheck";
@@ -33,6 +33,9 @@ import {
   CursorArrowRaysIcon,
   EyeIcon,
   MagnifyingGlassIcon,
+  ArrowUpTrayIcon,
+  LinkIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { SearchInput } from "@/components/SearchInput";
 import { IconBadge } from "@/components/IconBadge";
@@ -68,6 +71,7 @@ import {
   Clock,
   Monitor,
   Smartphone,
+  Search,
 } from "lucide-react";
 import { LineDotChart } from "@/components/LineDotChart";
 import { Sparkline } from "@/components/Sparkline";
@@ -76,8 +80,7 @@ import { ActionCard, type ActionPriorityLevel, type ActionRecurrence } from "@/c
 import { PriorityBadge } from "@/components/PriorityBars";
 import { ValidateSwitch } from "@/components/ValidateSwitch";
 import { DeltaIndicator } from "@/components/DeltaIndicator";
-import { useRouter } from "next/navigation";
-import { TemplateSelector } from "@/components/templates/TemplateSelector";
+import { useRouter, usePathname } from "next/navigation";
 import { Stepper } from "@/components/Stepper";
 
 /* ── Column header helpers (vue URLs) ─────────────────────────────────── */
@@ -85,7 +88,7 @@ import { Stepper } from "@/components/Stepper";
 function ColHeader({ width, children }: { width: number; children: ReactNode }) {
   return (
     <span
-      className="flex-shrink-0 min-w-0 text-[12px] font-medium text-[var(--text-muted)]"
+      className="flex-shrink-0 min-w-0 type-caption"
       style={{ width }}
     >
       {children}
@@ -114,9 +117,7 @@ function SortHeader<K extends string>({
       <button
         type="button"
         onClick={onClick}
-        className={`group/sort inline-flex items-center gap-1 rounded-md text-[12px] font-medium transition-colors ${
-          active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-        }`}
+        className={`group/sort inline-flex items-center gap-1 rounded-md type-caption transition-colors ${ active ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]" }`}
       >
         {children}
         <span className="flex flex-col leading-none">
@@ -230,10 +231,10 @@ export const BRIEFS: Brief[] = [
   { id: 37, title: "Optimisation pour ChatGPT et Perplexity",  url: "/blog/seo-chatgpt",  type: "creer", priority: "basse",   keyword: "optimiser site pour chatgpt",volume: 660,             tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 1600, h2s: ["Comment ChatGPT cite les sources", "Stratégie de citation", "Cas pratiques"], internalLinks: ["/blog/geo-seo"] },
   { id: 38, title: "Structured data pour les articles",         url: "/blog/article-schema", type: "creer", priority: "basse", keyword: "article schema structured data", volume: 540,          tag: "Lot GEO — Structured data",    semanticScore: 0,  wordCount: 900,  h2s: ["Article schema expliqué", "Implémenter NewsArticle", "Erreurs fréquentes"], internalLinks: ["/blog/schema-org"] },
 
-  // Lot Netlinking — Autorité
-  { id: 3,  title: "Création de liens (link building)", url: "/blog/link-building",  type: "optimiser", priority: "moyenne", keyword: "link building",    volume: 2900, position: 22, tag: "Lot Netlinking — Autorité", semanticScore: 55, wordCount: 2200, h2s: ["Qu'est-ce que le link building ?", "Les meilleures stratégies", "Mesurer son profil de liens"], internalLinks: ["/blog/netlinking"] },
-  { id: 6,  title: "Rédaction SEO : le guide",          url: "/blog/redaction-seo",  type: "combler",   priority: "moyenne", keyword: "rédaction seo",    volume: 1600, position: 44, tag: "Lot Netlinking — Autorité", semanticScore: 0,  wordCount: 2000, h2s: ["Les fondamentaux de la rédaction SEO", "Structure d'un article optimisé"], internalLinks: ["/blog/cocon-semantique"] },
-  { id: 9,  title: "Stratégie de contenu pilier",       url: "/blog/contenu-pilier", type: "creer",     priority: "basse",   keyword: "content hub seo",  volume: 880,              tag: "Lot Netlinking — Autorité", semanticScore: 0,  wordCount: 2600, h2s: ["La méthode Hub & Spoke", "Créer une page pilier efficace"], internalLinks: ["/blog/cocon-semantique"] },
+  // Lot Popularité — Autorité
+  { id: 3,  title: "Création de liens (link building)", url: "/blog/link-building",  type: "optimiser", priority: "moyenne", keyword: "link building",    volume: 2900, position: 22, tag: "Lot Popularité — Autorité", semanticScore: 55, wordCount: 2200, h2s: ["Qu'est-ce que le link building ?", "Les meilleures stratégies", "Mesurer son profil de liens"], internalLinks: ["/blog/netlinking"] },
+  { id: 6,  title: "Rédaction SEO : le guide",          url: "/blog/redaction-seo",  type: "combler",   priority: "moyenne", keyword: "rédaction seo",    volume: 1600, position: 44, tag: "Lot Popularité — Autorité", semanticScore: 0,  wordCount: 2000, h2s: ["Les fondamentaux de la rédaction SEO", "Structure d'un article optimisé"], internalLinks: ["/blog/cocon-semantique"] },
+  { id: 9,  title: "Stratégie de contenu pilier",       url: "/blog/contenu-pilier", type: "creer",     priority: "basse",   keyword: "content hub seo",  volume: 880,              tag: "Lot Popularité — Autorité", semanticScore: 0,  wordCount: 2600, h2s: ["La méthode Hub & Spoke", "Créer une page pilier efficace"], internalLinks: ["/blog/cocon-semantique"] },
 
   // Pages "agence" — utilisées comme cibles dans Univers sémantique (cannibalisation / couvert)
   { id: 100, title: "Accueil — Agence marketing digital",            url: "/",                                                       type: "optimiser", priority: "haute",   keyword: "agence marketing digital",     volume: 9800, position: 9,  semanticScore: 64, wordCount: 1400, h2s: ["Notre vision", "Nos expertises", "Nos secteurs"], internalLinks: ["/agence-marketing-digital-sante/", "/agence-marketing-digital-b2b/"] },
@@ -262,7 +263,7 @@ export const TAG_COLORS_DEFAULT: Record<string, string> = {
   "Lot SEO — Optimisation Q2":  "#5B72E8",
   "Lot Création — Blog expert": "#2BB3A3",
   "Lot GEO — Structured data":  "#A06AE0",
-  "Lot Netlinking — Autorité":  "#C9974E",
+  "Lot Popularité — Autorité":  "#C9974E",
   "Sans lot":                   "#8A93A6",
 };
 
@@ -271,7 +272,7 @@ const TAG_DONE: Record<string, number> = {
   "Lot SEO — Optimisation Q2":  6,
   "Lot Création — Blog expert": 4,
   "Lot GEO — Structured data":  2,
-  "Lot Netlinking — Autorité":  1,
+  "Lot Popularité — Autorité":  1,
 };
 
 export function TagRow({
@@ -294,17 +295,17 @@ export function TagRow({
     <div className={`group flex items-center justify-between gap-6 px-5 py-4 transition-colors hover:bg-[var(--bg-card-hover)] ${!isLast ? "border-b border-[var(--border-subtle)]" : ""}`}>
       <div className="flex items-center gap-3 min-w-0">
         <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
-        <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{tag}</p>
+        <p className="truncate type-label text-[var(--text-primary)]">{tag}</p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-4">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
             <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
           </div>
-          <span className="text-[11px] tabular-nums text-[var(--text-muted)]">{done}/{total}</span>
+          <span className="type-micro tabular-nums">{done}/{total}</span>
         </div>
         {onNavigate && (
-          <button onClick={() => onNavigate(tag)} className="flex items-center gap-1 text-[12px] font-medium text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--text-primary)]">
+          <button onClick={() => onNavigate(tag)} className="flex items-center gap-1 type-caption text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--text-primary)]">
             Voir <ChevronRightIcon className="h-3.5 w-3.5" />
           </button>
         )}
@@ -327,7 +328,7 @@ export function TagList({ onNavigate, columns = 4 }: { onNavigate?: (tag: string
 
   if (allTags.length === 0) {
     return (
-      <div className="rounded-2xl border border-[var(--border-subtle)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
+      <div className="rounded-2xl border border-[var(--border-subtle)] px-4 py-10 text-center type-body-sm text-[var(--text-muted)]">
         Aucun lot récent.
       </div>
     );
@@ -353,7 +354,7 @@ export function TagList({ onNavigate, columns = 4 }: { onNavigate?: (tag: string
             {/* Header — icône tag colorée */}
             <div className="flex items-start">
               <span
-                className="flex h-10 w-10 items-center justify-center rounded-full"
+                className="flex h-10 w-10 items-center justify-center rounded-xl"
                 style={{ backgroundColor: `color-mix(in oklab, ${r.color} 12%, transparent)`, color: r.color }}
               >
                 <TagIcon className="h-4 w-4" />
@@ -361,12 +362,12 @@ export function TagList({ onNavigate, columns = 4 }: { onNavigate?: (tag: string
             </div>
 
             {/* Nom du tag */}
-            <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]" title={shortName}>
+            <p className="truncate type-body-strong" title={shortName}>
               {shortName}
             </p>
 
             {/* Compteur URLs */}
-            <div className="flex items-center gap-1.5 text-[14px] text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1.5 type-body text-[var(--text-secondary)]">
               <GlobeIcon className="h-3.5 w-3.5" />
               <span className="tabular-nums">{r.total} URL{r.total > 1 ? "s" : ""}</span>
             </div>
@@ -379,7 +380,7 @@ export function TagList({ onNavigate, columns = 4 }: { onNavigate?: (tag: string
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex items-center text-[12px] text-[var(--text-muted)]">
+              <div className="flex items-center type-caption text-[var(--text-muted)]">
                 <span className="tabular-nums">{r.done} / {r.total}</span>
               </div>
             </div>
@@ -559,7 +560,9 @@ const PAGE_HISTORY: Record<number, HistoricalAnalysis[]> = {
 };
 
 function formatAnalysisDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }).replace(".", "");
+  // Garde le point d'abréviation des mois tronqués (avr., févr., déc.…) ;
+  // les mois complets (mars, mai, juin, août) n'en portent pas.
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
 /* ── PositionSparkline ───────────────────────────────────────────────── */
@@ -685,8 +688,8 @@ function ClicsSparkline({ history, color }: { history: { date: string; clics: nu
       {hov && (
         <ChartTooltip x={tipX} y={tipY - 4} portal>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] text-white/60">{fmtDate(hov.date)}</span>
-            <span className="text-[13px] font-semibold text-white">{hov.val.toLocaleString("fr-FR")} clics</span>
+            <span className="type-micro text-white/60">{fmtDate(hov.date)}</span>
+            <span className="type-label text-white">{hov.val.toLocaleString("fr-FR")} clics</span>
           </div>
         </ChartTooltip>
       )}
@@ -742,11 +745,11 @@ function formatMinutesLabel(minutes: number): string {
 }
 
 function SemanticPill({ score }: { score: number }) {
-  if (!score) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+  if (!score) return <span className="type-body-sm text-[var(--text-muted)]">—</span>;
   const color = score >= 70 ? "var(--color-success)" : score >= 40 ? "var(--color-warning)" : "var(--color-danger)";
   return (
     <span
-      className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-[12px] font-semibold tabular-nums"
+      className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 type-caption tabular-nums"
       style={{
         color,
         backgroundColor: `color-mix(in oklab, ${color} 10%, transparent)`,
@@ -767,7 +770,7 @@ function StatusBadge({ status, onChange }: { status: BriefStatus; onChange: (s: 
         width={148}
         trigger={
           <button
-            className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-70 cursor-pointer"
+            className="inline-flex items-center rounded-full px-2 py-1 type-caption transition-opacity hover:opacity-70 cursor-pointer"
             style={{ color: cfg.color, backgroundColor: cfg.bg }}
           >
             {cfg.label}
@@ -793,11 +796,11 @@ type DrawerTab = "synthese" | "contenu" | "autorite" | "technique" | "actions" |
 
 const DRAWER_TABS: { key: DrawerTab; label: string }[] = [
   { key: "synthese",  label: "Synthèse" },
-  { key: "contenu",   label: "Contenu" },
-  { key: "autorite",  label: "Autorité" },
-  { key: "technique", label: "Technique" },
   { key: "actions",   label: "Actions" },
-  { key: "comments",  label: "Commentaires" },
+  { key: "technique", label: "Technique" },
+  { key: "contenu",   label: "Contenu" },
+  { key: "autorite",  label: "Popularité" },
+  { key: "comments",  label: "Notes" },
 ];
 
 /* ── Actions partagées — source unique pour les 4 tabs + le tab Actions ── */
@@ -807,7 +810,7 @@ type ActionSource = "synthese" | "contenu" | "autorite" | "technique";
 const ACTION_SOURCE_LABEL: Record<ActionSource, string> = {
   synthese: "Synthèse",
   contenu: "Contenu",
-  autorite: "Autorité",
+  autorite: "Popularité",
   technique: "Technique",
 };
 
@@ -882,9 +885,14 @@ type TabProps = {
   setRecurrence: (id: string, rec: ActionRecurrence) => void;
 };
 
-function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline, setRecurrence }: TabProps) {
+function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadline, setRecurrence, onSeeAllActions }: TabProps & { onSeeAllActions?: () => void }) {
   const pos = brief.position;
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
+
+  /* ── Actions prioritaires (High) + filtre statut ── */
+  const highActions = actions.filter((a) => a.priority === "high");
+  const [actionStatusFilter, setActionStatusFilter] = useState<BriefStatus | "all">("all");
+  const visibleHighActions = highActions.filter((a) => actionStatusFilter === "all" || getStatus(a.id) === actionStatusFilter);
 
   /* ── Position evolution data ── */
   const [chartRange, setChartRange] = useState<"3m" | "6m" | "1an">("6m");
@@ -926,9 +934,9 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
         <div className="flex items-center gap-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-8">
           <ScoreRing score={progressPct} size={120} strokeWidth={8} color="var(--accent-primary)" hideTotal />
           <div>
-            <p className="text-[13px] font-semibold tracking-caption text-[var(--text-secondary)]">Progression</p>
-            <p className="mt-1 text-[24px] font-semibold leading-none tabular-nums tracking-heading text-[var(--text-primary)]">{doneCount}/{actions.length}</p>
-            <p className="mt-1.5 text-[12px] tracking-caption text-[var(--text-muted)]">actions complétées</p>
+            <p className="type-label">Progression</p>
+            <p className="mt-1 type-h1 leading-none tabular-nums">{doneCount}/{actions.length}</p>
+            <p className="mt-1.5 type-caption text-[var(--text-muted)]">actions complétées</p>
           </div>
         </div>
 
@@ -936,10 +944,10 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
         <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-8">
           <div className="flex items-center gap-2">
             <SparklesIcon className="h-4 w-4 text-[var(--text-primary)]" />
-            <span className="text-[13px] font-semibold tracking-caption text-[var(--text-secondary)]">Synthèse IA</span>
-            <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">GPT-4</span>
+            <span className="type-label">Synthèse IA</span>
+            <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-micro">GPT-4</span>
           </div>
-          <p className="text-[15px] leading-relaxed text-[var(--text-secondary)]">
+          <p className="type-body leading-relaxed text-[var(--text-secondary)]">
             {pos
               ? `Page en position #${pos} sur "${brief.keyword}" — l'intention informationnelle est bien alignée avec la SERP dominante, mais la profondeur H3 reste limitée face aux concurrents qui détaillent davantage formateurs, certifications et méthodes pédagogiques. ${brief.semanticScore > 30 ? "Couverture sémantique solide ; le levier principal reste l'autorité (backlinks)." : "Contenu à enrichir en priorité — ajouter des sous-sections H3 ciblées améliorera la lisibilité et la couverture."}`
               : `Page non positionnée sur "${brief.keyword}" — la page n'est probablement pas encore indexée ou n'a pas de signal suffisant sur ce terme. Priorité : vérifier l'indexation GSC, enrichir le contenu sémantiquement et construire le maillage interne depuis les pages piliers.`}
@@ -957,7 +965,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       {/* Évolution position — pleine largeur sous le hero */}
       <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Évolution position</p>
+          <p className="type-h3">Évolution position</p>
           <FilterTabs
             tabs={[{ key: "3m", label: "3m" }, { key: "6m", label: "6m" }, { key: "1an", label: "1 an" }]}
             value={chartRange}
@@ -972,12 +980,12 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
           actionDots={actionDots}
           formatTooltip={(p) => (
             <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] text-white/60">{p.label}</span>
-              <span className="text-[13px] font-semibold text-white">#{p.value}</span>
+              <span className="type-micro text-white/60">{p.label}</span>
+              <span className="type-label text-white">#{p.value}</span>
             </div>
           )}
         />
-        <div className="mt-3 flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
+        <div className="mt-3 flex items-center gap-4 type-micro">
           <span className="flex items-center gap-1.5"><span className="inline-block h-1.5 w-4 rounded-full bg-[var(--accent-primary)]" />Position</span>
           <span className="flex items-center gap-1.5">
             <svg width="10" height="10" viewBox="0 0 10 10" className="flex-shrink-0">
@@ -993,25 +1001,25 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       <div className="grid grid-cols-2 gap-4">
         {/* Aperçu SERP */}
         <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-6">
-          <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Aperçu SERP</p>
+          <p className="mb-4 type-h3">Aperçu SERP</p>
           <div className="flex-1 space-y-1.5">
-            <p className="font-mono text-[12px] text-[var(--text-muted)]">votre-site.fr › {brief.url.replace(/^\//, "")}</p>
-            <p className="text-[18px] font-medium leading-snug" style={{ color: "#1a0dab" }}>
+            <p className="font-mono type-caption text-[var(--text-muted)]">votre-site.fr › {brief.url.replace(/^\//, "")}</p>
+            <p className="type-h3 leading-snug" style={{ color: "#1a0dab" }}>
               {serpTitleLen > 60 ? serpTitle.slice(0, 60) + "…" : serpTitle}
             </p>
-            <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
+            <p className="type-body leading-relaxed text-[var(--text-secondary)]">
               {serpDescLen > 155 ? serpDesc.slice(0, 155) + "…" : serpDesc}
             </p>
           </div>
           <div className="mt-4 flex gap-3 border-t border-[var(--border-subtle)] pt-3">
-            <span className={`text-[11px] font-medium ${serpTitleLen > 60 ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"}`}>Title {serpTitleLen}/60</span>
-            <span className={`text-[11px] font-medium ${serpDescLen > 155 ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"}`}>Desc {serpDescLen}/155</span>
+            <span className={`type-micro ${serpTitleLen > 60 ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"}`}>Title {serpTitleLen}/60</span>
+            <span className={`type-micro ${serpDescLen > 155 ? "text-[var(--color-danger)]" : "text-[var(--color-success)]"}`}>Desc {serpDescLen}/155</span>
           </div>
         </div>
 
         {/* Analyse CTR */}
         <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] p-6">
-          <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Analyse CTR</p>
+          <p className="mb-4 type-h3">Analyse CTR</p>
           <KpiGroup columns={3}>
             <KpiCard bare icon={MousePointerClick} label="CTR réel" value={`${ctrReel}%`} sub={pos ? `position #${pos}` : "actuel"} />
             <KpiCard bare icon={Target} label="CTR attendu" value={`${ctrAttendu}%`} valueColor="var(--color-success)" sub="médiane SERP" />
@@ -1025,7 +1033,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
           {/* Gradient slider — position du CTR vs médiane */}
           <div className="mt-auto pt-4">
             <div className="rounded-xl border border-[var(--border-subtle)] px-4 py-3">
-              <div className="mb-1.5 flex justify-between text-[11px] text-[var(--text-muted)]">
+              <div className="mb-1.5 flex justify-between type-micro">
                 <span>−50%</span><span>0%</span><span>+50%</span>
               </div>
               <div className="relative h-2 w-full overflow-hidden rounded-full" style={{ background: "linear-gradient(to right, var(--color-danger), var(--color-warning) 50%, var(--color-success))" }}>
@@ -1034,22 +1042,46 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
                   style={{ left: `${Math.min(100, Math.max(0, 50 - parseFloat(ctrGap)))}%`, backgroundColor: ctrGapNeg ? "var(--color-danger)" : "var(--color-success)" }}
                 />
               </div>
-              <p className="mt-1.5 text-center text-[11px] text-[var(--text-muted)]">CTR vs médiane SERP</p>
+              <p className="mt-1.5 text-center type-micro">CTR vs médiane SERP</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Roadmap — grille de cards d'action */}
+      {/* Actions prioritaires — priorités hautes ; bloc mis en avant (bg accent soft) */}
       <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
-        <div className="mb-4 flex items-baseline justify-between">
-          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Roadmap</p>
-          <p className="text-[12px] tabular-nums text-[var(--text-muted)]">
-            {doneCount}/{actions.length} faites
-          </p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-baseline gap-2">
+              <p className="type-h3">Actions prioritaires</p>
+              <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-caption tabular-nums">{highActions.length}</span>
+            </div>
+            {/* Filtre par statut — dropdown, ferré à gauche */}
+            <ColPill
+              name="Statut"
+              label={actionStatusFilter === "all" ? "Statut" : STATUS_CONFIG[actionStatusFilter].label}
+              active={actionStatusFilter !== "all"}
+              value={actionStatusFilter}
+              onChange={(v) => setActionStatusFilter(v as BriefStatus | "all")}
+              items={[
+                { value: "all",         label: "Tous" },
+                { value: "todo",        label: "À faire" },
+                { value: "in_progress", label: "En cours" },
+                { value: "done",        label: "Terminé" },
+              ]}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onSeeAllActions}
+            className="inline-flex items-center gap-1 type-label transition-colors hover:text-[var(--text-primary)]"
+          >
+            Toutes les actions
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
         </div>
         <div className="flex flex-col gap-2">
-          {actions.map((a) => (
+          {visibleHighActions.map((a) => (
             <ActionCard
               key={a.id}
               priority={a.priority}
@@ -1068,6 +1100,9 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               onRecurrenceChange={(r) => setRecurrence(a.id, r)}
             />
           ))}
+          {visibleHighActions.length === 0 && (
+            <p className="py-6 text-center type-body-sm text-[var(--text-muted)]">Aucune action prioritaire pour ce filtre.</p>
+          )}
         </div>
       </section>
     </div>
@@ -1079,11 +1114,11 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
   const doneCount = actions.filter((a) => getStatus(a.id) === "done").length;
 
   const missingTopics = [
-    { word: "ROI contenu B2B",         desc: "Méthodes de calcul et benchmarks sectoriels",     ecartPts: 18 },
-    { word: "Content scoring",          desc: "Grilles d'évaluation et outils automatisés",       ecartPts: 14 },
-    { word: "Distribution multicanal",  desc: "LinkedIn, newsletter, syndicats de contenu",       ecartPts: 12 },
-    { word: "Personas décideurs",       desc: "Cartographie des comités d'achat B2B",             ecartPts: 11 },
-    { word: "Case studies format",      desc: "Structures narratives qui convertissent en B2B",   ecartPts: 9 },
+    { word: "ROI contenu B2B",         desc: "Détailler les méthodes de calcul du ROI (coût par lead, attribution multi-touch) avec des benchmarks sectoriels chiffrés. C'est la question n°1 des décideurs et l'angle le plus couvert par les 3 pages en top 3.", ecartPts: 18 },
+    { word: "Content scoring",          desc: "Présenter les grilles d'évaluation de la qualité de contenu et les outils de scoring automatisés (Surfer, Clearscope), avec un exemple de grille appliquée à un article type.", ecartPts: 14 },
+    { word: "Distribution multicanal",  desc: "Couvrir la diffusion au-delà du blog : LinkedIn organique et Ads, newsletter, syndication et repurposing. Les concurrents consacrent une section entière à l'amplification.", ecartPts: 12 },
+    { word: "Personas décideurs",       desc: "Cartographier le comité d'achat B2B (décideur, prescripteur, utilisateur) et adapter le message à chaque rôle, avec un exemple d'accroche par persona.", ecartPts: 11 },
+    { word: "Case studies format",      desc: "Expliquer les structures narratives qui convertissent en B2B (problème → solution → résultats chiffrés) et fournir un template de case study réutilisable.", ecartPts: 9 },
   ];
 
   const h2ToAdd = [
@@ -1103,30 +1138,30 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
 
       {/* Brief éditorial — pills + checklist (structuré, conservé) */}
       <div>
-        <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Analyse éditoriale</p>
+        <p className="mb-4 type-h3">Analyse éditoriale</p>
         <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">B2B / Services</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">Informationnelle</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--bg-subtle)] text-[var(--text-primary)]">Funnel TOFU</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-caption bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">B2B / Services</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-caption bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]">Informationnelle</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 type-caption bg-[var(--bg-subtle)] text-[var(--text-primary)]">Funnel TOFU</span>
           </div>
 
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Topiques clés à couvrir</p>
+            <p className="mb-2 type-label">Topiques clés à couvrir</p>
             <div className="flex flex-wrap gap-2">
               {["Stratégie éditoriale", "Lead nurturing", "Content marketing", "KPIs contenu", "Personas B2B"].map((t) => (
-                <span key={t} className="inline-flex items-center rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">{t}</span>
+                <span key={t} className="inline-flex items-center rounded-full border border-[var(--border-subtle)] px-3 py-1.5 type-caption">{t}</span>
               ))}
             </div>
           </div>
 
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Sections H2 à ajouter</p>
+            <p className="mb-2 type-label">Sections H2 à ajouter</p>
             <div className="space-y-2">
               {h2ToAdd.map((h, i) => (
                 <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] px-4 py-3">
-                  <span className="text-[13px] text-[var(--text-primary)]">{h.text}</span>
-                  <span className={`flex-shrink-0 inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${h.priority === "Critical" ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"}`}>
+                  <span className="type-body-sm text-[var(--text-primary)]">{h.text}</span>
+                  <span className={`flex-shrink-0 inline-flex items-center rounded-full px-2 py-1 type-caption ${h.priority === "Critical" ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"}`}>
                     {h.priority}
                   </span>
                 </div>
@@ -1135,7 +1170,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
           </div>
 
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Checklist qualité</p>
+            <p className="mb-2 type-label">Checklist qualité</p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
               {[
                 { label: "Mot-clé dans H1",                ok: true  },
@@ -1146,10 +1181,10 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
                 { label: "Structure Hn cohérente",         ok: false },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-[10px] ${item.ok ? "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]" : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"}`}>
+                  <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full type-micro ${item.ok ? "bg-[rgba(16,185,129,0.1)] text-[var(--color-success)]" : "bg-[var(--bg-subtle)] text-[var(--text-muted)]"}`}>
                     {item.ok ? "✓" : "○"}
                   </span>
-                  <span className={`text-[12px] ${item.ok ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}>{item.label}</span>
+                  <span className={`type-caption ${item.ok ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}>{item.label}</span>
                 </div>
               ))}
             </div>
@@ -1157,38 +1192,27 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
         </div>
       </div>
 
-      {/* Top 5 sujets manquants — table triée par impact */}
+      {/* Top 5 sujets manquants — liste lisible (titre + description détaillée + écart) */}
       <div>
-        <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Sujets manquants</p>
+        <p className="mb-4 type-h3">Sujets manquants</p>
         <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
-                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Sujet</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Description</th>
-                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">Écart</th>
-              </tr>
-            </thead>
-            <tbody>
-              {missingTopics.map((t, i) => (
-                <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
-                  <td className="px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] whitespace-nowrap">{t.word}</td>
-                  <td className="px-4 py-3 text-[12px] text-[var(--text-muted)]">{t.desc}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium bg-[var(--color-danger-bg)] text-[var(--color-danger)]">+{t.ecartPts} pts</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {missingTopics.map((t, i) => (
+            <div key={i} className="flex items-start justify-between gap-5 border-b border-[var(--border-subtle)] px-5 py-4 last:border-0">
+              <div className="min-w-0">
+                <p className="type-body-strong">{t.word}</p>
+                <p className="mt-1 type-body-sm leading-relaxed">{t.desc}</p>
+              </div>
+              <span className="mt-0.5 inline-flex flex-shrink-0 items-center rounded-full px-2.5 py-1 type-caption bg-[var(--color-danger-bg)] text-[var(--color-danger)]">+{t.ecartPts} pts</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Actions d'amélioration — grille de cards */}
+      {/* Actions à mener — grille de cards (bloc mis en avant) */}
       <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions d'amélioration</p>
-          <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
+          <p className="type-h3">Actions à mener</p>
+          <p className="type-caption tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
         </div>
         <div className="flex flex-col gap-2">
           {actions.map((a) => (
@@ -1233,7 +1257,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
     {
       key: "pos", header: "Pos.", width: 60, align: "right",
       sortable: true, sortValue: (r) => r.pos,
-      render: (r) => <span className="text-[13px] font-semibold tabular-nums text-[var(--text-muted)]">#{r.pos}</span>,
+      render: (r) => <span className="type-label tabular-nums text-[var(--text-primary)]">#{r.pos}</span>,
     },
     {
       key: "domain", header: "Domaine", width: 220, flex: true,
@@ -1245,11 +1269,11 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
             className="h-4 w-4 flex-shrink-0 rounded-sm"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
           />
-          <span className={`block truncate text-[13px] ${r.isYou ? "font-semibold text-[var(--accent-primary)]" : "font-medium text-[var(--text-primary)]"}`}>
+          <span className={`block truncate type-body-sm ${r.isYou ? "font-semibold text-[var(--accent-primary)]" : "font-medium text-[var(--text-primary)]"}`}>
             {r.domain}
           </span>
           {r.isYou && (
-            <span className="flex-shrink-0 rounded-full bg-[var(--accent-primary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-micro text-white">
+            <span className="flex-shrink-0 rounded-full bg-[var(--accent-primary)] px-2 py-0.5 type-micro uppercase text-white">
               Vous
             </span>
           )}
@@ -1260,7 +1284,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       key: "mots", header: "Mots", width: 90, align: "right",
       sortable: true, sortValue: (r) => r.mots,
       render: (r) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label tabular-nums text-[var(--text-primary)]">
           {r.mots.toLocaleString("fr-FR")}
           {!r.isYou && <DeltaIndicator value={r.mots} ref={serpYou.mots} />}
         </span>
@@ -1270,7 +1294,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       key: "dr", header: "DR", width: 70, align: "right",
       sortable: true, sortValue: (r) => r.dr,
       render: (r) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label tabular-nums text-[var(--text-primary)]">
           {r.dr}
           {!r.isYou && <DeltaIndicator value={r.dr} ref={serpYou.dr} />}
         </span>
@@ -1280,7 +1304,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       key: "bl", header: "Backlinks", width: 100, align: "right",
       sortable: true, sortValue: (r) => r.bl,
       render: (r) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label tabular-nums text-[var(--text-primary)]">
           {r.bl.toLocaleString("fr-FR")}
           {!r.isYou && <DeltaIndicator value={r.bl} ref={serpYou.bl} />}
         </span>
@@ -1290,7 +1314,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       key: "soseo", header: "SOSEO", width: 80, align: "right",
       sortable: true, sortValue: (r) => r.soseo,
       render: (r) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label tabular-nums text-[var(--text-primary)]">
           {r.soseo > 0 ? `${r.soseo}%` : "—"}
           {!r.isYou && <DeltaIndicator value={r.soseo} ref={serpYou.soseo} />}
         </span>
@@ -1300,7 +1324,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
       key: "dseo", header: "DSEO", width: 80, align: "right",
       sortable: true, sortValue: (r) => r.dseo,
       render: (r) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label tabular-nums text-[var(--text-primary)]">
           {r.dseo > 0 ? `${r.dseo}%` : "—"}
           {!r.isYou && <DeltaIndicator value={r.dseo} ref={serpYou.dseo} />}
         </span>
@@ -1335,7 +1359,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
 
       {/* Benchmark SERP — même pattern que les autres tableaux concurrents */}
       <div className="flex flex-col gap-3">
-        <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Benchmark SERP</p>
+        <p className="type-h3">Benchmark SERP</p>
         <TableWide<SerpRow>
           columns={serpColumns}
           data={serpBenchmark}
@@ -1350,7 +1374,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
 
       {/* Backlinks de cette page — section dédiée, distincte du profil d'ancres */}
       <div>
-        <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Backlinks de cette page</p>
+        <p className="mb-5 type-title">Backlinks de cette page</p>
         <div className="rounded-2xl border border-[var(--border-subtle)] p-6">
           {(() => {
             const ownBacklinks = 0;
@@ -1362,20 +1386,20 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
                 {/* 2 chiffres clés en grille */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-xl border border-[var(--border-subtle)] p-4">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Total</p>
-                    <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">
+                    <p className="type-micro uppercase tracking-[0.08em]">Total</p>
+                    <p className="mt-1 type-h1 tabular-nums leading-none">
                       {ownBacklinks.toLocaleString("fr-FR")}
                     </p>
-                    <p className="mt-1.5 text-[11px] tracking-caption text-[var(--text-muted)]">
+                    <p className="mt-1.5 type-micro">
                       backlinks pointant vers cette URL
                     </p>
                   </div>
                   <div className="rounded-xl border border-[var(--border-subtle)] p-4">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Moyenne concurrents</p>
-                    <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-[var(--text-primary)]">
+                    <p className="type-micro uppercase tracking-[0.08em]">Moyenne concurrents</p>
+                    <p className="mt-1 type-h1 tabular-nums leading-none">
                       {avg.toLocaleString("fr-FR")}
                     </p>
-                    <p className="mt-1.5 text-[11px] tracking-caption text-[var(--text-muted)]">
+                    <p className="mt-1.5 type-micro">
                       quantité moyenne · {competitorBls.length} concurrents top SERP
                     </p>
                   </div>
@@ -1383,12 +1407,12 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
 
                 {/* Comparaison visuelle vs concurrents */}
                 <div className="mt-5 space-y-2">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">Comparaison</p>
+                  <p className="type-micro uppercase tracking-[0.08em]">Comparaison</p>
                   {[{ domain: "votre-site.fr", bl: ownBacklinks, isYou: true }, ...competitorBls].map((row) => {
                     const pct = (row.bl / maxBl) * 100;
                     return (
                       <div key={row.domain} className="grid grid-cols-[140px_1fr_60px] items-center gap-3">
-                        <span className={`truncate text-[12px] ${row.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>{row.domain}</span>
+                        <span className={`truncate type-caption ${row.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}>{row.domain}</span>
                         <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-subtle)]">
                           <div
                             className="h-full rounded-full transition-all"
@@ -1398,7 +1422,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
                             }}
                           />
                         </div>
-                        <span className="text-right text-[12px] font-semibold tabular-nums text-[var(--text-primary)]">
+                        <span className="text-right type-caption tabular-nums text-[var(--text-primary)]">
                           {row.bl.toLocaleString("fr-FR")}
                         </span>
                       </div>
@@ -1413,16 +1437,16 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
 
       {/* Profil d'ancres — section distincte, cibles de répartition recommandées */}
       <div>
-        <p className="mb-1 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Profil d'ancres</p>
-        <p className="mb-4 text-[12px] tracking-caption text-[var(--text-muted)]">
+        <p className="mb-1 type-title">Profil d'ancres</p>
+        <p className="mb-4 type-caption text-[var(--text-muted)]">
           Cibles de répartition recommandées pour vos futurs backlinks
         </p>
         <div className="rounded-2xl border border-[var(--border-subtle)] p-6 space-y-2.5">
           {ancreSegments.map((s) => (
             <div key={s.label}>
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-[12px] text-[var(--text-secondary)]">{s.label}</span>
-                <span className="text-[12px] font-semibold tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
+                <span className="type-caption">{s.label}</span>
+                <span className="type-caption tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-[var(--bg-subtle)] border border-[var(--border-subtle)]">
                 <div className="h-1.5 rounded-full" style={{ width: `${s.pct}%`, backgroundColor: s.color, opacity: 0.5 }} />
@@ -1434,27 +1458,27 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
 
       {/* Cibles d'outreach */}
       <div>
-        <p className="mb-5 text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Cibles d'outreach</p>
+        <p className="mb-5 type-title">Cibles d'outreach</p>
         <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-[var(--border-subtle)]">
-                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Domaine</th>
-                <th className="px-4 py-2.5 text-right text-[12px] font-medium text-[var(--text-muted)]">DR</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Fit</th>
-                <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Contact</th>
+              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+                <th className="px-4 py-2.5 type-caption">Domaine</th>
+                <th className="px-4 py-2.5 text-right type-caption">DR</th>
+                <th className="px-4 py-2.5 type-caption">Fit</th>
+                <th className="px-4 py-2.5 type-caption">Contact</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
               {outreachTargets.map((t, i) => (
                 <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
-                  <td className="px-4 py-3 text-[13px] font-medium text-[var(--text-primary)]">{t.domain}</td>
-                  <td className="px-4 py-3 text-right text-[14px] tabular-nums text-[var(--text-secondary)]">{t.dr}</td>
+                  <td className="px-4 py-3 type-label text-[var(--text-primary)]">{t.domain}</td>
+                  <td className="px-4 py-3 text-right type-body tabular-nums text-[var(--text-secondary)]">{t.dr}</td>
                   <td className="px-4 py-3">
-                    <span className="text-[var(--color-warning)] text-[12px]">{"★".repeat(t.fit)}{"☆".repeat(5 - t.fit)}</span>
+                    <span className="text-[var(--color-warning)] type-caption">{"★".repeat(t.fit)}{"☆".repeat(5 - t.fit)}</span>
                   </td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-[var(--text-muted)]">{t.contact}</td>
+                  <td className="px-4 py-3 font-mono type-micro">{t.contact}</td>
                   <td className="px-4 py-3">
                     <Button variant="secondary" size="sm">Contacter</Button>
                   </td>
@@ -1465,11 +1489,11 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
         </div>
       </div>
 
-      {/* Actions recommandées — grille de cards */}
+      {/* Actions à mener — grille de cards (bloc mis en avant) */}
       <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions recommandées</p>
-          <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
+          <p className="type-h3">Actions à mener</p>
+          <p className="type-caption tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
         </div>
         <div className="flex flex-col gap-2">
           {actions.map((a) => (
@@ -1550,7 +1574,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
 
       {/* Switch device — segmented pill iOS-like (inspiré Vercel Speed Insights) */}
       <div className="flex items-center justify-between gap-4">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">
+        <p className="type-micro uppercase tracking-[0.08em]">
           Audit Lighthouse
         </p>
         <div
@@ -1570,11 +1594,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
                 role="tab"
                 aria-selected={active}
                 onClick={() => setDevice(dev)}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                  active
-                    ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                }`}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 type-caption transition-colors ${ active ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]" }`}
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span>{dev === "desktop" ? "Desktop" : "Mobile"}</span>
@@ -1599,14 +1619,14 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
 
       {/* Audit technique */}
       <div>
-        <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Audit technique</p>
+        <p className="mb-4 type-h3">Audit technique</p>
         <div className="grid grid-cols-2 gap-2">
           {auditItems.map((item) => (
             <div key={item.label} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
-              <span className="text-[12px] text-[var(--text-muted)]">{item.label}</span>
+              <span className="type-caption text-[var(--text-muted)]">{item.label}</span>
               <div className="flex items-center gap-2">
-                <span className="text-[12px] font-medium text-[var(--text-secondary)]">{item.value}</span>
-                <span className={`text-[11px] ${item.ok ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{item.ok ? "✓" : "✕"}</span>
+                <span className="type-caption">{item.value}</span>
+                <span className={`type-micro ${item.ok ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{item.ok ? "✓" : "✕"}</span>
               </div>
             </div>
           ))}
@@ -1615,18 +1635,18 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
 
       {/* Core Web Vitals */}
       <div>
-        <p className="mb-4 text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Core Web Vitals</p>
+        <p className="mb-4 type-h3">Core Web Vitals</p>
         <div className="grid grid-cols-2 gap-3">
           {cwv.map((m) => (
             <div key={m.label} className="rounded-2xl border border-[var(--border-subtle)] p-6">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] font-medium text-[var(--text-muted)]">{m.label}</p>
-                <span className={`inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${m.ok ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"}`}>
+                <p className="type-caption text-[var(--text-muted)]">{m.label}</p>
+                <span className={`inline-flex items-center rounded-full px-2 py-1 type-caption ${m.ok ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"}`}>
                   {m.ok ? "Bon" : "À améliorer"}
                 </span>
               </div>
-              <p className="mt-1.5 text-[22px] font-semibold tabular-nums text-[var(--text-primary)]">{m.value}</p>
-              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Seuil : {m.threshold}</p>
+              <p className="mt-1.5 type-h2 tabular-nums">{m.value}</p>
+              <p className="mt-0.5 type-micro">Seuil : {m.threshold}</p>
             </div>
           ))}
         </div>
@@ -1639,8 +1659,8 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
           onClick={() => setDetailsOpen((v) => !v)}
           className="flex w-full items-center justify-between rounded-2xl border border-[var(--border-subtle)] px-5 py-4 text-left transition-colors hover:bg-[var(--bg-subtle)]"
         >
-          <span className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Détails on-page</span>
-          <span className="flex items-center gap-2 text-[12px] text-[var(--text-muted)]">
+          <span className="type-h3">Détails on-page</span>
+          <span className="flex items-center gap-2 type-caption text-[var(--text-muted)]">
             Images · Données structurées
             <ChevronDownIcon className={`h-4 w-4 transition-transform ${detailsOpen ? "rotate-180" : ""}`} />
           </span>
@@ -1648,7 +1668,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
         {detailsOpen && (
           <div className="mt-3 space-y-4">
             <div>
-              <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Images</p>
+              <p className="mb-2 type-label">Images</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Total images",    value: "14",    ok: true  },
@@ -1657,33 +1677,33 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
                   { label: "Poids total",     value: "1,4 MB", ok: false },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] px-4 py-3">
-                    <span className="text-[12px] text-[var(--text-muted)]">{item.label}</span>
-                    <span className={`text-[13px] font-semibold tabular-nums ${item.ok ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{item.value}</span>
+                    <span className="type-caption text-[var(--text-muted)]">{item.label}</span>
+                    <span className={`type-label tabular-nums ${item.ok ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{item.value}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div>
-              <p className="mb-2 text-[13px] font-semibold text-[var(--text-secondary)]">Données structurées</p>
+              <p className="mb-2 type-label">Données structurées</p>
               <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
-                      <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Schema</th>
-                      <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Statut</th>
-                      <th className="px-4 py-2.5 text-[12px] font-medium text-[var(--text-muted)]">Note</th>
+                      <th className="px-4 py-2.5 type-caption">Schema</th>
+                      <th className="px-4 py-2.5 type-caption">Statut</th>
+                      <th className="px-4 py-2.5 type-caption">Note</th>
                     </tr>
                   </thead>
                   <tbody>
                     {structuredData.map((item) => (
                       <tr key={item.schema} className="border-b border-[var(--border-subtle)] last:border-0">
-                        <td className="px-4 py-3 font-mono text-[12px] text-[var(--text-primary)]">{item.schema}</td>
+                        <td className="px-4 py-3 font-mono type-caption text-[var(--text-primary)]">{item.schema}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium ${item.ok ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : item.note === "Critique" ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]"}`}>
+                          <span className={`inline-flex items-center rounded-full px-2 py-1 type-caption ${item.ok ? "bg-[var(--color-success-bg)] text-[var(--color-success)]" : item.note === "Critique" ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]" : "bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]"}`}>
                             {item.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-[12px] text-[var(--text-muted)]">{item.note}</td>
+                        <td className="px-4 py-3 type-caption text-[var(--text-muted)]">{item.note}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1694,11 +1714,11 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
         )}
       </div>
 
-      {/* Actions techniques — grille de cards */}
+      {/* Actions à mener — grille de cards (bloc mis en avant) */}
       <section className="rounded-2xl border border-[var(--border-subtle)] p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Actions techniques</p>
-          <p className="text-[12px] tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
+          <p className="type-h3">Actions à mener</p>
+          <p className="type-caption tabular-nums text-[var(--text-muted)]">{doneCount}/{actions.length} faites</p>
         </div>
         <div className="flex flex-col gap-2">
           {actions.map((a) => (
@@ -1728,6 +1748,33 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
 
 /* ── ActionsTab — vue aggrégée toutes actions, format tableau ── */
 
+/** Chip de catégorie (source) — même style que la vue Actions : fond neutre + icône grise. */
+const ACTION_SOURCE_ICON = { synthese: Target, contenu: FileText, autorite: Award, technique: Activity } as const;
+function ActionSourceChip({ source }: { source: ActionSource }) {
+  const Icon = ACTION_SOURCE_ICON[source];
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2 py-1 type-caption text-[var(--text-primary)]">
+      <Icon className="h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)]" />
+      {ACTION_SOURCE_LABEL[source]}
+    </span>
+  );
+}
+
+/** Avatar owner compact (pravatar par seed, sinon initiales). */
+function OwnerAvatarSm({ owner }: { owner: ActionOwner }) {
+  const seed = owner.photoSeed;
+  const src = seed ? `https://i.pravatar.cc/44?${/^\d+$/.test(seed) ? "img" : "u"}=${seed}` : null;
+  if (!src) {
+    return (
+      <span className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-subtle)] type-micro text-[var(--text-secondary)]">
+        {owner.initials}
+      </span>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={owner.name} width={22} height={22} className="flex-shrink-0 rounded-full object-cover" style={{ width: 22, height: 22 }} />;
+}
+
 function ActionsTab({
   actions,
   getStatus,
@@ -1746,19 +1793,6 @@ function ActionsTab({
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<ActionSource | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<ActionPriorityLevel | "all">("all");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  }
-  function markSelectedDone() {
-    selected.forEach((id) => setStatus(id, "done"));
-    setSelected(new Set());
-  }
 
   const filtered = actions.filter((a) =>
     (sourceFilter === "all" || a.source === sourceFilter) &&
@@ -1774,13 +1808,13 @@ function ActionsTab({
     <div className="flex flex-col gap-6">
       {/* Header — titre + count */}
       <div className="flex items-baseline gap-2">
-        <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">
+        <p className="type-h3">
           Toutes les actions
         </p>
-        <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
+        <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-caption tabular-nums">
           {filtered.length}{filtered.length !== actions.length && <span className="text-[var(--text-muted)]"> / {actions.length}</span>}
         </span>
-        <span className="text-[12px] tabular-nums text-[var(--text-muted)]">· {doneCount} faites</span>
+        <span className="type-caption tabular-nums text-[var(--text-muted)]">· {doneCount} faites</span>
       </div>
 
       {/* Toolbar — search + filtres Source / Priorité + reset */}
@@ -1796,7 +1830,7 @@ function ActionsTab({
             { value: "all",       label: "Toutes" },
             { value: "synthese",  label: "Synthèse" },
             { value: "contenu",   label: "Contenu" },
-            { value: "autorite",  label: "Autorité" },
+            { value: "autorite",  label: "Popularité" },
             { value: "technique", label: "Technique" },
           ]}
         />
@@ -1819,57 +1853,24 @@ function ActionsTab({
         />
       </div>
 
-      {/* Barre d'action groupée */}
-      {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-subtle)] px-4 py-2.5">
-          <span className="text-[13px] font-medium text-[var(--text-primary)]">
-            {selected.size} action{selected.size > 1 ? "s" : ""} sélectionnée{selected.size > 1 ? "s" : ""}
-          </span>
-          <div className="flex items-center gap-3">
-            <Button size="sm" onClick={markSelectedDone}>Marquer comme fait</Button>
-            <button
-              type="button"
-              onClick={() => setSelected(new Set())}
-              className="text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Liste — ActionCard expandable (cohérent avec les autres onglets) */}
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--border-subtle)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
-          Aucune action ne correspond aux filtres.
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map((a) => (
-            <ActionCard
-              key={a.id}
-              priority={a.priority}
-              title={a.title}
-              commentTarget={{ id: a.id, label: a.title }}
-              selectable
-              selected={selected.has(a.id)}
-              onSelectChange={() => toggleSelect(a.id)}
-              time={a.time}
-              impact={a.impact}
-              status={getStatus(a.id)}
-              onStatusChange={(s) => setStatus(a.id, s)}
-              owner={a.owner}
-              ownerCandidates={ALL_OWNERS}
-              onOwnerChange={(o) => setOwner(a.id, o)}
-              deadline={a.deadline}
-              onDeadlineChange={(d) => setDeadline(a.id, d)}
-              recurrence={a.recurrence}
-              onRecurrenceChange={(r) => setRecurrence(a.id, r)}
-            />
-          ))}
-        </div>
-      )}
-
+      {/* Tableau — même style que la vue Actions (colonnes sticky, statut éditable inline) */}
+      <TableWide<Action>
+        columns={[
+          { key: "title", header: "Nom", width: 340, flex: true, render: (a) => <span className="block truncate type-body-strong" title={a.title}>{a.title}</span> },
+          { key: "source", header: "Catégorie", width: 150, render: (a) => <ActionSourceChip source={a.source} /> },
+          { key: "status", header: "Statut", width: 160, render: (a) => <span className="inline-flex" onClick={(e) => e.stopPropagation()}><StatusPillDropdown status={getStatus(a.id)} onChange={(s) => setStatus(a.id, s)} /></span> },
+          { key: "priority", header: "Priorité", width: 120, render: (a) => <PriorityBadge level={a.priority} /> },
+          { key: "owner", header: "Assigné à", width: 180, render: (a) => a.owner ? <span className="inline-flex min-w-0 items-center gap-2"><OwnerAvatarSm owner={a.owner} /><span className="truncate type-body-sm text-[var(--text-primary)]">{a.owner.name}</span></span> : <span className="type-body-sm text-[var(--text-muted)]">Non assigné</span> },
+          { key: "effort", header: "Effort", width: 110, render: (a) => <span className="whitespace-nowrap type-body-sm text-[var(--text-muted)]">{a.time ?? "—"}</span> },
+        ]}
+        data={filtered}
+        rowKey={(a) => a.id}
+        minWidth={1040}
+        stickyLeft
+        bordered
+        hidePagination
+        emptyState="Aucune action ne correspond aux filtres."
+      />
     </div>
   );
 }
@@ -1897,7 +1898,6 @@ function BriefDrawerContent({
 }) {
   const [tab, setTab] = useState<DrawerTab>("synthese");
   const router = useRouter();
-  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
   const idx = briefs.findIndex((b) => b.id === brief.id);
   const hasPrev = idx > 0;
   const hasNext = idx < briefs.length - 1;
@@ -1930,15 +1930,13 @@ function BriefDrawerContent({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // Le sélecteur de template gère ses propres raccourcis (ESC ferme la modale, pas le drawer).
-      if (templateSelectorOpen) return;
       if (e.key === "Escape") { onClose(); return; }
       if (e.key === "ArrowUp"   && hasPrev) onNavigate(briefs[idx - 1]);
       if (e.key === "ArrowDown" && hasNext) onNavigate(briefs[idx + 1]);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, onNavigate, briefs, idx, hasPrev, hasNext, templateSelectorOpen]);
+  }, [onClose, onNavigate, briefs, idx, hasPrev, hasNext]);
 
   return (
     <>
@@ -1958,7 +1956,7 @@ function BriefDrawerContent({
               </Tooltip>
             ) : null}
             {/* Fil d'ariane — Titre de la page > Analyse du X (quand analysedAt présent) */}
-            <nav className="flex min-w-0 items-center gap-2 text-[14px]">
+            <nav className="flex min-w-0 items-center gap-2 type-body">
               <span className="truncate font-semibold text-[var(--text-primary)]" title={brief.title}>{brief.title}</span>
               {brief.analysedAt && (
                 <>
@@ -1997,7 +1995,7 @@ function BriefDrawerContent({
         <div className="mb-5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Priority — editable */}
           <DropdownMenu width={180} trigger={
-            <button className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-70"
+            <button className="inline-flex items-center rounded-md px-2 py-1 type-caption transition-opacity hover:opacity-70"
               style={{ color: PRIORITY_CONFIG[priority].text, backgroundColor: PRIORITY_CONFIG[priority].bg }}>
               {PRIORITY_CONFIG[priority].label}
             </button>
@@ -2006,7 +2004,7 @@ function BriefDrawerContent({
             {(Object.entries(PRIORITY_CONFIG) as [Priority, typeof PRIORITY_CONFIG[Priority]][]).map(([key, c]) => (
               <DropdownItem key={key} onClick={() => onPriorityChange(key)} selected={priority === key}>
                 <span
-                  className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium"
+                  className="inline-flex items-center rounded-md px-2 py-1 type-caption"
                   style={{ color: c.text, backgroundColor: c.bg }}
                 >
                   {c.label}
@@ -2017,10 +2015,19 @@ function BriefDrawerContent({
           {/* Status — editable */}
           <StatusPillDropdown status={status} onChange={onStatusChange} />
 
-          {/* Applique les recommandations sémantiques de l'analyse et ouvre
-              directement le brief de contenu (Écran D), en sautant la configuration. */}
-          <Button variant="secondary" size="sm" className="ml-auto" onClick={() => setTemplateSelectorOpen(true)}>
-            Appliquer les recommandations en contenu
+          {/* Ouvre directement le configurateur (Écran B) en mode « optimisation »
+              de la page existante : sujet pré-rempli + actions sémantiques de l'analyse. */}
+          <Button
+            variant="secondary"
+            size="md"
+            className="ml-auto"
+            onClick={() =>
+              router.push(
+                `/templates/configurer/sys-refresh-decaye?from=analyse&keyword=${encodeURIComponent(brief.keyword)}&url=${encodeURIComponent(brief.url)}`
+              )
+            }
+          >
+            Appliquer les recommandations
             <ChevronRightIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -2034,7 +2041,7 @@ function BriefDrawerContent({
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`relative flex h-full cursor-pointer items-center px-3 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                className={`relative flex h-full cursor-pointer items-center px-3 type-body-strong transition-colors ${isActive ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
               >
                 {label}
                 {isActive && (
@@ -2046,29 +2053,16 @@ function BriefDrawerContent({
         </div>
       </div>
 
-      {templateSelectorOpen && (
-        <TemplateSelector
-          context="from_url_analysis"
-          title="Appliquer les recommandations en contenu"
-          subtitle={`Les actions sémantiques de « ${brief.keyword} » seront reprises dans le brief`}
-          onSelect={(t) => {
-            setTemplateSelectorOpen(false);
-            router.push(`/templates/brief/${t.id}?titre=${encodeURIComponent(brief.keyword)}`);
-          }}
-          onClose={() => setTemplateSelectorOpen(false)}
-        />
-      )}
-
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-12 py-10">
-        {tab === "synthese"  && <SyntheseTab  brief={brief} actions={allActions.filter(a => a.source === "synthese")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
+        {tab === "synthese"  && <SyntheseTab  brief={brief} actions={allActions}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} onSeeAllActions={() => setTab("actions")} />}
         {tab === "contenu"   && <ContenuTab   brief={brief} actions={allActions.filter(a => a.source === "contenu")}   getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
         {tab === "autorite"  && <AutoriteTab  brief={brief} actions={allActions.filter(a => a.source === "autorite")}  getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
         {tab === "technique" && <TechniqueTab brief={brief} actions={allActions.filter(a => a.source === "technique")} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
         {tab === "actions"   && <ActionsTab   actions={allActions} getStatus={getActionStatus} setStatus={setActionStatus} setOwner={setActionOwner} setDeadline={setActionDeadline} setRecurrence={setActionRecurrence} />}
         {tab === "comments"  && (
           <div className="mx-auto max-w-[640px]">
-            <CommentThread target={{ type: "analysis", id: String(brief.id), label: brief.keyword }} />
+            <CommentThread variant="cards" target={{ type: "analysis", id: String(brief.id), label: brief.keyword }} />
           </div>
         )}
       </div>
@@ -2109,8 +2103,8 @@ function AnalyseModeOption({
         {checked && <CheckIcon className="h-3.5 w-3.5" strokeWidth={3} />}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-medium text-[var(--text-primary)]">{title}</p>
-        <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">{description}</p>
+        <p className="type-body-strong">{title}</p>
+        <p className="mt-0.5 type-caption text-[var(--text-muted)]">{description}</p>
       </div>
     </button>
   );
@@ -2169,8 +2163,8 @@ function AnalyseLaunchModal({
           <>
             <div className="flex-shrink-0 px-8 pt-6 pb-4 border-b border-[var(--border-subtle)]">
               <Stepper steps={2} current={1} onClose={requestClose} />
-              <h2 className="font-semibold text-[var(--text-primary)]">Mode d'analyse</h2>
-              <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+              <h2 className="type-h2">Mode d'analyse</h2>
+              <p className="mt-1 type-body-sm text-[var(--text-muted)]">
                 Que faire des URLs déjà analysées dans la sélection ?
               </p>
             </div>
@@ -2191,7 +2185,7 @@ function AnalyseLaunchModal({
             <div className="flex-shrink-0 flex items-center justify-end gap-3 px-8 py-6 border-t border-[var(--border-subtle)]">
               <button
                 onClick={requestClose}
-                className="rounded-xl px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                className="rounded-xl px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
               >
                 Annuler
               </button>
@@ -2202,8 +2196,8 @@ function AnalyseLaunchModal({
           <>
             <div className="flex-shrink-0 px-8 pt-6 pb-4 border-b border-[var(--border-subtle)]">
               <Stepper steps={2} current={2} onClose={requestClose} />
-              <h2 className="font-semibold text-[var(--text-primary)]">Lancer l'analyse</h2>
-              <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+              <h2 className="type-h2">Lancer l'analyse</h2>
+              <p className="mt-1 type-body-sm text-[var(--text-muted)]">
                 Décochez les URLs à exclure et vérifiez le mot-clé cible avant de lancer l'analyse sur {includedCount} URL{includedCount > 1 ? "s" : ""}.
               </p>
             </div>
@@ -2225,8 +2219,8 @@ function AnalyseLaunchModal({
                       {isIncluded && <CheckIcon className="h-3.5 w-3.5" strokeWidth={3} />}
                     </button>
                     <div className={`min-w-0 flex-1 transition-opacity ${isIncluded ? "" : "opacity-40"}`}>
-                      <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{b.title}</p>
-                      <p className="truncate font-mono text-[11px] text-[var(--text-muted)]">{b.url}</p>
+                      <p className="truncate type-label text-[var(--text-primary)]">{b.title}</p>
+                      <p className="truncate font-mono type-micro">{b.url}</p>
                     </div>
                     <input
                       type="text"
@@ -2234,7 +2228,7 @@ function AnalyseLaunchModal({
                       onChange={(e) => onKeywordChange(b.id, e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       disabled={!isIncluded}
-                      className="w-[180px] flex-shrink-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none transition-opacity focus:border-[var(--accent-primary)] disabled:opacity-40"
+                      className="w-[180px] flex-shrink-0 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-2 type-body-sm text-[var(--text-primary)] outline-none transition-opacity focus:border-[var(--accent-primary)] disabled:opacity-40"
                       placeholder="Mot-clé cible"
                     />
                   </div>
@@ -2244,14 +2238,14 @@ function AnalyseLaunchModal({
             <div className="flex-shrink-0 flex items-center justify-between gap-3 px-8 py-6 border-t border-[var(--border-subtle)]">
               <button
                 onClick={() => setStep(1)}
-                className="rounded-xl px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                className="rounded-xl px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
               >
                 ← Retour
               </button>
               <div className="flex items-center gap-3">
                 <button
                   onClick={requestClose}
-                  className="rounded-xl px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                  className="rounded-xl px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
                 >
                   Annuler
                 </button>
@@ -2320,8 +2314,8 @@ function SparklineEmpty() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5l4.5-4.5 3 3 4-5L19 10M3 20h18M3 4h18" />
         </svg>
       </div>
-      <p className="text-[13px] font-semibold text-[var(--text-primary)]">Pas encore de données</p>
-      <p className="mt-1 max-w-[24ch] text-[11px] text-[var(--text-muted)]">
+      <p className="type-label text-[var(--text-primary)]">Pas encore de données</p>
+      <p className="mt-1 max-w-[24ch] type-micro">
         L'historique apparaîtra après la première analyse.
       </p>
     </div>
@@ -2418,16 +2412,16 @@ function PagePanelContent({
 
         {/* Title */}
         <div className="mb-4 min-w-0">
-          <p className="mb-1.5 font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
-          <h1 className="font-semibold leading-snug tracking-tight text-[var(--text-primary)]">{brief.title}</h1>
+          <p className="mb-1.5 font-mono type-micro">{brief.url}</p>
+          <h1 className="type-h1 leading-snug">{brief.title}</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-medium" style={{ color: typeText, backgroundColor: colorBg }}>{label}</span>
+          <span className="inline-flex items-center rounded-full px-2 py-1 type-caption" style={{ color: typeText, backgroundColor: colorBg }}>{label}</span>
           <DropdownMenu
             width={280}
             trigger={
-              <button className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-opacity hover:opacity-80">
+              <button className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 type-caption transition-opacity hover:opacity-80">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tagColor }} />
                 {brief.tag ? shortTag(brief.tag) : "Sans lot"}
               </button>
@@ -2440,7 +2434,7 @@ function PagePanelContent({
                 selected={(brief.tag ?? "Sans lot") === tag}
                 onClick={() => onTagChange(tag === "Sans lot" ? null : tag)}
               >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 type-caption">
                   <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[tag] }} />
                   {tag}
                 </span>
@@ -2451,14 +2445,20 @@ function PagePanelContent({
               Créer un nouveau tag
             </DropdownItem>
           </DropdownMenu>
-          <span className="rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-primary)]">{keyword}</span>
+          <Tooltip side="top" portal label="Mot-clé cible de la page">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 type-caption text-[var(--text-primary)]">
+              <Search className="h-3 w-3 flex-shrink-0 text-[var(--text-muted)]" />
+              <span className="text-[var(--text-muted)]">Mot-clé :</span>
+              <span className="font-medium">{keyword}</span>
+            </span>
+          </Tooltip>
           {(() => {
             const panelActions = getAnalysisActions(brief);
             const totalMin = panelActions.reduce((sum, a) => sum + parseTimeToMinutes(a.time), 0);
             if (totalMin === 0) return null;
             return (
               <Tooltip side="top" portal label={`Temps cumulé de toutes les actions de cette analyse (${panelActions.length} actions)`}>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)]">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 type-caption">
                   <Clock className="h-3 w-3" />
                   <span className="font-medium tabular-nums text-[var(--text-primary)]">{formatMinutesLabel(totalMin)}</span>
                   <span>d'actions</span>
@@ -2499,30 +2499,30 @@ function PagePanelContent({
           {/* Position GSC + Trafic — deux graphiques séparés côte à côte */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
-              <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Position GSC</p>
+              <p className="type-h3">Position GSC</p>
               <div className="mt-1 mb-4 flex items-center gap-2">
                 {current?.positionGsc != null ? (
                   <>
-                    <span className="text-[20px] font-semibold leading-none tabular-nums tracking-heading text-[var(--text-primary)]">{current.positionGsc.toFixed(1).replace(".", ",")}</span>
+                    <span className="type-h2 leading-none tabular-nums">{current.positionGsc.toFixed(1).replace(".", ",")}</span>
                     {posDelta != null && <DeltaBadge value={posDelta.toFixed(1).replace(".", ",")} positiveIsGood={false} />}
-                    {posDelta != null && <span className="text-[12px] tracking-caption text-[var(--text-muted)]">vs préc.</span>}
+                    {posDelta != null && <span className="type-caption text-[var(--text-muted)]">vs préc.</span>}
                   </>
-                ) : <span className="text-[14px] text-[var(--text-muted)]">—</span>}
+                ) : <span className="type-body text-[var(--text-muted)]">—</span>}
               </div>
               <div className="h-[200px]">
                 {history.length >= 2 ? <PositionSparkline history={history} /> : <SparklineEmpty />}
               </div>
             </div>
             <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] px-5 pt-5 pb-3">
-              <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Trafic</p>
+              <p className="type-h3">Trafic</p>
               <div className="mt-1 mb-4 flex items-center gap-2">
                 {current?.clics != null ? (
                   <>
-                    <span className="text-[20px] font-semibold leading-none tabular-nums tracking-heading text-[var(--text-primary)]">{current.clics.toLocaleString("fr-FR")}</span>
+                    <span className="type-h2 leading-none tabular-nums">{current.clics.toLocaleString("fr-FR")}</span>
                     {clicsDelta != null && <DeltaBadge value={`${clicsDelta > 0 ? "+" : ""}${clicsDelta}`} positiveIsGood />}
-                    {clicsDelta != null && <span className="text-[12px] tracking-caption text-[var(--text-muted)]">vs préc.</span>}
+                    {clicsDelta != null && <span className="type-caption text-[var(--text-muted)]">vs préc.</span>}
                   </>
-                ) : <span className="text-[14px] text-[var(--text-muted)]">—</span>}
+                ) : <span className="type-body text-[var(--text-muted)]">—</span>}
               </div>
               <div className="h-[200px]">
                 {(history.length >= 2 && history.some((h) => h.clics != null)) ? <TrafficSparkline history={history} /> : <SparklineEmpty />}
@@ -2534,41 +2534,45 @@ function PagePanelContent({
         {/* Right — historique des analyses */}
         <div className="w-[340px] flex-shrink-0 flex flex-col gap-5 rounded-2xl border border-[var(--border-subtle)] p-5">
           <div className="flex items-center gap-2">
-            <p className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">Historique des analyses</p>
-            <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-primary)]">{history.length}</span>
+            <p className="type-title">Historique des analyses</p>
+            <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-micro text-[var(--text-primary)]">{history.length}</span>
           </div>
 
           <div className="flex-1 overflow-y-auto flex flex-col gap-2">
             {history.length === 0 ? (
               <div className="rounded-2xl border border-[var(--border-subtle)] px-5 py-10 text-center">
-                <p className="text-[13px] text-[var(--text-muted)]">Aucune analyse disponible</p>
-                <p className="mt-1 text-[12px] text-[var(--text-muted)] opacity-60">Lancez une première analyse.</p>
+                <p className="type-body-sm text-[var(--text-muted)]">Aucune analyse disponible</p>
+                <p className="mt-1 type-caption text-[var(--text-muted)] opacity-60">Lancez une première analyse.</p>
               </div>
             ) : history.map((h, i) => (
               <button
                 key={h.date}
                 onClick={() => onOpenAnalysis(brief, i)}
-                className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--border-subtle)] px-4 py-3.5 text-left transition-colors hover:bg-[var(--bg-card-hover)]"
+                className={`group flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors ${
+                  i === 0
+                    ? "border-[var(--accent-primary-mid)] bg-gradient-to-br from-[var(--accent-primary-soft)] to-transparent"
+                    : "border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]"
+                }`}
               >
                 {h.actionsTotal != null && (
                   <ActionRing done={h.actionsDone ?? 0} total={h.actionsTotal} />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] font-medium text-[var(--text-primary)]">Analyse du {formatAnalysisDate(h.date)}</span>
-                    {i === 0 && <span className="rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-[12px] font-medium text-[var(--text-primary)]">Récente</span>}
+                  <div className="flex items-center gap-2">
+                    <span className="type-label capitalize text-[var(--text-primary)]">{formatAnalysisDate(h.date)}</span>
+                    {i === 0 && <span className="flex-shrink-0 rounded-full border border-[var(--accent-primary-mid)] bg-[var(--bg-card)] px-2 py-0.5 type-caption text-[var(--accent-primary)]">Dernière analyse</span>}
                   </div>
                   {h.actionsTotal != null && (
-                    <div className="mt-1 text-[12px] text-[var(--text-muted)]">
+                    <div className="mt-1 type-caption text-[var(--text-muted)]">
                       <span>{h.actionsDone ?? 0}/{h.actionsTotal} actions réalisées</span>
                     </div>
                   )}
                   <div className="mt-2 flex items-center gap-1.5">
-                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium"
+                    <span className="inline-flex items-center rounded-md px-2 py-0.5 type-micro"
                       style={{ color: PRIORITY_CONFIG[priority].text, backgroundColor: PRIORITY_CONFIG[priority].bg }}>
                       {PRIORITY_CONFIG[priority].label}
                     </span>
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 type-micro"
                       style={{ color: STATUS_CONFIG[status].text, backgroundColor: STATUS_CONFIG[status].bg }}>
                       {STATUS_CONFIG[status].label}
                     </span>
@@ -2632,10 +2636,10 @@ function CreateTagModal({
           <XMarkIcon className="h-5 w-5" />
         </button>
 
-        <h3 className="mb-1.5 font-semibold tracking-subheading text-[var(--text-primary)]">
+        <h3 className="mb-1.5 type-h3">
           Créer un nouveau tag
         </h3>
-        <p className="mb-5 text-[13px] text-[var(--text-secondary)]">
+        <p className="mb-5 type-body-sm">
           Donnez un nom à votre lot et choisissez sa couleur.
         </p>
 
@@ -2646,15 +2650,15 @@ function CreateTagModal({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) onCreate(trimmed, color); }}
           placeholder="Ex. Lot Mai 2026 — Refonte"
-          className="w-full rounded-full border border-[var(--border-medium)] bg-[var(--input-bg)] px-4 py-2.5 text-[14px] text-[var(--text-primary)] placeholder-[var(--text-input)] focus:border-[var(--accent-primary)] focus:outline-none"
+          className="w-full rounded-full border border-[var(--border-medium)] bg-[var(--input-bg)] px-4 py-2.5 type-body placeholder-[var(--text-input)] focus:border-[var(--accent-primary)] focus:outline-none"
         />
         {exists && (
-          <p className="mt-2 text-[12px] text-[var(--color-danger)]">Ce lot existe déjà.</p>
+          <p className="mt-2 type-caption text-[var(--color-danger)]">Ce lot existe déjà.</p>
         )}
 
         {/* Sélecteur de couleur */}
         <div className="mt-5">
-          <p className="mb-2.5 text-[12px] font-medium text-[var(--text-secondary)]">Couleur</p>
+          <p className="mb-2.5 type-caption">Couleur</p>
           <div className="flex flex-wrap gap-2">
             {TAG_COLOR_PALETTE.map((c) => (
               <button
@@ -2810,18 +2814,31 @@ function SidePanel({
 export function BriefsView({
   initialBriefUrl,
   onPendingHandled,
+  initialAnalysisId,
+  onAnalysisHandled,
   initialTagFilter,
   onTagFilterHandled,
+  onOpenUrlModal,
 }: {
   /** When provided, opens the matching brief's SidePanel on mount/change */
   initialBriefUrl?: string | null;
   /** Called after the panel opens, so the parent can clear its pending state */
   onPendingHandled?: () => void;
+  /** When provided, ouvre directement la modale d'analyse du brief (id) — ex. clic
+   *  sur une note « Analyse · … » depuis la vue Notes. */
+  initialAnalysisId?: string | null;
+  /** Called after the analysis modal opens, so the parent can clear the ?analysis= param */
+  onAnalysisHandled?: () => void;
   /** When provided, pre-applies the lot filter (ex. clic sur un "Lot récent"). */
   initialTagFilter?: string | null;
   /** Called after the filter is applied, so the parent can clear its pending state */
   onTagFilterHandled?: () => void;
+  /** Ouvre une modale d'ajout d'URL (le state/rendu vit dans la page parente). */
+  onOpenUrlModal?: (kind: "import-csv" | "add-url" | "new-brief") => void;
 } = {}) {
+
+  const briefsRouter = useRouter();
+  const briefsPathname = usePathname();
 
   // Synchro du scroll horizontal entre l'en-tête et le corps. On pilote l'en-tête via
   // `scrollLeft` (et non un `transform`) pour que les colonnes check + page puissent
@@ -2853,6 +2870,20 @@ export function BriefsView({
     onPendingHandled?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialBriefUrl]);
+
+  // Ouvre directement la modale d'analyse d'un brief (par id) — ex. clic sur une
+  // note « Analyse · … » depuis la vue Notes. L'analyse se rend dans la SidePanel,
+  // donc on ouvre les deux (brief + analyse).
+  useEffect(() => {
+    if (!initialAnalysisId) return;
+    const target = briefs.find((b) => String(b.id) === initialAnalysisId);
+    if (target) {
+      setActiveBrief(target);
+      setActiveAnalysis(target);
+    }
+    onAnalysisHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAnalysisId]);
   const [briefKeywords, setBriefKeywords] = useState<Record<number, string>>({});
   const [analyseLaunchOpen, setAnalyseLaunchOpen] = useState(false);
   // Briefs ciblés par l'AnalyseLaunchModal — soit la sélection courante,
@@ -2892,10 +2923,23 @@ export function BriefsView({
     changeBriefTag(briefId, trimmed);
   }
 
+  // Création d'un tag depuis la toolbar (sans l'assigner à un brief).
+  const [newTagOpen, setNewTagOpen] = useState(false);
+  function createTag(name: string, color: string) {
+    const trimmed = name.trim();
+    if (!trimmed || tagColors[trimmed]) return;
+    const used = new Set(Object.values(tagColors));
+    const fallback = TAG_PALETTE.find((c) => !used.has(c)) ?? TAG_PALETTE[0];
+    setTagColors((prev) => ({ ...prev, [trimmed]: color || fallback }));
+  }
+
   const [colType,     setColType]     = useState<BriefType[]>([]);   // multi-select ([] = toutes)
   const [colPriority, setColPriority] = useState<Priority | "all">("all");
   const [colStatut,   setColStatut]   = useState<BriefStatus | "all">("all");
   const [colTag,      setColTag]      = useState<string[]>([]);        // multi-select ([] = tous)
+  const [colKeyword,  setColKeyword]  = useState<string[]>([]); // filtre multi-select par mot-clé existant
+  const toggleKeyword = (kw: string) => setColKeyword((prev) => prev.includes(kw) ? prev.filter((k) => k !== kw) : [...prev, kw]);
+  const allKeywords = useMemo(() => [...new Set(briefs.map((b) => b.keyword))].sort((a, b) => a.localeCompare(b, "fr")), [briefs]);
   const toggleTag  = (t: string)    => setColTag((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
   const toggleType = (t: BriefType) => setColType((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
 
@@ -2908,7 +2952,7 @@ export function BriefsView({
   }, [initialTagFilter]);
 
   // Tri sur les colonnes chiffrables — clic sur header cycle asc → desc → off
-  type SortKey = "position" | "volume" | "trafic" | "ctr" | "effort" | "score" | "analyse";
+  type SortKey = "keyword" | "position" | "volume" | "trafic" | "clics" | "ctr" | "effort" | "score" | "analyse";
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   function toggleSort(key: SortKey) {
@@ -2918,13 +2962,14 @@ export function BriefsView({
   }
 
   const hasActiveFilters =
-    colType.length > 0 || colPriority !== "all" || colStatut !== "all" || colTag.length > 0;
+    colType.length > 0 || colPriority !== "all" || colStatut !== "all" || colTag.length > 0 || colKeyword.length > 0;
 
   function resetFilters() {
     setColType([]);
     setColPriority("all");
     setColStatut("all");
     setColTag([]);
+    setColKeyword([]);
   }
 
   function assignTag(tag: string | null) {
@@ -2951,15 +2996,20 @@ export function BriefsView({
       const statut = briefStatuses[b.id] ?? "todo";
       if (colStatut !== "all" && statut !== colStatut) return false;
       if (colTag.length > 0 && !((b.tag && colTag.includes(b.tag)) || (!b.tag && colTag.includes("Sans lot")))) return false;
+      if (colKeyword.length > 0 && !colKeyword.includes(b.keyword)) return false;
       return true;
     });
     if (!sortKey) return base;
     const mult = sortDir === "asc" ? 1 : -1;
+    if (sortKey === "keyword") {
+      return [...base].sort((a, b) => a.keyword.localeCompare(b.keyword, "fr") * mult);
+    }
     const getVal = (b: Brief): number => {
       switch (sortKey) {
         case "position": return b.position ?? 9999;
         case "volume":   return b.volume;
-        case "trafic":   return b.clics ?? -1;
+        case "trafic":   return b.clics != null ? Math.round(b.clics * 1.4) : -1;
+        case "clics":    return b.clics ?? -1;
         case "ctr":      return (b.clics != null && b.impressions) ? (b.clics / b.impressions) * 100 : -1;
         case "effort":   return estimateEffortHours(b);
         case "score":    return b.semanticScore;
@@ -3001,28 +3051,67 @@ export function BriefsView({
   return (
     <div className="animate-fade-in">
 
-      {/* ── Header — H2 + count badge à gauche, CTA Analyser à droite ── */}
-      <div className="mb-4 flex items-center justify-between gap-4 px-[var(--page-px)]">
-        <div className="flex items-baseline gap-2">
-          <h1 className="font-semibold leading-none tracking-heading text-[var(--text-primary)]">URLs</h1>
-          <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
-            {filtered.length.toLocaleString("fr-FR")}
-            {hasActiveFilters && filtered.length !== briefs.length && (
-              <span className="text-[var(--text-muted)]"> / {briefs.length.toLocaleString("fr-FR")}</span>
-            )}
-          </span>
+      {/* ── Header — titre + sous-titre à gauche, CTA Analyser à droite ── */}
+      <div className="mb-4 flex items-start justify-between gap-4 px-[var(--page-px)]">
+        <div>
+          <div className="flex items-baseline gap-2">
+            <h1 className="type-h1 leading-none">URLs</h1>
+            <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-caption tabular-nums">
+              {filtered.length.toLocaleString("fr-FR")}
+              {hasActiveFilters && filtered.length !== briefs.length && (
+                <span className="text-[var(--text-muted)]"> / {briefs.length.toLocaleString("fr-FR")}</span>
+              )}
+            </span>
+          </div>
+          <p className="mt-1 type-body text-[var(--text-secondary)]">Optimisez les pages existantes en fonction des priorités</p>
         </div>
-        <Button
-          onClick={() => { setAnalyseTargets(filtered); setAnalyseLaunchOpen(true); }}
-          disabled={filtered.length === 0}
-        >
-          Analyser
-        </Button>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          {onOpenUrlModal && (
+            <DropdownMenu
+              align="right"
+              width={210}
+              trigger={
+                <Button variant="secondary">
+                  <PlusIcon className="h-4 w-4" />
+                  Ajouter
+                  <ChevronDownIcon className="h-3.5 w-3.5" />
+                </Button>
+              }
+            >
+              <DropdownItem icon={ArrowUpTrayIcon} onClick={() => onOpenUrlModal("import-csv")}>Importer des URLs</DropdownItem>
+              <DropdownItem icon={LinkIcon}        onClick={() => onOpenUrlModal("add-url")}>Ajouter une URL</DropdownItem>
+              <DropdownItem icon={SparklesIcon}    onClick={() => briefsRouter.push(`${briefsPathname}?tab=creation`)}>Création de contenu</DropdownItem>
+            </DropdownMenu>
+          )}
+          <Button
+            onClick={() => { setAnalyseTargets(filtered); setAnalyseLaunchOpen(true); }}
+            disabled={filtered.length === 0}
+          >
+            Analyser
+          </Button>
+        </div>
       </div>
 
       {/* ── Toolbar — search + filtres dropdown (Tag, Origine, Priorité, Statut) ── */}
       <div className="mb-4 flex flex-wrap items-center gap-3 px-[var(--page-px)]">
         <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un brief…" alwaysExpanded />
+        {/* Filtre par mot-clé — multi-select (checkbox) listant les mots-clés existants */}
+        <ColPill
+          name="Mot-clé"
+          label={colKeyword.length === 0 ? "Mot-clé" : colKeyword.length === 1 ? colKeyword[0] : `${colKeyword.length} mots-clés`}
+          active={colKeyword.length > 0}
+        >
+          {() => (
+            <>
+              <DropdownHeader>Filtrer par mot-clé</DropdownHeader>
+              {allKeywords.map((kw) => (
+                <DropdownItem key={kw} checkbox keepOpen selected={colKeyword.includes(kw)} onClick={() => toggleKeyword(kw)}>
+                  <span className="truncate">{kw}</span>
+                </DropdownItem>
+              ))}
+            </>
+          )}
+        </ColPill>
         <ColPill
           name="Lot"
           label={colTag.length === 0 ? "Tag" : colTag.length === 1 ? colTag[0].replace(/^Lot\s+/, "") : `${colTag.length} lots`}
@@ -3039,6 +3128,8 @@ export function BriefsView({
                   </span>
                 </DropdownItem>
               ))}
+              <DropdownSeparator />
+              <DropdownItem icon={Plus} onClick={() => setNewTagOpen(true)}>Nouveau tag</DropdownItem>
             </>
           )}
         </ColPill>
@@ -3097,7 +3188,7 @@ export function BriefsView({
             className="pointer-events-auto relative flex items-center gap-1 rounded-2xl px-2 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.28)]"
             style={{ backgroundColor: "var(--floating-bar-bg)" }}
           >
-            <span className="px-3 text-[14px] font-medium" style={{ color: "var(--floating-bar-text)", opacity: 0.5 }}>{selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}</span>
+            <span className="px-3 type-body-strong" style={{ color: "var(--floating-bar-text)", opacity: 0.5 }}>{selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}</span>
             <div className="h-4 w-px" style={{ backgroundColor: "var(--floating-bar-sep)" }} />
 
             {/* Assigner un tag */}
@@ -3105,7 +3196,7 @@ export function BriefsView({
               upward
               width="auto"
               trigger={
-                <button className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors hover:bg-[var(--floating-bar-hover)]" style={{ color: "var(--floating-bar-text)" }}>
+                <button className="flex items-center gap-2 rounded-xl px-3 py-1.5 type-body-strong transition-colors hover:bg-[var(--floating-bar-hover)]" style={{ color: "var(--floating-bar-text)" }}>
                   <FolderOpenIcon className="h-4 w-4" />Assigner un tag
                 </button>
               }
@@ -3124,7 +3215,7 @@ export function BriefsView({
               upward
               width={180}
               trigger={
-                <button className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors hover:bg-[var(--floating-bar-hover)]" style={{ color: "var(--floating-bar-text)" }}>
+                <button className="flex items-center gap-2 rounded-xl px-3 py-1.5 type-body-strong transition-colors hover:bg-[var(--floating-bar-hover)]" style={{ color: "var(--floating-bar-text)" }}>
                   <AdjustmentsHorizontalIcon className="h-4 w-4" />Changer la priorité
                 </button>
               }
@@ -3135,7 +3226,7 @@ export function BriefsView({
                 return (
                   <DropdownItem key={p} onClick={() => assignPriority(p)}>
                     <span
-                      className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium"
+                      className="inline-flex items-center rounded-md px-2 py-1 type-caption"
                       style={{ color: c.text, backgroundColor: c.bg }}
                     >
                       {c.label}
@@ -3148,7 +3239,7 @@ export function BriefsView({
             {/* Lancer l'analyse */}
             <button
               onClick={() => { setAnalyseTargets(selectedBriefs); setAnalyseLaunchOpen(true); }}
-              className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-medium transition-colors hover:bg-[var(--floating-bar-hover)]"
+              className="flex items-center gap-2 rounded-xl px-3 py-1.5 type-body-strong transition-colors hover:bg-[var(--floating-bar-hover)]"
               style={{ color: "var(--floating-bar-text)" }}
             >
               <ArrowPathIcon className="h-4 w-4" />Lancer l'analyse
@@ -3159,7 +3250,7 @@ export function BriefsView({
             {/* Supprimer */}
             <button
               onClick={deleteSelected}
-              className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-medium text-[var(--color-danger)] transition-colors hover:bg-[rgba(225,29,72,0.12)]"
+              className="flex items-center gap-2 rounded-xl px-3 py-1.5 type-body-strong text-[var(--color-danger)] transition-colors hover:bg-[rgba(225,29,72,0.12)]"
             >
               <TrashIcon className="h-4 w-4" />Supprimer
             </button>
@@ -3181,17 +3272,19 @@ export function BriefsView({
 
       {/* ── Sticky column header — check + page figées à gauche, reste défilant (sync scrollLeft) ── */}
       <div ref={headerScrollRef} className="sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
-        <div style={{ minWidth: 2150 }} className="flex h-10 items-stretch">
+        <div style={{ minWidth: 2270 }} className="flex h-10 items-stretch">
             <StickyCols header scrolled={scrolled}>
               <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={toggleAll} />
               <ColHeader width={200}>Page</ColHeader>
             </StickyCols>
             <div className="flex items-center gap-3 pr-4">
-              <ColHeader width={130}>Mot-clé</ColHeader>
+              <SortHeader width={130} sortKey={sortKey} sortDir={sortDir} k="keyword" onClick={() => toggleSort("keyword")}>Mot-clé</SortHeader>
               <ColHeader width={110}>Origine</ColHeader>
               <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="position" onClick={() => toggleSort("position")}>Position</SortHeader>
               <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="volume"   onClick={() => toggleSort("volume")}>Volume</SortHeader>
-              <SortHeader width={200} sortKey={sortKey} sortDir={sortDir} k="trafic"   onClick={() => toggleSort("trafic")}>Trafic</SortHeader>
+              <SortHeader width={90}  sortKey={sortKey} sortDir={sortDir} k="trafic"   onClick={() => toggleSort("trafic")}>Trafic</SortHeader>
+              <SortHeader width={90}  sortKey={sortKey} sortDir={sortDir} k="clics"    onClick={() => toggleSort("clics")}>Clics</SortHeader>
+              <ColHeader width={140}>Tendance</ColHeader>
               <SortHeader width={110} sortKey={sortKey} sortDir={sortDir} k="ctr"      onClick={() => toggleSort("ctr")}>CTR</SortHeader>
               <ColHeader width={110}>Priorité</ColHeader>
               <SortHeader width={80}  sortKey={sortKey} sortDir={sortDir} k="effort"   onClick={() => toggleSort("effort")}>Effort</SortHeader>
@@ -3216,7 +3309,7 @@ export function BriefsView({
             description={search ? `Aucun résultat pour « ${search} »` : "Aucun brief dans cette catégorie."}
           />
         ) : (
-          <div style={{ minWidth: 2150 }}>
+          <div style={{ minWidth: 2270 }}>
             {pageBriefs.map((brief, i) => {
                 const { color, colorBg, text: typeText } = TYPE_CONFIG[brief.type];
                 const prio = PRIORITY_CONFIG[briefPriorities[brief.id] ?? brief.priority];
@@ -3257,8 +3350,8 @@ export function BriefsView({
                       <Checkbox checked={isSelected} onChange={() => toggleOne(brief.id)} />
                       {/* Page */}
                       <div className="w-[200px] flex-shrink-0 min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">{brief.title}</p>
-                        <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-muted)]">{brief.url}</p>
+                        <p className="truncate type-label text-[var(--text-primary)]">{brief.title}</p>
+                        <p className="mt-0.5 truncate font-mono type-micro">{brief.url}</p>
                       </div>
                     </StickyCols>
 
@@ -3273,7 +3366,7 @@ export function BriefsView({
                         value={briefKeywords[brief.id] ?? brief.keyword}
                         onChange={(e) => setBriefKeywords((prev) => ({ ...prev, [brief.id]: e.target.value }))}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full truncate rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)] outline-none transition-colors hover:bg-[var(--bg-card-hover)] focus:border-[var(--accent-primary)] focus:bg-[var(--bg-secondary)]"
+                        className="w-full truncate rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-3 py-1.5 type-caption outline-none transition-colors hover:bg-[var(--bg-card-hover)] focus:border-[var(--accent-primary)] focus:bg-[var(--bg-secondary)]"
                         style={{ minWidth: 0 }}
                         placeholder="Mot-clé…"
                       />
@@ -3281,7 +3374,7 @@ export function BriefsView({
 
                     {/* Type */}
                     <div className="w-[110px] flex-shrink-0 min-w-0">
-                      <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
+                      <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 type-caption">
                         {TYPE_CONFIG[brief.type].label}
                       </span>
                     </div>
@@ -3290,7 +3383,7 @@ export function BriefsView({
                     <div className="w-[110px] flex-shrink-0 min-w-0">
                       {brief.position ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] tabular-nums text-[var(--text-primary)]">
+                          <span className="type-label tabular-nums text-[var(--text-primary)]">
                             #{brief.position}
                           </span>
                           {brief.positionDelta != null && brief.positionDelta !== 0 && (() => {
@@ -3304,72 +3397,80 @@ export function BriefsView({
                             );
                           })()}
                         </div>
-                      ) : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
+                      ) : <span className="type-body-sm text-[var(--text-muted)]">—</span>}
                     </div>
 
                     {/* Volume */}
                     <div className="w-[80px] flex-shrink-0 min-w-0">
-                      <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{brief.volume.toLocaleString()}</span>
+                      <span className="type-label tabular-nums text-[var(--text-primary)]">{brief.volume.toLocaleString()}</span>
                     </div>
 
-                    {/* Trafic — clics (tooltip Détail GSC) + sparkline interactive (tooltip point survolé) */}
-                    <div className="w-[200px] flex-shrink-0 min-w-0">
+                    {/* Trafic est. — sessions estimées (dérivées des clics GSC) */}
+                    <div className="w-[90px] flex-shrink-0 min-w-0">
+                      {brief.clics != null
+                        ? <span className="type-label tabular-nums text-[var(--text-primary)]">{Math.round(brief.clics * 1.4).toLocaleString("fr-FR")}</span>
+                        : <span className="type-body-sm text-[var(--text-muted)]">—</span>}
+                    </div>
+
+                    {/* Clics — GSC (tooltip Détail GSC) */}
+                    <div className="w-[90px] flex-shrink-0 min-w-0">
+                      {brief.clics != null ? (() => {
+                        const isUp = (brief.clicsDelta ?? 0) >= 0;
+                        return (
+                          <Tooltip
+                            side="top"
+                            rich
+                            portal
+                            label={
+                              <div className="flex flex-col gap-1.5">
+                                <p className="font-semibold">Détail GSC</p>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="opacity-70">Clics</span>
+                                  <span className="font-semibold tabular-nums">{brief.clics!.toLocaleString("fr-FR")}{brief.clicsDelta != null && <span className={`ml-1.5 type-micro ${isUp ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{isUp ? "+" : ""}{brief.clicsDelta}</span>}</span>
+                                </div>
+                                {brief.impressions != null && (
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="opacity-70">Impressions</span>
+                                    <span className="font-semibold tabular-nums">{brief.impressions.toLocaleString("fr-FR")}</span>
+                                  </div>
+                                )}
+                                {brief.positionGsc != null && (
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="opacity-70">Position GSC</span>
+                                    <span className="font-semibold tabular-nums">{brief.positionGsc.toFixed(1)}{brief.positionDelta != null && <span className={`ml-1.5 type-micro ${brief.positionDelta < 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{brief.positionDelta > 0 ? "+" : ""}{brief.positionDelta.toFixed(1)}</span>}</span>
+                                  </div>
+                                )}
+                                {brief.impressions != null && brief.clics != null && (
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="opacity-70">CTR</span>
+                                    <span className="font-semibold tabular-nums">{((brief.clics / brief.impressions) * 100).toFixed(1)}%</span>
+                                  </div>
+                                )}
+                              </div>
+                            }
+                          >
+                            <span className="type-label tabular-nums text-[var(--text-primary)]">{brief.clics.toLocaleString()}</span>
+                          </Tooltip>
+                        );
+                      })() : <span className="type-body-sm text-[var(--text-muted)]">—</span>}
+                    </div>
+
+                    {/* Tendance — sparkline clics (tooltip point survolé) */}
+                    <div className="w-[140px] flex-shrink-0 min-w-0">
                       {brief.clics != null ? (() => {
                         const histClics = (PAGE_HISTORY[brief.id] ?? [])
                           .map((h) => ({ date: h.date, clics: h.clics }))
                           .filter((h): h is { date: string; clics: number } => h.clics != null)
-                          .reverse(); // oldest → most recent
-                        const isUp = (brief.clicsDelta ?? 0) >= 0;
-                        const trendColor = "var(--accent-primary)";
-                        return (
-                          <span className="inline-flex w-full items-center justify-between gap-3">
-                            {/* Tooltip 1 — Détail GSC sur le nombre de clics */}
-                            <Tooltip
-                              side="top"
-                              rich
-                              portal
-                              label={
-                                <div className="flex flex-col gap-1.5">
-                                  <p className="font-semibold">Détail GSC</p>
-                                  <div className="flex items-center justify-between gap-4">
-                                    <span className="opacity-70">Clics</span>
-                                    <span className="font-semibold tabular-nums">{brief.clics!.toLocaleString("fr-FR")}{brief.clicsDelta != null && <span className={`ml-1.5 text-[11px] ${isUp ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{isUp ? "+" : ""}{brief.clicsDelta}</span>}</span>
-                                  </div>
-                                  {brief.impressions != null && (
-                                    <div className="flex items-center justify-between gap-4">
-                                      <span className="opacity-70">Impressions</span>
-                                      <span className="font-semibold tabular-nums">{brief.impressions.toLocaleString("fr-FR")}</span>
-                                    </div>
-                                  )}
-                                  {brief.positionGsc != null && (
-                                    <div className="flex items-center justify-between gap-4">
-                                      <span className="opacity-70">Position GSC</span>
-                                      <span className="font-semibold tabular-nums">{brief.positionGsc.toFixed(1)}{brief.positionDelta != null && <span className={`ml-1.5 text-[11px] ${brief.positionDelta < 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}>{brief.positionDelta > 0 ? "+" : ""}{brief.positionDelta.toFixed(1)}</span>}</span>
-                                    </div>
-                                  )}
-                                  {brief.impressions != null && brief.clics != null && (
-                                    <div className="flex items-center justify-between gap-4">
-                                      <span className="opacity-70">CTR</span>
-                                      <span className="font-semibold tabular-nums">{((brief.clics / brief.impressions) * 100).toFixed(1)}%</span>
-                                    </div>
-                                  )}
-                                </div>
-                              }
-                            >
-                              <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{brief.clics.toLocaleString()}</span>
-                            </Tooltip>
-                            {/* Tooltip 2 — point survolé du sparkline (date + valeur) */}
-                            <ClicsSparkline history={histClics} color={trendColor} />
-                          </span>
-                        );
-                      })() : <span className="text-[13px] text-[var(--text-muted)]">—</span>}
+                          .reverse();
+                        return <ClicsSparkline history={histClics} color="var(--accent-primary)" />;
+                      })() : <span className="type-body-sm text-[var(--text-muted)]">—</span>}
                     </div>
 
                     {/* CTR — réel + pill gap inline (même style que Position) */}
                     <div className="w-[110px] flex-shrink-0 min-w-0">
                       {(() => {
                         if (brief.clics == null || brief.impressions == null || !brief.impressions) {
-                          return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+                          return <span className="type-body-sm text-[var(--text-muted)]">—</span>;
                         }
                         const ctrReel = (brief.clics / brief.impressions) * 100;
                         const ctrAttendu = expectedCtrFromPosition(brief.position);
@@ -3394,7 +3495,7 @@ export function BriefsView({
                             }
                           >
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{ctrReel.toFixed(1)}%</span>
+                              <span className="type-label tabular-nums text-[var(--text-primary)]">{ctrReel.toFixed(1)}%</span>
                               {gap != null && gap !== 0 && (
                                 <VariationPill direction={sousPerf ? "down" : "up"} className="!text-[11px]">
                                   {Math.abs(gap).toFixed(1)}
@@ -3412,7 +3513,7 @@ export function BriefsView({
                         <DropdownMenu
                           width={180}
                           trigger={
-                            <button className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium transition-opacity hover:opacity-70" style={{ color: prio.text, backgroundColor: prio.bg }}>
+                            <button className="inline-flex items-center rounded-md px-2 py-1 type-caption transition-opacity hover:opacity-70" style={{ color: prio.text, backgroundColor: prio.bg }}>
                               {prio.label}
                             </button>
                           }
@@ -3425,7 +3526,7 @@ export function BriefsView({
                               selected={(briefPriorities[brief.id] ?? brief.priority) === key}
                             >
                               <span
-                                className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium"
+                                className="inline-flex items-center rounded-md px-2 py-1 type-caption"
                                 style={{ color: c.text, backgroundColor: c.bg }}
                               >
                                 {c.label}
@@ -3442,7 +3543,7 @@ export function BriefsView({
                         const h = estimateEffortHours(brief);
                         return (
                           <Tooltip side="top" portal label={`${h}h estimées pour livrer cette analyse`}>
-                            <span className="text-[13px] tabular-nums text-[var(--text-primary)]">
+                            <span className="type-label tabular-nums text-[var(--text-primary)]">
                               {h}h
                             </span>
                           </Tooltip>
@@ -3458,7 +3559,7 @@ export function BriefsView({
                           trigger={brief.tag ? (
                             <button
                               type="button"
-                              className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                              className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-3 py-1.5 type-caption transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
                             >
                               <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: tagColors[brief.tag] ?? "#64748B" }} />
                               <span className="whitespace-nowrap">{shortTag(brief.tag)}</span>
@@ -3466,7 +3567,7 @@ export function BriefsView({
                           ) : (
                             <button
                               type="button"
-                              className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-1 type-caption text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                             >
                               + Ajouter un lot
                             </button>
@@ -3508,15 +3609,15 @@ export function BriefsView({
                         />
                         {analyseLabel ? (
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
+                            <p className="truncate type-label text-[var(--text-primary)]">
                               Analyse {brief.analysisCount ?? 1}
                             </p>
-                            <p className="truncate text-[11px] tracking-caption text-[var(--text-muted)]">
+                            <p className="truncate type-micro">
                               {analyseLabel}
                             </p>
                           </div>
                         ) : (
-                          <span className="truncate text-[13px] font-medium text-[var(--text-muted)]">
+                          <span className="truncate type-label text-[var(--text-muted)]">
                             Pas encore analysée
                           </span>
                         )}
@@ -3572,19 +3673,19 @@ export function BriefsView({
 
       {/* ── Pagination — sticky bottom of viewport ── */}
       <div className="sticky bottom-0 z-30 flex items-center justify-between gap-4 border-t border-[var(--border-subtle)] bg-[var(--bg-primary)]/95 px-[var(--page-px)] py-3 backdrop-blur">
-        <span className="text-[12px] tabular-nums text-[var(--text-muted)]">
+        <span className="type-caption tabular-nums text-[var(--text-muted)]">
           {pageStart.toLocaleString("fr-FR")} – {pageEnd.toLocaleString("fr-FR")} sur {filtered.length.toLocaleString("fr-FR")}
         </span>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-[var(--text-muted)]">URLs par page</span>
+            <span className="type-caption text-[var(--text-muted)]">URLs par page</span>
             <DropdownMenu
               upward
               width={88}
               align="right"
               trigger={
-                <button className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-2.5 py-1 text-[12px] font-medium tabular-nums text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]">
+                <button className="flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-subtle)] px-2.5 py-1 type-caption tabular-nums text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]">
                   {pageSize}
                   <ChevronDownIcon className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                 </button>
@@ -3650,6 +3751,15 @@ export function BriefsView({
           onKeywordChange={(id, kw) => setBriefKeywords((prev) => ({ ...prev, [id]: kw }))}
           onConfirm={() => { setAnalyseLaunchOpen(false); setSelected(new Set()); }}
           onClose={() => setAnalyseLaunchOpen(false)}
+        />
+      )}
+
+      {/* Création d'un tag depuis la toolbar */}
+      {newTagOpen && (
+        <CreateTagModal
+          existingTags={Object.keys(tagColors)}
+          onCancel={() => setNewTagOpen(false)}
+          onCreate={(name, color) => { createTag(name, color); setNewTagOpen(false); }}
         />
       )}
     </div>

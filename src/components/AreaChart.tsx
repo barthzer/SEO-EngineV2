@@ -151,6 +151,13 @@ export function AreaChart({
         )
       : nice.ticks;
 
+  // Positions de l'axe X retenues (≤ 6, espacées) — servent aux labels ET à la grille verticale.
+  const xLabelPts = pts.filter((_, i) => {
+    if (pts.length <= 6) return true;
+    const step = Math.ceil(pts.length / 6);
+    return i === 0 || i === pts.length - 1 || i % step === 0;
+  });
+
   function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
     const svgEl = svgRef.current;
     const cEl = containerRef.current;
@@ -198,33 +205,41 @@ export function AreaChart({
             <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.14 }} />
             <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
           </linearGradient>
+          {/* Fade des extrémités : la courbe + l'aire s'estompent aux bords gauche/droit. */}
+          <linearGradient id={`${gradId}-edge`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="white" stopOpacity="0" />
+            <stop offset="0.08" stopColor="white" stopOpacity="1" />
+            <stop offset="0.92" stopColor="white" stopOpacity="1" />
+            <stop offset="1" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <mask id={`${gradId}-edgemask`}>
+            <rect x={lm} y={0} width={chartW} height={svgH} fill={`url(#${gradId}-edge)`} />
+          </mask>
         </defs>
 
-        {/* Grid lines + Y labels (formatés avec suffixe k/M par défaut) */}
+        {/* Grille verticale — alignée sur les labels de l'axe X (plus de lignes horizontales) */}
+        {xLabelPts.map((pt) => (
+          <line key={`grid-${pt.label}`} x1={pt.x} y1={tm} x2={pt.x} y2={tm + chartH} stroke="var(--border-subtle)" strokeWidth="1" />
+        ))}
+
+        {/* Y labels (formatés avec suffixe k/M par défaut) */}
         {yTicks.map((v) => {
           const y = toY(v);
           return (
-            <g key={v}>
-              <line x1={lm} y1={y} x2={lm + chartW} y2={y} stroke="var(--border-subtle)" strokeWidth="1" />
-              <text x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{formatYTick(v)}</text>
-            </g>
+            <text key={v} x={lm - 6} y={y + 4} textAnchor="end" fontSize={12} fill="var(--text-muted)">{formatYTick(v)}</text>
           );
         })}
 
-        {/* X labels — show up to 6 evenly */}
-        {pts
-          .filter((_, i) => {
-            if (pts.length <= 6) return true;
-            const step = Math.ceil(pts.length / 6);
-            return i === 0 || i === pts.length - 1 || i % step === 0;
-          })
-          .map((pt) => (
-            <text key={pt.label} x={pt.x} y={tm + chartH + 16} textAnchor="middle" fontSize={12} fill="var(--text-muted)">{pt.label}</text>
-          ))}
+        {/* X labels */}
+        {xLabelPts.map((pt) => (
+          <text key={pt.label} x={pt.x} y={tm + chartH + 16} textAnchor="middle" fontSize={12} fill="var(--text-muted)">{pt.label}</text>
+        ))}
 
-        {/* Area + line */}
-        <path d={areaPath} fill={`url(#${gradId})`} />
-        <path d={linePath} fill="none" style={{ stroke: color }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Area + line — fade aux extrémités */}
+        <g mask={`url(#${gradId}-edgemask)`}>
+          <path d={areaPath} fill={`url(#${gradId})`} />
+          <path d={linePath} fill="none" style={{ stroke: color }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
 
         {/* Action markers — trait vertical pointillé + petit triangle au sommet */}
         {actionDots?.map((dot) => {
@@ -271,8 +286,8 @@ export function AreaChart({
               ? formatTooltip(hovPt)
               : (
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[11px] text-white/60">{hovPt.label}</span>
-                  <span className="text-[13px] font-semibold text-white">{hovPt.value}</span>
+                  <span className="type-micro text-white/60">{hovPt.label}</span>
+                  <span className="type-label text-white">{hovPt.value}</span>
                 </div>
               )}
           </ChartTooltip>

@@ -59,8 +59,8 @@ export function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () =>
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 font-semibold tracking-tight text-[var(--text-primary)]">Créer une analyse SEO</h2>
-      <p className="mt-1 text-[13px] text-[var(--text-muted)]">Générez une analyse complète pour un nouveau contenu (mot-clé sans page existante)</p>
+      <h2 className="pr-10 type-h2">Créer une analyse SEO</h2>
+      <p className="mt-1 type-body-sm">Générez une analyse complète pour un nouveau contenu (mot-clé sans page existante)</p>
       <div className="mt-6 flex flex-col gap-4">
         <FormField label="Mot-clé cible" required>
           <input type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="ex : meilleur aspirateur sans fil" autoFocus className={fieldCls} />
@@ -76,7 +76,7 @@ export function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () =>
         </InfoNote>
       </div>
       <div className="mt-6 flex items-center justify-end gap-3">
-        <button onClick={onClose} className="rounded-full px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
+        <button onClick={onClose} className="rounded-full px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
         <Button disabled={!keyword.trim()} onClick={onClose}>
           Générer l&apos;analyse
           <ChevronRightIcon className="h-4 w-4" />

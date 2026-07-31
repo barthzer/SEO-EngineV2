@@ -55,11 +55,12 @@
   --cta-text:          #ffffff;
   --cta-border:        transparent;
 
-  /* Texte */
+  /* Texte — 3 tiers lisibles : primary → secondary → tertiary(muted).
+     tertiary assombri (#8e8e93 → #76767b) pour rester lisible en 11/12px. */
   --text-primary:      #0a0a0a;
   --text-heading:      #0a0a0a;
-  --text-secondary:    #6e6e73;
-  --text-muted:        #8e8e93;
+  --text-secondary:    #63636a;
+  --text-muted:        #76767b;
   --text-input:        #8e8e93;
 
   /* Statuts — calibrés pour fond warm light */
@@ -139,11 +140,12 @@
   --cta-text:          #0a0a0a;
   --cta-border:        transparent;
 
-  /* Texte */
+  /* Texte — tertiary(muted) éclairci (#636366 → #85858b) pour rester lisible
+     en petit sur fond sombre, tout en restant sous secondary. */
   --text-primary:      #ffffff;
   --text-heading:      #ffffff;
-  --text-secondary:    #98989d;
-  --text-muted:        #636366;
+  --text-secondary:    #a3a3a8;
+  --text-muted:        #85858b;
   --text-input:        #636366;
 
   /* Statuts — saturés pour dark */

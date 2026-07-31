@@ -112,7 +112,7 @@ export function ChatWidget() {
           <GradientDivider position="bottom" />
           <SeoEngineLogo className="h-5 w-5 flex-shrink-0 text-[var(--accent-primary)]" />
           {showHistory ? (
-            <span className="min-w-0 flex-1 truncate px-1.5 py-1 text-[14px] font-semibold text-[var(--text-primary)]">
+            <span className="min-w-0 flex-1 truncate px-1.5 py-1 type-body-strong font-semibold">
               Historique du chat
             </span>
           ) : (
@@ -122,7 +122,7 @@ export function ChatWidget() {
               onChange={(e) => { setNameDraft(e.target.value); renameConversation(activeId, e.target.value); }}
               onBlur={() => setNameDraft(activeName)}
               aria-label="Nom de la discussion"
-              className="min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-1.5 py-1 text-[14px] font-semibold text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] focus:border-[var(--border-medium)] focus:bg-[var(--card-inner-bg)]"
+              className="min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-1.5 py-1 type-body-strong font-semibold outline-none transition-colors hover:border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)] focus:border-[var(--border-medium)] focus:bg-[var(--card-inner-bg)]"
             />
           )}
           <Tooltip label="Nouvelle discussion" side="bottom" portal>
@@ -174,10 +174,10 @@ export function ChatWidget() {
                 onClick={() => { selectConversation(c.id); setShowHistory(false); }}
                 className="flex w-full flex-col gap-0.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--bg-subtle)]"
               >
-                <span className="w-full truncate text-[13.5px] font-medium text-[var(--text-primary)]">
+                <span className="w-full truncate type-label text-[var(--text-primary)]">
                   {c.name}
                 </span>
-                <span className="w-full truncate text-[12px] text-[var(--text-muted)]">
+                <span className="w-full truncate type-caption">
                   {lastPreview(c)}
                 </span>
               </button>
@@ -204,7 +204,7 @@ export function ChatWidget() {
                   onKeyDown={onKeyDown}
                   rows={2}
                   placeholder="Écrivez votre message…"
-                  className="block w-full resize-none rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3.5 py-2.5 pr-11 text-[14px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--border-medium)]"
+                  className="block w-full resize-none rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3.5 py-2.5 pr-11 type-body leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] transition-colors focus:border-[var(--border-medium)]"
                 />
                 <button
                   type="button"
@@ -242,11 +242,11 @@ function MessageBubble({
   return (
     <div className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
       {isUser ? (
-        <div className="max-w-[85%] whitespace-pre-line rounded-2xl bg-[var(--bg-subtle)] px-3.5 py-2.5 text-[13.5px] leading-relaxed text-[var(--text-primary)]">
+        <div className="max-w-[85%] whitespace-pre-line rounded-2xl bg-[var(--bg-subtle)] px-3.5 py-2.5 type-body leading-relaxed">
           {message.text}
         </div>
       ) : (
-        <div className="max-w-full whitespace-pre-line text-[13.5px] leading-relaxed text-[var(--text-primary)]">
+        <div className="max-w-full whitespace-pre-line type-body leading-relaxed">
           {message.text}
         </div>
       )}
@@ -263,7 +263,7 @@ function MessageBubble({
         <button
           type="button"
           onClick={() => onAction(message.action!.href)}
-          className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
+          className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-1.5 type-label transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
         >
           {message.action.label}
           <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -278,7 +278,7 @@ function MessageBubble({
               key={s}
               type="button"
               onClick={() => onSuggestion(s)}
-              className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
+              className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-1.5 type-label transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
             >
               {s}
             </button>
@@ -293,7 +293,7 @@ function MessageBubble({
 
 function ThinkingBubble() {
   return (
-    <p className="ai-thinking-text py-1 text-[13.5px] font-medium leading-relaxed">
+    <p className="ai-thinking-text py-1 type-body-sm font-medium leading-relaxed">
       Réflexion en cours…
     </p>
   );

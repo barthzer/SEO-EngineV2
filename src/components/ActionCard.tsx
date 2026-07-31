@@ -37,6 +37,7 @@ import { PriorityBadge, type ActionPriorityLevel } from "@/components/PriorityBa
 import { pravatarUrl } from "@/lib/avatar";
 import { type Status, StatusPillDropdown } from "@/components/StatusPill";
 import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
+import { DatePopover } from "@/components/DatePopover";
 import { CommentThread } from "@/components/CommentThread";
 import { useToast } from "@/context/ToastContext";
 
@@ -149,7 +150,7 @@ function OwnerPicker({
           <CaretDown className="h-3 w-3 text-[var(--text-muted)]" />
         </>
       ) : (
-        <span className="flex h-5 items-center text-[11px] text-[var(--text-muted)]">
+        <span className="flex h-5 items-center type-micro">
           + Assigner
         </span>
       )}
@@ -171,7 +172,7 @@ function OwnerPicker({
         >
           <span className="inline-flex items-center gap-2">
             <OwnerAvatar owner={c} size={20} />
-            <span className="text-[13px] text-[var(--text-primary)]">{c.name}</span>
+            <span className="type-label text-[var(--text-primary)]">{c.name}</span>
           </span>
         </DropdownItem>
       ))}
@@ -179,7 +180,7 @@ function OwnerPicker({
         <>
           <div className="my-1 h-px bg-[var(--border-subtle)]" />
           <DropdownItem onClick={() => onChange(undefined)}>
-            <span className="text-[12px] text-[var(--text-muted)]">Retirer l&apos;assignation</span>
+            <span className="type-caption text-[var(--text-muted)]">Retirer l&apos;assignation</span>
           </DropdownItem>
         </>
       )}
@@ -196,51 +197,28 @@ function DeadlinePicker({
   deadline?: string;
   onChange?: (next: string | undefined) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus();
-  }, [editing]);
-
   if (!onChange) {
     return deadline ? (
-      <span className="inline-flex items-center gap-1 text-[12px] tabular-nums text-[var(--text-muted)]">
+      <span className="inline-flex items-center gap-1 type-caption tabular-nums text-[var(--text-muted)]">
         <Calendar className="h-3 w-3" />
         {formatDeadline(deadline)}
       </span>
     ) : null;
   }
 
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="date"
-        defaultValue={deadline}
-        onClick={(e) => e.stopPropagation()}
-        onChange={(e) => {
-          const v = e.target.value;
-          onChange(v || undefined);
-        }}
-        onBlur={() => setEditing(false)}
-        className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2 py-1 text-[12px] text-[var(--text-primary)] outline-none focus:border-[var(--border-medium)]"
-      />
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        setEditing(true);
-      }}
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] tabular-nums text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
-    >
-      <Calendar className="h-3 w-3" />
-      {deadline ? formatDeadline(deadline) : "Pas de deadline"}
-    </button>
+    <DatePopover value={deadline} onChange={onChange} align="left">
+      {({ toggle }) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); toggle(); }}
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-caption tabular-nums text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+        >
+          <Calendar className="h-3 w-3" />
+          {deadline ? formatDeadline(deadline) : "Pas de deadline"}
+        </button>
+      )}
+    </DatePopover>
   );
 }
 
@@ -256,7 +234,7 @@ function RecurrencePicker({
   // Lecture seule (client / contextes sans handler) → badge discret.
   if (!onChange) {
     return recurrence !== "none" ? (
-      <span className="inline-flex items-center gap-1 text-[12px] text-[var(--text-muted)]">
+      <span className="inline-flex items-center gap-1 type-caption text-[var(--text-muted)]">
         <Repeat className="h-3 w-3" />
         {RECURRENCE_LABEL[recurrence]}
       </span>
@@ -267,7 +245,7 @@ function RecurrencePicker({
     <button
       type="button"
       onClick={(e) => e.stopPropagation()}
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] ${
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-caption transition-colors hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] ${
         recurrence === "none" ? "text-[var(--text-muted)]" : "text-[var(--text-secondary)]"
       }`}
     >
@@ -281,7 +259,7 @@ function RecurrencePicker({
       <DropdownHeader>Récurrence</DropdownHeader>
       {RECURRENCE_OPTIONS.map((r) => (
         <DropdownItem key={r} onClick={() => onChange(r)} selected={recurrence === r}>
-          <span className="text-[13px] text-[var(--text-primary)]">{RECURRENCE_PICKER_LABEL[r]}</span>
+          <span className="type-label text-[var(--text-primary)]">{RECURRENCE_PICKER_LABEL[r]}</span>
         </DropdownItem>
       ))}
     </DropdownMenu>
@@ -419,14 +397,14 @@ export function ActionCard({
           aria-expanded={expanded}
         >
           <p
-            className={`text-[14px] font-medium leading-snug text-[var(--text-primary)] ${
+            className={`type-body-strong leading-snug ${
               isAbandoned ? "line-through" : ""
             }`}
           >
             {title}
           </p>
           {(time || impact || recurrence !== "none") && (
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[var(--text-muted)]">
+            <div className="mt-1 flex flex-wrap items-center gap-2 type-caption text-[var(--text-muted)]">
               {time && <span className="tabular-nums">⏱ {time}</span>}
               {time && impact && <span className="text-[var(--border-medium)]">·</span>}
               {impact && (
@@ -488,18 +466,18 @@ export function ActionCard({
           <div className="flex flex-col gap-5">
             {/* Description — typo plus présente (15px / leading-relaxed / text-primary) */}
             <div>
-              <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+              <p className="mb-2 inline-flex items-center gap-1.5 type-micro uppercase tracking-[0.08em]">
                 <FileText className="h-3 w-3" />
                 Description
               </p>
-              <p className="text-[15px] leading-relaxed text-[var(--text-primary)]">
+              <p className="type-body leading-relaxed">
                 {effectiveDescription}
               </p>
             </div>
 
             {/* Steps — typo plus présente, chiffre plus gros */}
             <div>
-              <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+              <p className="mb-3 inline-flex items-center gap-1.5 type-micro uppercase tracking-[0.08em]">
                 <Sparkles className="h-3 w-3" />
                 Comment réaliser cette action
               </p>
@@ -509,7 +487,7 @@ export function ActionCard({
                     <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary-soft)] text-[12px] font-semibold tabular-nums text-[var(--accent-primary)]">
                       {i + 1}
                     </span>
-                    <span className="text-[14px] leading-relaxed text-[var(--text-primary)]">
+                    <span className="type-body leading-relaxed">
                       {s}
                     </span>
                   </li>
@@ -520,7 +498,7 @@ export function ActionCard({
             {/* Resources */}
             {resources && resources.length > 0 && (
               <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                <p className="mb-2 type-micro uppercase tracking-[0.08em]">
                   Ressources
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -530,7 +508,7 @@ export function ActionCard({
                       href={r.url ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1 type-caption transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
                     >
                       {r.label}
                     </a>
@@ -543,14 +521,14 @@ export function ActionCard({
                 PLUS de champ "URL preuve". Juste narratif + indicateur impact. */}
             {showImplementation && (
               <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)] p-4">
-                <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                <p className="mb-3 inline-flex items-center gap-1.5 type-micro uppercase tracking-[0.08em]">
                   <TrendingUp className="h-3 w-3" />
                   Implémentation
                 </p>
 
                 {/* Narratif client */}
                 <label className="block">
-                  <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-secondary)]">
+                  <span className="mb-1.5 flex items-center gap-1.5 type-micro text-[var(--text-secondary)]">
                     <MessageSquare className="h-3 w-3" />
                     Narratif client (pour le rapport mensuel)
                   </span>
@@ -560,13 +538,13 @@ export function ActionCard({
                     onBlur={handleNarrativeBlur}
                     placeholder="Comment expliquer cette action à votre client en 2 phrases business…"
                     rows={2}
-                    className="w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[13px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]"
+                    className="w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 type-body-sm leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)] focus:border-[var(--border-medium)]"
                   />
                 </label>
 
                 {/* Temps passé (read-only pour l'instant) */}
                 {typeof timeSpentMinutes === "number" && timeSpentMinutes > 0 && (
-                  <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                  <p className="mt-2 type-micro">
                     Temps passé :{" "}
                     <span className="font-medium tabular-nums text-[var(--text-secondary)]">
                       {timeSpentMinutes < 60
@@ -577,7 +555,7 @@ export function ActionCard({
                 )}
 
                 {isDone && (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 text-[11px] text-[var(--text-muted)]">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] px-3 py-2 type-micro">
                     <TrendingUp className="h-3.5 w-3.5" />
                     <span>
                       Impact mesuré à T+30 / +60 / +90 jours (programmé automatiquement)

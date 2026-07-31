@@ -80,7 +80,7 @@ export function TemplateTagPill({ tag }: { tag: TemplateTag }) {
   const color = TAG_META[tag].color;
   return (
     <span
-      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+      className="inline-flex items-center rounded-full px-2 py-0.5 type-micro"
       style={{ color, backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)` }}
     >
       {tag}
@@ -93,7 +93,7 @@ export function VisibilityBadge({ visibility }: { visibility: TemplateVisibility
   const { label, color } = VISIBILITY_META[visibility];
   return (
     <span
-      className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+      className="inline-flex items-center rounded-full px-2 py-0.5 type-micro"
       style={{ color, backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)` }}
     >
       {label}

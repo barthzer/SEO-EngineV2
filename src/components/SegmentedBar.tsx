@@ -33,7 +33,7 @@ export function SegmentedBar({
             style={{ flex: Math.max(d.pct, 8), backgroundColor: d.color }}
           >
             {d.icon && <span className="flex flex-shrink-0 items-center">{d.icon}</span>}
-            {d.pct >= 3 && <span className="text-[12px] font-semibold tabular-nums">{d.pct}%</span>}
+            {d.pct >= 3 && <span className="type-caption tabular-nums text-white">{d.pct}%</span>}
           </div>
         ))}
       </div>
@@ -42,7 +42,7 @@ export function SegmentedBar({
         {data.map((d) => (
           <div key={d.label} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 flex-shrink-0 rounded-[3px]" style={{ backgroundColor: d.color }} />
-            <span className="text-[13px] text-[var(--text-secondary)]">{d.label}</span>
+            <span className="type-label">{d.label}</span>
           </div>
         ))}
       </div>

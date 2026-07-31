@@ -92,11 +92,11 @@ export function RegionFlag({ code }: { code: string }) {
 
 /** Pastille de tag (point coloré + nom). */
 export function TagPill({ name, color }: { name: string; color: string }) {
+  // Pill tag/lot alignée sur les « Tags de prompts » des paramètres (dot coloré +
+  // fond neutre + texte secondary), plutôt qu'un fond teinté par la couleur du tag.
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-medium"
-      style={{ color, backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)` }}
-    >
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-secondary)]">
+      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
       {name}
     </span>
   );

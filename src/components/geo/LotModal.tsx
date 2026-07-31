@@ -92,12 +92,12 @@ export function LotModal({ lot, lots = [], setup, domain, onNavigate, onClose }:
               </button>
             </div>
           </div>
-          <h1 className="mb-4 font-semibold leading-snug tracking-tight text-[var(--text-primary)]">{lot.name}</h1>
+          <h1 className="mb-4 type-h1 leading-snug">{lot.name}</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-primary)]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 type-caption text-[var(--text-primary)]">
               <span className="font-medium tabular-nums">{promptCount}</span> prompt{promptCount > 1 ? "s" : ""}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] text-[var(--text-primary)]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 type-caption text-[var(--text-primary)]">
               <span className="font-medium tabular-nums">{volume.toLocaleString("fr-FR")}</span> de volume estimé
             </span>
           </div>
@@ -110,8 +110,8 @@ export function LotModal({ lot, lots = [], setup, domain, onNavigate, onClose }:
           {/* Classement par prompt — même grille #1..#10 que « Classement par sujet », mais par prompt */}
           <section className="flex flex-col gap-3">
             <div>
-              <p className="text-[15px] font-semibold text-[var(--text-primary)]">Classement par prompt</p>
-              <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">Classement de visibilité par prompt de cette liste, comparé aux marques de votre marché</p>
+              <p className="type-title">Classement par prompt</p>
+              <p className="mt-0.5 type-caption">Classement de visibilité par prompt de cette liste, comparé aux marques de votre marché</p>
             </div>
             <PromptRankingTable prompts={lotPromptRankings} setup={setup} domain={domain} />
           </section>

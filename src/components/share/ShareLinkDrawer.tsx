@@ -60,13 +60,13 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
 
       {/* Header */}
       <div>
-        <p className="text-[12px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="type-caption font-medium uppercase tracking-wider text-[var(--text-muted)]">
           Partage client
         </p>
-        <h2 className="mt-1 text-[20px] font-semibold leading-tight tracking-tight text-[var(--text-primary)]">
+        <h2 className="mt-1 type-h2">
           Partagez l'avancement avec {domain}
         </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="mt-2 type-body-sm">
           Un lien public en lecture seule. Votre client verra l'avancement,
           les actions livrées et les prochaines étapes — sans accès aux données
           internes (commentaires, temps passé, briefs en cours).
@@ -76,8 +76,8 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
       {/* Toggle activation */}
       <div className="flex items-center justify-between rounded-2xl border border-[var(--border-subtle)] px-4 py-3">
         <div>
-          <p className="text-[13px] font-semibold text-[var(--text-primary)]">Activer le partage</p>
-          <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">
+          <p className="type-label font-semibold text-[var(--text-primary)]">Activer le partage</p>
+          <p className="mt-0.5 type-caption text-[var(--text-muted)]">
             {enabled ? "Le lien est actif et accessible." : "Le lien est désactivé. Activez pour partager."}
           </p>
         </div>
@@ -97,7 +97,7 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
 
       {/* Lien + copy */}
       <div className={`flex flex-col gap-2 transition-opacity ${enabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
-        <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="type-micro uppercase tracking-wider text-[var(--text-muted)]">
           Lien partageable
         </p>
         <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3 py-2.5">
@@ -107,12 +107,12 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
             readOnly
             value={shareUrl}
             onFocus={(e) => e.target.select()}
-            className="flex-1 truncate bg-transparent text-[13px] text-[var(--text-primary)] outline-none"
+            className="flex-1 truncate bg-transparent type-body-sm text-[var(--text-primary)] outline-none"
           />
           <button
             onClick={handleCopy}
             disabled={!enabled}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors hover:bg-[var(--bg-card-hover)]"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 type-caption font-medium transition-colors hover:bg-[var(--bg-card-hover)]"
             style={{ color: copied ? "var(--color-success)" : "var(--text-secondary)" }}
           >
             {copied ? (
@@ -133,7 +133,7 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
           <button
             onClick={handleRegenerate}
             disabled={!enabled}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+            className="inline-flex items-center gap-1.5 type-caption font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
           >
             <ArrowPathIcon className="h-3.5 w-3.5" />
             Régénérer le lien
@@ -143,7 +143,7 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
             href={`/share/${token}`}
             target="_blank"
             rel="noopener noreferrer"
-            className={`inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--accent-primary)] transition-opacity hover:opacity-80 ${
+            className={`inline-flex items-center gap-1.5 type-caption font-medium text-[var(--accent-primary)] transition-opacity hover:opacity-80 ${
               enabled ? "" : "pointer-events-none opacity-40"
             }`}
           >
@@ -152,17 +152,17 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
           </Link>
         </div>
 
-        <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+        <p className="mt-1 type-micro leading-relaxed text-[var(--text-muted)]">
           Régénérer le lien invalide l'ancien — utile si le précédent a été partagé par erreur.
         </p>
       </div>
 
       {/* Ce que verra le client */}
       <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="type-micro font-semibold uppercase tracking-wider text-[var(--text-muted)]">
           Ce que verra votre client
         </p>
-        <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        <ul className="mt-2 flex flex-col gap-1.5 type-body-sm">
           <li className="inline-flex items-baseline gap-2">
             <span className="text-[var(--color-success)]">✓</span>
             Header avec votre branding agence
@@ -180,10 +180,10 @@ export function ShareLinkDrawer({ domain }: { domain: string }) {
             Actions en cours + prochaines étapes
           </li>
         </ul>
-        <p className="mt-3 text-[12px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="mt-3 type-caption font-semibold uppercase tracking-wider text-[var(--text-muted)]">
           Ce qui reste privé
         </p>
-        <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        <ul className="mt-2 flex flex-col gap-1.5 type-body-sm">
           <li className="inline-flex items-baseline gap-2">
             <span className="text-[var(--text-muted)]">×</span>
             Commentaires internes & notes

@@ -54,7 +54,7 @@ export function PriorityBars({
 export function PriorityBadge({ level }: { level: ActionPriorityLevel }) {
   const cfg = PRIORITY_STYLE[level];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-[12px] font-medium text-[var(--text-primary)]">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2 py-1 type-caption text-[var(--text-primary)]">
       <PriorityBars level={level} />
       {cfg.label}
     </span>

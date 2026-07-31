@@ -7,7 +7,7 @@
  *
  * Pattern : [icon] label + status pill + big number + horizontal bar + hint.
  * Conçu pour être empilé verticalement quand on doit montrer plusieurs
- * axes dans un panel (Technique / Contenu / Netlinking par exemple).
+ * axes dans un panel (Technique / Contenu / Popularité par exemple).
  *
  * @example
  *   <Panel title="Santé de votre site">
@@ -81,19 +81,19 @@ export function HealthScoreBar({
               bg={scoreBg(score)}
             />
           )}
-          <p className="text-[13px] font-medium text-[var(--text-primary)]">{label}</p>
+          <p className="type-label text-[var(--text-primary)]">{label}</p>
         </div>
         <div className="flex items-baseline gap-2">
           <span
-            className="text-[10px] font-semibold uppercase tracking-wider"
+            className="type-micro uppercase tracking-wider"
             style={{ color }}
           >
             {status}
           </span>
-          <span className="text-[28px] font-semibold leading-none tabular-nums text-[var(--text-primary)]">
+          <span className="type-h1 leading-none tabular-nums">
             {score}
           </span>
-          <span className="text-[12px] text-[var(--text-muted)]">/100</span>
+          <span className="type-caption text-[var(--text-muted)]">/100</span>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export function HealthScoreBar({
       </div>
 
       {hint && (
-        <p className="text-[11px] leading-relaxed text-[var(--text-muted)]">{hint}</p>
+        <p className="type-caption leading-relaxed text-[var(--text-muted)]">{hint}</p>
       )}
     </div>
   );

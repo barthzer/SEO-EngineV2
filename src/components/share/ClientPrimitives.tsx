@@ -37,19 +37,19 @@ export function StatTile({
   return (
     <div className="rounded-2xl bg-[var(--bg-card-static)] px-5 py-6">
       <p
-        className="text-[13px] font-medium tracking-body"
+        className="type-label"
         style={{ color: "light-dark(color(srgb 0.05 0.05 0.05 / 0.5), var(--text-muted))" }}
       >
         {label}
       </p>
       <div className="mt-2 flex items-baseline gap-2">
-        <p className="text-[24px] font-semibold leading-none tabular-nums text-[var(--text-primary)]">
+        <p className="type-h1 leading-none tabular-nums">
           {value}
         </p>
         {valueExtra}
       </div>
       {sub && (
-        <p className="mt-1.5 text-[12px] text-[var(--text-muted)]">{sub}</p>
+        <p className="mt-1.5 type-caption text-[var(--text-muted)]">{sub}</p>
       )}
     </div>
   );
@@ -86,7 +86,7 @@ export function StatusPill({ status }: { status: SharedAction["status"] }) {
   const Icon = cfg.icon;
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 type-micro font-semibold"
       style={{ color: cfg.color, backgroundColor: cfg.bg }}
     >
       <Icon className="h-3 w-3" />
@@ -110,7 +110,7 @@ export function OwnerAvatar({
   if (errored) {
     return (
       <div
-        className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[10px] font-semibold text-[var(--text-secondary)]"
+        className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] type-micro font-semibold text-[var(--text-secondary)]"
         style={{ width: size, height: size, fontSize: size * 0.4 }}
       >
         {name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()}
@@ -155,12 +155,12 @@ export function ClientActionCard({
   return (
     <article className="flex flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] p-5">
       <div className="flex items-start justify-between gap-4">
-        <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-[var(--text-primary)]">
+        <h3 className="type-title">
           {action.title}
         </h3>
         <div className="flex flex-shrink-0 items-center gap-2">
           {action.assignedToClient && (
-            <span className="inline-flex items-center rounded-full bg-[var(--accent-primary-soft)] px-2.5 py-1 text-[11px] font-medium text-[var(--accent-primary)]">
+            <span className="inline-flex items-center rounded-full bg-[var(--accent-primary-soft)] px-2.5 py-1 type-micro text-[var(--accent-primary)]">
               Assignée à vous
             </span>
           )}
@@ -168,12 +168,12 @@ export function ClientActionCard({
         </div>
       </div>
 
-      <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+      <p className="type-body-sm">
         {action.clientNarrative}
       </p>
 
       <div className="flex items-center justify-between gap-3 pt-1">
-        <div className="flex items-center gap-2 text-[12px] text-[var(--text-muted)]">
+        <div className="flex items-center gap-2 type-caption text-[var(--text-muted)]">
           <OwnerAvatar photoSeed={action.owner.photoSeed} name={action.owner.name} size={20} />
           <span>{action.owner.name}</span>
           <span className="text-[var(--border-medium)]">·</span>
@@ -201,13 +201,13 @@ export function ClientActionCard({
           {action.assignedToClient && (
             done ? (
               <>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-success)]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-success-bg)] px-2.5 py-1 type-caption font-medium text-[var(--color-success)]">
                   <CheckCircleIcon className="h-4 w-4" /> Fait
                 </span>
                 <button
                   type="button"
                   onClick={() => clearTaskDone(domain, action.id)}
-                  className="text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                  className="type-caption text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
                 >
                   Annuler
                 </button>
@@ -216,7 +216,7 @@ export function ClientActionCard({
               <button
                 type="button"
                 onClick={() => setTaskDone(domain, action.id, clientName)}
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 type-caption font-medium text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: "var(--color-success)" }}
               >
                 <CheckCircleIcon className="h-4 w-4" /> Marquer comme fait
@@ -228,7 +228,7 @@ export function ClientActionCard({
         <button
           type="button"
           onClick={() => setShowComments((v) => !v)}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+          className="inline-flex items-center gap-1.5 type-caption font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
         >
           <ChatBubbleOvalLeftIcon className="h-4 w-4" />
           {commentCount > 0 ? `${commentCount} commentaire${commentCount > 1 ? "s" : ""}` : "Commenter"}
@@ -261,14 +261,14 @@ export function SectionHeader({
 }) {
   return (
     <div className="flex items-baseline gap-2">
-      <h2 className="text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</h2>
+      <h2 className="type-h3">{title}</h2>
       {count !== undefined && (
-        <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[var(--text-secondary)]">
+        <span className="rounded-full bg-[var(--bg-subtle)] px-2 py-0.5 type-micro tabular-nums text-[var(--text-secondary)]">
           {count}
         </span>
       )}
       {subtitle && (
-        <span className="ml-2 text-[12px] text-[var(--text-muted)]">{subtitle}</span>
+        <span className="ml-2 type-caption text-[var(--text-muted)]">{subtitle}</span>
       )}
     </div>
   );

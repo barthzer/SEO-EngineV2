@@ -4,15 +4,17 @@ import { Fragment, useState, useMemo, type ReactNode } from "react";
 import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { GeoLineChart } from "@/components/geo/GeoLineChart";
 import { DonutChart } from "@/components/DonutChart";
+import { VerticalBarChart } from "@/components/VerticalBarChart";
 import { Tooltip } from "@/components/Tooltip";
 import { Favicon } from "@/components/geo/views/OverviewView";
 import { PromptModal } from "@/components/geo/PromptModal";
 import {
   visibilitySeries, averagePositionSeries, shareOfVoice, leaderboard, topicRankings,
-  brandFromDomain, enrichPrompts, type TopicRanking, type RankBrand, type PromptRanking, type EnrichedPrompt,
+  brandFromDomain, enrichPrompts, platformMatrix, PLATFORM_LABEL, PLATFORM_DOMAIN,
+  type TopicRanking, type RankBrand, type PromptRanking, type EnrichedPrompt,
 } from "@/components/geo/analytics";
-import type { GeoSetup } from "@/components/geo/types";
-import { CARD } from "@/components/geo/ui";
+import type { GeoSetup, LlmPlatform } from "@/components/geo/types";
+import { CARD, PLATFORM_COLOR } from "@/components/geo/ui";
 
 /**
  * Hook interne : retrouve l'`EnrichedPrompt` correspondant au texte d'une ligne
@@ -31,12 +33,21 @@ function usePromptModal(setup?: GeoSetup) {
 
 /** Rang formaté façon position (1 décimale, virgule française). */
 const fmtPos = (v: number) => (Math.round(v * 10) / 10).toString().replace(".", ",");
+const fmtPct = (v: number) => `${v}%`;
 
 type RankRowData = { name: string; domain: string; isYou: boolean; value: number };
 
 export function VisibilityView({ setup, domain }: { setup: GeoSetup; domain: string }) {
   const brand = brandFromDomain(domain);
   const topics = topicRankings(setup, domain);
+
+  // ── Score de visibilité par plateforme (marque suivie) ──
+  const platforms = setup.platforms;
+  const you = platformMatrix(setup, domain).find((r) => r.isYou);
+  const platVisRows = platforms
+    .map((p) => ({ platform: p, value: you?.byPlatform[p] ?? 0 }))
+    .sort((a, b) => b.value - a.value);
+  const platVisBars = platVisRows.map((r) => ({ label: PLATFORM_LABEL(r.platform), value: r.value, color: PLATFORM_COLOR(r.platform) }));
 
   return (
     <div className="flex flex-col gap-8">
@@ -46,6 +57,51 @@ export function VisibilityView({ setup, domain }: { setup: GeoSetup; domain: str
       <Section title="Classement par sujet" subtitle={`Classement de visibilité de ${brand} par sujet, comparé aux marques de votre marché`}>
         <TopicRankingTable topics={topics} setup={setup} domain={domain} />
       </Section>
+
+      {/* 5. Score de visibilité par plateforme — barres + classement */}
+      <Section title="Score de visibilité par plateforme" subtitle={`Fréquence d'apparition de ${brand} sur chaque plateforme IA`}>
+        <SplitCard
+          left={
+            <div className="flex flex-col">
+              <p className="mb-5 type-label">Score de visibilité</p>
+              <VerticalBarChart
+                data={platVisBars}
+                chartHeight={232}
+                barWidth={52}
+                showYAxis
+                formatValue={fmtPct}
+                renderLabel={(_item, i) => <Favicon domain={PLATFORM_DOMAIN(platVisRows[i].platform)} size={18} />}
+                tooltip={(item) => <span className="type-caption font-medium text-white">{item.label} · {fmtPct(item.value)}</span>}
+              />
+            </div>
+          }
+          right={<PlatformRankSide label="Classement — score de visibilité" valueHeader="Score de visibilité" rows={platVisRows} format={fmtPct} />}
+        />
+      </Section>
+    </div>
+  );
+}
+
+/* ── Panneau de classement par plateforme (à droite des SplitCards) ──────── */
+function PlatformRankSide({ label, valueHeader, rows, format }: {
+  label: string; valueHeader: string; rows: { platform: LlmPlatform; value: number }[]; format: (v: number) => string;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <p className="mb-5 type-label">{label}</p>
+      <div className="flex items-center justify-between pb-1 type-caption">
+        <span>Plateforme</span><span>{valueHeader}</span>
+      </div>
+      <div className="flex flex-col">
+        {rows.map((r, i) => (
+          <div key={r.platform} className="flex items-center gap-3 border-t border-[var(--border-subtle)] py-2.5 first:border-t-0">
+            <span className="w-6 flex-shrink-0 type-label tabular-nums text-[var(--text-primary)]">{i + 1}.</span>
+            <Favicon domain={PLATFORM_DOMAIN(r.platform)} size={18} />
+            <span className="min-w-0 flex-1 truncate type-label text-[var(--text-primary)]">{PLATFORM_LABEL(r.platform)}</span>
+            <span className="flex-shrink-0 type-label tabular-nums text-[var(--text-primary)]">{format(r.value)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -134,8 +190,8 @@ export function Section({ title, subtitle, children }: { title: string; subtitle
   return (
     <section className="flex flex-col gap-3">
       <div>
-        <p className="text-[15px] font-semibold text-[var(--text-primary)]">{title}</p>
-        <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">{subtitle}</p>
+        <p className="type-title">{title}</p>
+        <p className="mt-0.5 type-caption">{subtitle}</p>
       </div>
       {children}
     </section>
@@ -156,9 +212,9 @@ export function SplitCard({ left, right }: { left: ReactNode; right: ReactNode }
 function ChartSide({ label, value, delta, deltaSuffix = "", children }: { label: string; value: string; delta: number; deltaSuffix?: string; children: ReactNode }) {
   return (
     <div className="flex flex-col">
-      <p className="text-[13px] text-[var(--text-muted)]">{label}</p>
+      <p className="type-label">{label}</p>
       <div className="mb-5 mt-1 flex items-baseline gap-2">
-        <span className="text-[28px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">{value}</span>
+        <span className="type-display leading-none">{value}</span>
         <DeltaBadge delta={delta} suffix={deltaSuffix} />
       </div>
       {children}
@@ -167,10 +223,10 @@ function ChartSide({ label, value, delta, deltaSuffix = "", children }: { label:
 }
 
 function DeltaBadge({ delta, suffix = "" }: { delta: number; suffix?: string }) {
-  if (!delta) return <span className="text-[14px] text-[var(--text-muted)]">–</span>;
+  if (!delta) return <span className="type-body text-[var(--text-muted)]">–</span>;
   const up = delta > 0;
   return (
-    <span className="text-[13px] font-medium tabular-nums" style={{ color: up ? "var(--color-success)" : "var(--color-danger)" }}>
+    <span className="type-label tabular-nums" style={{ color: up ? "var(--color-success)" : "var(--color-danger)" }}>
       {up ? "+" : ""}{delta}{suffix}
     </span>
   );
@@ -189,9 +245,9 @@ function RankSide({ label, rank, valueHeader, rows, format }: {
 
   return (
     <div className="flex h-full flex-col">
-      <p className="text-[13px] text-[var(--text-muted)]">{label}</p>
-      <p className="mb-5 mt-1 text-[28px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">#{rank}</p>
-      <div className="flex items-center justify-between pb-1 text-[12px] text-[var(--text-muted)]">
+      <p className="type-label">{label}</p>
+      <p className="mb-5 mt-1 type-display leading-none">#{rank}</p>
+      <div className="flex items-center justify-between pb-1 type-caption">
         <span>Marque</span><span>{valueHeader}</span>
       </div>
       <div className="flex flex-col">
@@ -200,7 +256,7 @@ function RankSide({ label, rank, valueHeader, rows, format }: {
       </div>
       {rows.length > 5 && (
         <button type="button" onClick={() => setExpanded((e) => !e)}
-          className="mt-3 self-end rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)]">
+          className="mt-3 self-end rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 type-caption font-medium transition-colors hover:bg-[var(--bg-subtle)]">
           {expanded ? "Réduire" : "Voir tout"}
         </button>
       )}
@@ -211,11 +267,11 @@ function RankSide({ label, rank, valueHeader, rows, format }: {
 function RankRow({ pos, r, format }: { pos: number; r: RankRowData; format: (v: number) => string }) {
   return (
     <div className="flex items-center gap-3 border-t border-[var(--border-subtle)] py-2.5 first:border-t-0">
-      <span className="w-6 flex-shrink-0 text-[13px] tabular-nums text-[var(--text-muted)]">{pos}.</span>
+      <span className="w-6 flex-shrink-0 type-label tabular-nums text-[var(--text-primary)]">{pos}.</span>
       <Favicon domain={r.domain} size={18} />
-      <span className={`min-w-0 flex-1 truncate text-[13px] ${r.isYou ? "font-medium text-[var(--text-primary)]" : "text-[var(--text-primary)]"}`}>{r.name}</span>
-      {r.isYou && <span className="flex-shrink-0 rounded-md bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">Vous</span>}
-      <span className="flex-shrink-0 text-[13px] font-medium tabular-nums text-[var(--text-primary)]">{format(r.value)}</span>
+      <span className={`min-w-0 flex-1 truncate type-body-sm text-[var(--text-primary)] ${r.isYou ? "font-medium" : ""}`}>{r.name}</span>
+      {r.isYou && <span className="flex-shrink-0 rounded-md bg-[var(--bg-subtle)] px-1.5 py-0.5 type-micro">Vous</span>}
+      <span className="flex-shrink-0 type-label tabular-nums text-[var(--text-primary)]">{format(r.value)}</span>
     </div>
   );
 }
@@ -239,13 +295,13 @@ function SovDonut({ setup, domain, seedOffset = 0 }: { setup: GeoSetup; domain: 
       <DonutChart
         slices={slices}
         size={208}
-        strokeWidth={16}
+        strokeWidth={7}
         gapPercent={1}
         showTrack={false}
         formatTooltip={(slice, pct) => (
           <div className="flex flex-col gap-0.5">
-            <span className="text-[12px] font-semibold text-white">{slice.label}</span>
-            <span className="text-[11px] text-white/60"><span className="font-semibold text-white">{slice.value}%</span> · {pct}% du graphe</span>
+            <span className="type-caption font-semibold text-white">{slice.label}</span>
+            <span className="type-micro text-white/60"><span className="font-semibold text-white">{slice.value}%</span> · {pct}% du graphe</span>
           </div>
         )}
       />
@@ -253,7 +309,7 @@ function SovDonut({ setup, domain, seedOffset = 0 }: { setup: GeoSetup; domain: 
         {items.map((s) => {
           const on = !hidden.has(s.key);
           return (
-            <button key={s.key} type="button" onClick={() => toggle(s.key)} className="flex items-center gap-1.5 text-[12px]">
+            <button key={s.key} type="button" onClick={() => toggle(s.key)} className="flex items-center gap-1.5 type-caption">
               <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors"
                 style={{ borderColor: s.color, backgroundColor: on ? s.color : "transparent" }}>
                 {on && (
@@ -290,10 +346,10 @@ function TopicRankingTable({ topics, setup, domain }: { topics: TopicRanking[]; 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[940px] border-collapse">
           <thead>
-            <tr className="border-b border-[var(--border-subtle)]">
-              <th className="px-5 py-3 text-left text-[12px] font-medium text-[var(--text-muted)]">Sujets</th>
+            <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+              <th className="px-5 py-3 text-left type-caption">Sujets</th>
               {TOPIC_COLS.map((c) => (
-                <th key={c} className="w-16 px-1 py-3 text-center text-[12px] font-medium text-[var(--text-muted)]">#{c}</th>
+                <th key={c} className="w-16 px-1 py-3 text-center type-caption">#{c}</th>
               ))}
             </tr>
           </thead>
@@ -305,7 +361,7 @@ function TopicRankingTable({ topics, setup, domain }: { topics: TopicRanking[]; 
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <ChevronRightIcon className={`h-4 w-4 flex-shrink-0 text-[var(--text-muted)] transition-transform ${open === t.topic ? "rotate-90" : ""}`} />
-                      <span className="max-w-[210px] truncate text-[13px] text-[var(--text-primary)]">{t.topic}</span>
+                      <span className="max-w-[210px] truncate type-label text-[var(--text-primary)]">{t.topic}</span>
                       <StatusBadge status={t.status} />
                     </div>
                   </td>
@@ -323,7 +379,7 @@ function TopicRankingTable({ topics, setup, domain }: { topics: TopicRanking[]; 
                     className={`border-b border-[var(--border-subtle)] last:border-b-0 ${setup && domain ? "group cursor-pointer transition-colors hover:bg-[var(--bg-subtle)]" : ""}`}
                     onClick={setup && domain ? () => openByText(pr.text) : undefined}>
                     <td className="py-2.5 pl-12 pr-5">
-                      <span className={`block max-w-[260px] truncate text-[13px] text-[var(--text-secondary)] ${setup && domain ? "group-hover:text-[var(--accent-primary)]" : ""}`}>{pr.text}</span>
+                      <span className={`block max-w-[260px] truncate type-label ${setup && domain ? "group-hover:text-[var(--accent-primary)]" : ""}`}>{pr.text}</span>
                     </td>
                     {TOPIC_COLS.map((c) => {
                       const b = pr.brands[c - 1];
@@ -341,7 +397,7 @@ function TopicRankingTable({ topics, setup, domain }: { topics: TopicRanking[]; 
         </table>
       </div>
       <div className="flex items-center justify-between border-t border-[var(--border-subtle)] px-5 py-3">
-        <span className="text-[12px] text-[var(--text-muted)]">
+        <span className="type-caption text-[var(--text-muted)]">
           {start + 1} – {Math.min(start + TOPIC_PAGE, topics.length)} sur {topics.length} sujets
         </span>
         <div className="flex items-center gap-1">
@@ -368,10 +424,10 @@ export function PromptRankingTable({ prompts, setup, domain }: { prompts: Prompt
       <div className="overflow-x-auto">
         <table className="w-full min-w-[940px] border-collapse">
           <thead>
-            <tr className="border-b border-[var(--border-subtle)]">
-              <th className="px-5 py-3 text-left text-[12px] font-medium text-[var(--text-muted)]">Prompt</th>
+            <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)]">
+              <th className="px-5 py-3 text-left type-caption">Prompt</th>
               {TOPIC_COLS.map((c) => (
-                <th key={c} className="w-16 px-1 py-3 text-center text-[12px] font-medium text-[var(--text-muted)]">#{c}</th>
+                <th key={c} className="w-16 px-1 py-3 text-center type-caption">#{c}</th>
               ))}
             </tr>
           </thead>
@@ -381,7 +437,7 @@ export function PromptRankingTable({ prompts, setup, domain }: { prompts: Prompt
                 className={`border-b border-[var(--border-subtle)] transition-colors last:border-b-0 hover:bg-[var(--bg-subtle)] ${setup && domain ? "group cursor-pointer" : ""}`}
                 onClick={setup && domain ? () => openByText(pr.text) : undefined}>
                 <td className="px-5 py-3">
-                  <span className={`block max-w-[260px] truncate text-[13px] text-[var(--text-primary)] ${setup && domain ? "group-hover:text-[var(--accent-primary)]" : ""}`}>{pr.text}</span>
+                  <span className={`block max-w-[260px] truncate type-label text-[var(--text-primary)] ${setup && domain ? "group-hover:text-[var(--accent-primary)]" : ""}`}>{pr.text}</span>
                 </td>
                 {TOPIC_COLS.map((c) => {
                   const b = pr.brands[c - 1];
@@ -406,9 +462,9 @@ export function PromptRankingTable({ prompts, setup, domain }: { prompts: Prompt
 
 function StatusBadge({ status }: { status: TopicRanking["status"] }) {
   return status === "leader" ? (
-    <span className="flex-shrink-0 rounded-md bg-[var(--color-success-bg)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-success)]">Leader</span>
+    <span className="flex-shrink-0 rounded-md bg-[var(--color-success-bg)] px-1.5 py-0.5 type-micro text-[var(--color-success)]">Leader</span>
   ) : (
-    <span className="flex-shrink-0 rounded-md bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-danger)]">À travailler</span>
+    <span className="flex-shrink-0 rounded-md bg-[var(--color-danger-bg)] px-1.5 py-0.5 type-micro text-[var(--color-danger)]">À travailler</span>
   );
 }
 
@@ -417,7 +473,7 @@ function BrandAvatar({ b, size = "md" }: { b: RankBrand; size?: "sm" | "md" }) {
   const box = size === "sm" ? "h-7 w-7" : "h-9 w-9";
   const fav = size === "sm" ? 16 : 20;
   const inner = b.isYou ? (
-    <span className={`flex ${box} items-center justify-center rounded-full bg-[var(--accent-primary-soft)] ${size === "sm" ? "text-[9px]" : "text-[11px]"} font-semibold text-[var(--accent-primary)]`}>
+    <span className={`flex ${box} items-center justify-center rounded-full bg-[var(--accent-primary-soft)] type-micro font-semibold text-[var(--accent-primary)]`}>
       {b.name.slice(0, 2).toUpperCase()}
     </span>
   ) : (

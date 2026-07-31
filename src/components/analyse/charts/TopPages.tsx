@@ -48,7 +48,7 @@ function MiniSparkline({ vals }: { vals: number[] }) {
 function PosTag({ pos }: { pos: number }) {
   const color = pos <= 3 ? "var(--color-success)" : pos <= 10 ? "var(--accent-primary)" : pos <= 20 ? "var(--color-warning)" : "var(--text-muted)";
   return (
-    <span className="inline-flex items-center rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color, backgroundColor: `${color}18` }}>
+    <span className="inline-flex items-center rounded-full px-2 py-1 type-caption font-semibold" style={{ color, backgroundColor: `${color}18` }}>
       #{pos.toFixed(1)}
     </span>
   );
@@ -72,18 +72,18 @@ export function TopPages({ onUrlClick }: { onUrlClick?: (url: string) => void } 
       width: 280,
       flex: true,
       render: (p) => (
-        <span className="block truncate font-mono text-[13px] text-[var(--text-secondary)]">{p.url}</span>
+        <span className="block truncate font-mono type-label">{p.url}</span>
       ),
     },
     {
       key: "clicks", header: "Clics", width: 90, align: "right",
       sortable: true, sortValue: (p) => p.clicks,
-      render: (p) => <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">{p.clicks.toLocaleString("fr-FR")}</span>,
+      render: (p) => <span className="type-label font-semibold tabular-nums text-[var(--text-primary)]">{p.clicks.toLocaleString("fr-FR")}</span>,
     },
     {
       key: "impressions", header: "Impressions", width: 110, align: "right",
       sortable: true, sortValue: (p) => p.impressions,
-      render: (p) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{p.impressions.toLocaleString("fr-FR")}</span>,
+      render: (p) => <span className="type-label tabular-nums">{p.impressions.toLocaleString("fr-FR")}</span>,
     },
     {
       key: "position", header: "Position", width: 90,
@@ -93,7 +93,7 @@ export function TopPages({ onUrlClick }: { onUrlClick?: (url: string) => void } 
     {
       key: "ctr", header: "CTR", width: 70, align: "right",
       sortable: true, sortValue: (p) => parseFloat(p.ctr),
-      render: (p) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{p.ctr}</span>,
+      render: (p) => <span className="type-label tabular-nums">{p.ctr}</span>,
     },
     {
       key: "trend", header: "Tendance", width: 90,
@@ -111,7 +111,7 @@ export function TopPages({ onUrlClick }: { onUrlClick?: (url: string) => void } 
           trigger={
             <button
               type="button"
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all ${urlFilter !== "all" ? "bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 type-label transition-all ${urlFilter !== "all" ? "bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold" : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"}`}
             >
               {urlFilter === "all" ? "Toutes les URLs" : urlFilter === "/" ? "Accueil" : urlFilter}
               <ChevronDownIcon className="h-3 w-3 flex-shrink-0 opacity-70" />
@@ -123,7 +123,7 @@ export function TopPages({ onUrlClick }: { onUrlClick?: (url: string) => void } 
           <DropdownItem selected={urlFilter === "/services"} onClick={() => setUrlFilter("/services")}>/services</DropdownItem>
           <DropdownItem selected={urlFilter === "/"}         onClick={() => setUrlFilter("/")}>/ (accueil)</DropdownItem>
         </DropdownMenu>
-        <span className="ml-auto text-[12px] tabular-nums text-[var(--text-muted)]">
+        <span className="ml-auto type-micro tabular-nums">
           {filtered.length} / {TOP_PAGES_ALL.length}
         </span>
       </div>

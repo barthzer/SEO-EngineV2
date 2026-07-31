@@ -1,7 +1,5 @@
 "use client";
 
-import { useId } from "react";
-
 /**
  * ScoreArc — jauge demi-cercle (180°) avec score au centre.
  *
@@ -32,30 +30,57 @@ interface ScoreArcProps {
   valueColor?: string;
 }
 
+/** Épaisseur du trait de la jauge. */
+const STROKE = 8;
+
 export function ScoreArc({ score, width = 176, color, hideTotal = false, valueColor }: ScoreArcProps) {
-  const gradId = useId();
   const clamped = Math.max(0, Math.min(100, score));
-  const circumference = Math.PI * ARC_RADIUS;
-  const offset = circumference - (clamped / 100) * circumference;
+  const circumference = Math.PI * ARC_RADIUS; // longueur de l'arc 180°
   const c = color ?? defaultColor(clamped);
   const height = width * (95 / 181);
   const valueSize = Math.round(width * 0.18);
 
+  // Gap constant en longueur d'arc : les round caps « mangent » ~STROKE (½ par extrémité),
+  // on ajoute une marge fixe pour laisser un vide visible constant quel que soit le score.
+  const gapLen = STROKE + 2.5;
+  const half = gapLen / 2;
+  const filledLen = (clamped / 100) * circumference;
+  const both = clamped > 0 && clamped < 100;
+  const fLen = both ? Math.max(0, filledLen - half) : filledLen;         // segment rempli
+  const eLen = both ? Math.max(0, circumference - filledLen - half) : circumference - filledLen; // segment vide
+
+  // Les deux segments s'animent ensemble → jonction (et donc le gap) reste constant pendant la maj.
+  const ease = "0.55s cubic-bezier(0.4, 0, 0.2, 1)";
+
   return (
     <div className="relative inline-block flex-shrink-0" style={{ width, height }}>
       <svg viewBox="0 0 181 95" width={width} height={height}>
-        <path d={ARC_PATH} fill="none" stroke="var(--arc-bg)" strokeWidth={8} strokeLinecap="round" />
-        <path
-          id={gradId}
-          d={ARC_PATH}
-          fill="none"
-          stroke={c}
-          strokeWidth={8}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 1s ease-out" }}
-        />
+        {/* Segment vide (track) — démarre après le gap */}
+        {clamped < 100 && (
+          <path
+            d={ARC_PATH}
+            fill="none"
+            stroke="var(--arc-bg)"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={`${eLen} ${circumference}`}
+            strokeDashoffset={both ? -(filledLen + half) : 0}
+            style={{ transition: `stroke-dashoffset ${ease}, stroke-dasharray ${ease}` }}
+          />
+        )}
+        {/* Segment rempli */}
+        {clamped > 0 && (
+          <path
+            d={ARC_PATH}
+            fill="none"
+            stroke={c}
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference - fLen}
+            style={{ transition: `stroke-dashoffset ${ease}, stroke ${ease}` }}
+          />
+        )}
       </svg>
       <div className="absolute inset-0 flex items-end justify-center">
         <span
@@ -64,7 +89,7 @@ export function ScoreArc({ score, width = 176, color, hideTotal = false, valueCo
         >
           {clamped}
         </span>
-        {!hideTotal && <span className="mb-1 ml-0.5 text-[13px] text-[var(--text-muted)]">/100</span>}
+        {!hideTotal && <span className="mb-1 ml-0.5 type-body-sm text-[var(--text-muted)]">/100</span>}
       </div>
     </div>
   );

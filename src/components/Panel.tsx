@@ -78,12 +78,12 @@ export function Panel({
         <div className="flex items-baseline justify-between gap-4">
           <div className="min-w-0 flex-1">
             {title && (
-              <h2 className="text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
+              <h2 className="type-title">
                 {title}
               </h2>
             )}
             {subtitle && (
-              <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-muted)]">
+              <p className="mt-0.5 type-micro leading-relaxed">
                 {subtitle}
               </p>
             )}

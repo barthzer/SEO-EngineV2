@@ -26,15 +26,15 @@ export function TopPagesChart({
         const isUp = p.monthlyDelta >= 0;
         return (
           <div className="flex flex-col gap-1">
-            <span className="text-[12px] font-semibold text-white">{p.title}</span>
+            <span className="type-caption font-semibold text-white">{p.title}</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-[14px] font-semibold tabular-nums text-white">
+              <span className="type-body font-semibold tabular-nums text-white">
                 {item.value.toLocaleString("fr-FR")}
               </span>
-              <span className="text-[11px] text-white/60">visites/mois</span>
+              <span className="type-micro text-white/60">visites/mois</span>
             </div>
             <span
-              className="text-[11px] font-medium tabular-nums"
+              className="type-micro tabular-nums"
               style={{ color: isUp ? "var(--color-success)" : "var(--color-danger)" }}
             >
               {isUp ? "+" : ""}
@@ -63,14 +63,14 @@ export function RisingKeywordsChart({
         const delta = kw.positionBefore - kw.positionAfter;
         return (
           <div className="flex flex-col gap-1">
-            <span className="text-[12px] font-semibold text-white">« {kw.keyword} »</span>
+            <span className="type-caption font-semibold text-white">« {kw.keyword} »</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-[14px] font-semibold tabular-nums text-white">
+              <span className="type-body font-semibold tabular-nums text-white">
                 {item.value.toLocaleString("fr-FR")}
               </span>
-              <span className="text-[11px] text-white/60">recherches/mois</span>
+              <span className="type-micro text-white/60">recherches/mois</span>
             </div>
-            <span className="text-[11px] font-medium tabular-nums text-[var(--color-success)]">
+            <span className="type-micro tabular-nums text-[var(--color-success)]">
               Position #{kw.positionBefore} → #{kw.positionAfter} (+{delta} places)
             </span>
           </div>

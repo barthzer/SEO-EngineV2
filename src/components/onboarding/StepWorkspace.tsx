@@ -34,33 +34,33 @@ export function StepWorkspace({ data, update }: { data: OnboardingData; update: 
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <h1 className="font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="type-h1">
           Créons votre workspace
         </h1>
-        <p className="text-[14px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="type-body text-[var(--text-secondary)]">
           Vous pourrez inviter votre équipe plus tard depuis les paramètres.
         </p>
       </header>
 
       <div className="flex flex-col gap-2">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Nom du workspace</label>
+        <label className="type-label text-[var(--text-primary)]">Nom du workspace</label>
         <input
           type="text"
           autoFocus
           value={data.workspaceName}
           onChange={(e) => update({ workspaceName: e.target.value })}
           placeholder="Mon agence"
-          className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-2.5 text-[14px] text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--text-primary)]"
+          className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-2.5 type-body outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--text-primary)]"
         />
         {data.workspaceSlug && (
-          <p className="font-mono text-[11px] text-[var(--text-muted)]">
+          <p className="font-mono type-micro">
             gse.app/<span className="text-[var(--text-secondary)]">{data.workspaceSlug}</span>
           </p>
         )}
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Secteur</label>
+        <label className="type-label text-[var(--text-primary)]">Secteur</label>
         <div className="flex flex-wrap gap-1.5">
           {INDUSTRIES.map((ind) => {
             const selected = data.industry === ind;
@@ -69,7 +69,7 @@ export function StepWorkspace({ data, update }: { data: OnboardingData; update: 
                 key={ind}
                 type="button"
                 onClick={() => update({ industry: ind })}
-                className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                className={`rounded-full px-3.5 py-1.5 type-label transition-colors ${
                   selected
                     ? "border border-[var(--accent-primary)] bg-[color-mix(in_oklab,var(--accent-primary)_8%,transparent)] text-[var(--accent-primary)]"
                     : "border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
@@ -83,7 +83,7 @@ export function StepWorkspace({ data, update }: { data: OnboardingData; update: 
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label className="text-[13px] font-medium text-[var(--text-primary)]">Taille d'équipe</label>
+        <label className="type-label text-[var(--text-primary)]">Taille d'équipe</label>
         <div className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--bg-subtle)] p-1">
           {TEAM_SIZES.map(({ key, label }) => {
             const selected = data.teamSize === key;
@@ -92,7 +92,7 @@ export function StepWorkspace({ data, update }: { data: OnboardingData; update: 
                 key={key}
                 type="button"
                 onClick={() => update({ teamSize: key })}
-                className={`rounded-full px-4 py-1.5 text-[12.5px] font-medium transition-colors ${
+                className={`rounded-full px-4 py-1.5 type-label transition-colors ${
                   selected
                     ? "bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"

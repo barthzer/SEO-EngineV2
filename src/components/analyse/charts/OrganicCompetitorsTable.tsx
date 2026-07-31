@@ -58,11 +58,11 @@ export function OrganicCompetitorsTable() {
       render: (c) => (
         <div className="flex items-center gap-3 min-w-0">
           <DomainSquircle domain={c.domain} />
-          <span className={`block truncate text-[13px] ${c.isYou ? "font-semibold text-[var(--accent-primary)]" : "font-medium text-[var(--text-primary)]"}`}>
+          <span className={`block truncate type-label ${c.isYou ? "font-semibold text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
             {c.domain}
           </span>
           {c.isYou && (
-            <span className="flex-shrink-0 rounded-full bg-[var(--accent-primary)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-micro text-white">
+            <span className="flex-shrink-0 rounded-full bg-[var(--accent-primary)] px-2 py-0.5 type-micro font-semibold uppercase text-white">
               Vous
             </span>
           )}
@@ -75,7 +75,7 @@ export function OrganicCompetitorsTable() {
       width: 90, align: "right",
       sortable: true, sortValue: (c) => c.tf,
       render: (c) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label font-semibold tabular-nums text-[var(--text-primary)]">
           {c.tf}
           {!c.isYou && <DeltaIndicator value={c.tf} ref={youCols.tf} />}
         </span>
@@ -87,7 +87,7 @@ export function OrganicCompetitorsTable() {
       width: 90, align: "right",
       sortable: true, sortValue: (c) => c.cf,
       render: (c) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label font-semibold tabular-nums text-[var(--text-primary)]">
           {c.cf}
           {!c.isYou && <DeltaIndicator value={c.cf} ref={youCols.cf} />}
         </span>
@@ -99,7 +99,7 @@ export function OrganicCompetitorsTable() {
       width: 90, align: "right",
       sortable: true, sortValue: (c) => c.bas,
       render: (c) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label font-semibold tabular-nums text-[var(--text-primary)]">
           {c.bas}
           {!c.isYou && <DeltaIndicator value={c.bas} ref={youCols.bas} />}
         </span>
@@ -111,7 +111,7 @@ export function OrganicCompetitorsTable() {
       width: 120, align: "right",
       sortable: true, sortValue: (c) => c.refDomains,
       render: (c) => (
-        <span className="inline-flex items-center justify-end text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">
+        <span className="inline-flex items-center justify-end type-label font-semibold tabular-nums text-[var(--text-primary)]">
           {c.refDomains.toLocaleString("fr-FR")}
           {!c.isYou && <DeltaIndicator value={c.refDomains} ref={youCols.refDomains} />}
         </span>
@@ -121,7 +121,7 @@ export function OrganicCompetitorsTable() {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[16px] font-semibold tracking-subheading text-[var(--text-primary)]">Concurrents organiques</p>
+      <p className="type-h3">Concurrents organiques</p>
       <TableWide<OrganicRow>
         columns={columns}
         data={rows}

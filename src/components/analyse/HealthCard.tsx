@@ -12,7 +12,7 @@ export function SeverityBadge({ level, count }: { level: "critique" | "important
     ? { color: "var(--color-danger)", bg: "var(--color-danger-bg)", label: count === 1 ? "critique" : "critiques" }
     : { color: "var(--color-warning)", bg: "rgba(245,158,11,0.09)", label: count === 1 ? "important" : "importants" };
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
+    <span className="type-caption inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold" style={{ color: cfg.color, backgroundColor: cfg.bg }}>
       {count} {cfg.label}
     </span>
   );
@@ -33,14 +33,14 @@ export function HealthCard({
       <div className="flex items-start gap-4 p-5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <p className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</p>
+            <p className="type-h3">{title}</p>
             {quote && (
               <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                 <Tooltip
                   side="top"
                   rich
                   portal
-                  label={<span className="block max-w-[260px] text-[12px] leading-relaxed text-white/90">{quote}</span>}
+                  label={<span className="type-caption block max-w-[260px] leading-relaxed text-white/90">{quote}</span>}
                 >
                   <button
                     type="button"
@@ -56,10 +56,10 @@ export function HealthCard({
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <SeverityBadge level="critique" count={critiques} />
             {importants !== undefined && <SeverityBadge level="important" count={importants} />}
-            <span className="text-[11px] text-[var(--text-muted)]">~{visitesRisk} vis./mois à risque</span>
+            <span className="type-micro">~{visitesRisk} vis./mois à risque</span>
           </div>
           {note && (
-            <p className="mt-2 text-[11px] text-[var(--text-muted)]">{note}</p>
+            <p className="type-micro mt-2">{note}</p>
           )}
         </div>
         {score !== undefined && <ScoreRing score={score} md />}

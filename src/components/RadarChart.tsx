@@ -269,23 +269,23 @@ export function RadarChart({
             className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-[rgba(20,20,20,0.92)] px-3.5 py-2.5 shadow-[var(--shadow-floating)] backdrop-blur-md min-w-[180px] transition-[left,top] duration-200 ease-out"
             style={{ left: hx, top: hy - 10 }}
           >
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/55">{label}</p>
+            <p className="mb-2 type-micro uppercase tracking-[0.06em] text-white/55">{label}</p>
             {seriesData.map((s, idx) => (
               <div key={idx} className="flex items-center justify-between gap-3 py-0.5">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} aria-hidden="true" />
-                  <span className="text-[12px] text-white/75">{s.label}</span>
+                  <span className="type-caption text-white/75">{s.label}</span>
                 </span>
-                <span className="text-[12.5px] font-semibold tabular-nums text-white">
+                <span className="type-caption tabular-nums text-white">
                   {s.values[axisIdx].toLocaleString("fr-FR")}
                 </span>
               </div>
             ))}
             {seriesData.length >= 2 && (
               <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/10 pt-1.5">
-                <span className="text-[11px] text-white/55">Δ vs concurrents</span>
+                <span className="type-micro text-white/55">Δ vs concurrents</span>
                 <span
-                  className="text-[12px] font-semibold tabular-nums"
+                  className="type-caption tabular-nums"
                   style={{ color: delta >= 0 ? "#34D399" : "#FB7185" }}
                 >
                   {delta >= 0 ? "+" : ""}{delta.toLocaleString("fr-FR")}

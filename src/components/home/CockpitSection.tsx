@@ -17,17 +17,26 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type ElementType } from "react";
 import {
   ArrowTrendingDownIcon,
   ArrowTrendingUpIcon,
   NoSymbolIcon,
   LinkIcon,
+  EllipsisHorizontalIcon,
+  ArrowRightCircleIcon,
+  ArrowTopRightOnSquareIcon,
+  Cog6ToothIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { GlobeIcon } from "lucide-react";
-import { ScoreGauges } from "@/components/ScoreGauges";
+import { ScoreRings } from "@/components/ScoreRings";
 import { IconBadge } from "@/components/IconBadge";
 import { VariationPill } from "@/components/VariationPill";
+import { Pill } from "@/components/Pill";
+import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPES — ré-export du shape Analysis pour les consumers
@@ -150,6 +159,20 @@ function TraficChip({ value, dir }: { value: string; dir: AnalysisRow["traficDir
   );
 }
 
+/** Badge « GSC connecté » — pastille verte + label, sur le composant DS Pill. */
+function GscBadge({ connected }: { connected: boolean }) {
+  // Rendu dans les deux états → hauteur de carte identique connecté / non connecté.
+  return (
+    <Pill
+      color={connected ? "var(--text-secondary)" : "var(--text-muted)"}
+      className="flex-shrink-0 border border-[var(--border-subtle)] px-2 py-0.5 text-[11px]"
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-[var(--color-success)]" : "bg-[var(--text-muted)]"}`} />
+      GSC
+    </Pill>
+  );
+}
+
 // StatusPillStatic retiré : la colonne actif/archive faisait doublon avec
 // le FilterTabs en haut de la vue (on n'affiche que les projets du filtre actif).
 
@@ -163,7 +186,58 @@ function geoScoreOf(a: AnalysisRow): number {
   return Math.round((a.scoreContenu * 2 + a.scoreNetlinking) / 3);
 }
 
-function ProjectCard({ a }: { a: AnalysisRow }) {
+/** CTA 3-points d'un projet. Rendu dans une carte-Link → stoppe la navigation. */
+function ProjectMenu({
+  domain,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  domain: string;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  const router = useRouter();
+  return (
+    <div className="flex-shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+      <DropdownMenu
+        align="right"
+        width={220}
+        trigger={
+          <button
+            type="button"
+            aria-label="Options du projet"
+            className="action-nested flex h-8 w-8 items-center justify-center rounded-lg"
+          >
+            <EllipsisHorizontalIcon className="h-5 w-5" />
+          </button>
+        }
+      >
+        <DropdownItem icon={ArrowRightCircleIcon} onClick={() => router.push(`/analyse/${encodeURIComponent(domain)}`)}>
+          Accéder au compte
+        </DropdownItem>
+        <DropdownItem icon={ArrowTopRightOnSquareIcon} onClick={() => window.open(`https://${domain}`, "_blank", "noopener,noreferrer")}>
+          Visiter le site
+        </DropdownItem>
+        <DropdownItem icon={Cog6ToothIcon} onClick={() => router.push(`/analyse/${encodeURIComponent(domain)}/parametres`)}>
+          Paramètres du projet
+        </DropdownItem>
+        <DropdownItem icon={StarIcon} onClick={onToggleFavorite}>
+          {isFavorite ? "Retirer des favoris" : "Ajouter en favori"}
+        </DropdownItem>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+function ProjectCard({
+  a,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  a: AnalysisRow;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
   return (
     <Link
       href={`/analyse/${encodeURIComponent(a.domain)}`}
@@ -174,45 +248,77 @@ function ProjectCard({ a }: { a: AnalysisRow }) {
       {/* Domain + meta */}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
-          <p className="min-w-0 truncate text-[15px] font-semibold leading-none tracking-tight text-[var(--text-primary)]">
+          {isFavorite && <StarIconSolid className="h-3.5 w-3.5 flex-shrink-0 text-[var(--color-warning)]" />}
+          <p className="min-w-0 truncate type-title leading-none">
             {a.domain}
           </p>
           <TraficChip value={a.trafic} dir={a.traficDir} />
         </div>
-        <p className="mt-1.5 truncate text-[12px] text-[var(--text-muted)]">
-          Mis à jour {relativeTime(a.updatedAt).toLowerCase()}
-          {a.gscConnected && <span className="ml-2 text-[var(--color-success)]">· GSC</span>}
-        </p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <p className="truncate type-caption">
+            Mis à jour {relativeTime(a.updatedAt).toLowerCase()}
+          </p>
+          <GscBadge connected={a.gscConnected} />
+        </div>
       </div>
 
-      <ScoreGauges
+      <ScoreRings
         technique={a.scoreTechnique}
         contenu={a.scoreContenu}
         netlinking={a.scoreNetlinking}
         geo={geoScoreOf(a)}
-        height={24}
-        compact
+        size={32}
       />
 
-      <div className="flex items-center gap-5 text-right">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-            Lots
-          </p>
-          <p className="mt-0.5 text-[15px] font-semibold tabular-nums text-[var(--text-primary)]">
-            {a.tagsActifs}
-          </p>
+      <ProjectMenu domain={a.domain} isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} />
+    </Link>
+  );
+}
+
+/** Variante « grille » (façon Vercel) — mêmes données que la row, en carte verticale. */
+function ProjectGridCard({
+  a,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  a: AnalysisRow;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  return (
+    <Link
+      href={`/analyse/${encodeURIComponent(a.domain)}`}
+      className="group flex flex-col gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 transition-colors duration-150 hover:border-[var(--border-medium)] hover:bg-[var(--bg-card-hover)]"
+    >
+      {/* Domain + trafic + màj — CTA 3-points ferré à droite du titre */}
+      <div className="flex items-start gap-3">
+        <Favicon domain={a.domain} size={40} />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            {isFavorite && <StarIconSolid className="h-3.5 w-3.5 flex-shrink-0 text-[var(--color-warning)]" />}
+            <p className="min-w-0 truncate type-title leading-none">
+              {a.domain}
+            </p>
+            <TraficChip value={a.trafic} dir={a.traficDir} />
+          </div>
+          <div className="mt-1.5 flex items-center gap-2">
+            <p className="truncate type-micro">
+              Mis à jour {relativeTime(a.updatedAt).toLowerCase()}
+            </p>
+            <GscBadge connected={a.gscConnected} />
+          </div>
         </div>
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-            URLs
-          </p>
-          <p className="mt-0.5 text-[15px] font-semibold tabular-nums text-[var(--text-primary)]">
-            {a.briefs}
-          </p>
-        </div>
+        <ProjectMenu domain={a.domain} isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} />
       </div>
 
+      {/* Scores — ferrés à gauche, sans fond */}
+      <ScoreRings
+        technique={a.scoreTechnique}
+        contenu={a.scoreContenu}
+        netlinking={a.scoreNetlinking}
+        geo={geoScoreOf(a)}
+        size={34}
+      />
     </Link>
   );
 }
@@ -229,11 +335,11 @@ function AlertRow({ alert: a }: { alert: AlertItem }) {
     >
       <IconBadge icon={a.icon} size="sm" color="var(--text-secondary)" bg="var(--bg-subtle)" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px] font-medium text-[var(--text-muted)]">{a.domain}</p>
-        <p className="mt-0.5 text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
+        <p className="truncate type-caption">{a.domain}</p>
+        <p className="mt-0.5 type-label font-semibold leading-snug text-[var(--text-primary)]">
           {a.title}
         </p>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-secondary)]">{a.detail}</p>
+        <p className="mt-0.5 type-micro leading-relaxed text-[var(--text-secondary)]">{a.detail}</p>
       </div>
       <VariationPill direction={a.variation.direction} tooltip={a.detail} className="flex-shrink-0">
         {a.variation.label}
@@ -250,11 +356,11 @@ function QuickWinRow({ qw }: { qw: QuickWin }) {
     >
       <IconBadge icon={ArrowTrendingUpIcon} size="sm" color="var(--text-secondary)" bg="var(--bg-subtle)" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px] font-medium text-[var(--text-muted)]">{qw.domain}</p>
-        <p className="mt-0.5 truncate text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
+        <p className="truncate type-caption">{qw.domain}</p>
+        <p className="mt-0.5 truncate type-label font-semibold leading-snug text-[var(--text-primary)]">
           « {qw.keyword} »
         </p>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="mt-0.5 type-micro leading-relaxed text-[var(--text-secondary)]">
           Pos.{" "}
           <span className="font-semibold tabular-nums text-[var(--text-primary)]">{qw.currentPos}</span>
           {" · "}
@@ -287,8 +393,8 @@ function SidebarBlock({
   return (
     <section className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3">
       <div className="mb-1.5 flex items-center justify-between px-1.5">
-        <h3 className="text-[13px] font-semibold tracking-tight text-[var(--text-primary)]">{title}</h3>
-        <span className="text-[11px] font-medium tabular-nums text-[var(--text-muted)]">{count}</span>
+        <h3 className="type-label font-semibold text-[var(--text-primary)]">{title}</h3>
+        <span className="type-micro tabular-nums">{count}</span>
       </div>
       <div className="flex flex-col">{children}</div>
     </section>
@@ -299,7 +405,26 @@ function SidebarBlock({
    COCKPIT — Page section
    ───────────────────────────────────────────────────────────────────── */
 
-export function CockpitSection({ analyses }: { analyses: AnalysisRow[] }) {
+export function CockpitSection({
+  analyses,
+  viewMode = "list",
+}: {
+  analyses: AnalysisRow[];
+  viewMode?: "list" | "grid";
+}) {
+  // Favoris (local — prototype) : les projets favoris remontent en tête de liste.
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const toggleFavorite = (id: number) =>
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  // Tri stable : favoris d'abord, ordre d'origine préservé au sein de chaque groupe.
+  const ordered = [...analyses].sort(
+    (a, b) => Number(favorites.has(b.id)) - Number(favorites.has(a.id))
+  );
+
   return (
     // Scroll page-level : la grille n'est plus contrainte en hauteur. Le scroll
     // se passe au niveau du conteneur AppShell. Le `<aside>` droite est `sticky`
@@ -311,13 +436,19 @@ export function CockpitSection({ analyses }: { analyses: AnalysisRow[] }) {
       {/* ─── LEFT : liste — pas d'overflow interne, scroll page-level ─── */}
       <section>
         {analyses.length === 0 ? (
-          <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center text-[14px] text-[var(--text-muted)]">
+          <div className="rounded-2xl border border-[var(--border-subtle)] px-6 py-16 text-center type-body text-[var(--text-muted)]">
             Aucun projet à afficher.
+          </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {ordered.map((a) => (
+              <ProjectGridCard key={a.id} a={a} isFavorite={favorites.has(a.id)} onToggleFavorite={() => toggleFavorite(a.id)} />
+            ))}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {analyses.map((a) => (
-              <ProjectCard key={a.id} a={a} />
+            {ordered.map((a) => (
+              <ProjectCard key={a.id} a={a} isFavorite={favorites.has(a.id)} onToggleFavorite={() => toggleFavorite(a.id)} />
             ))}
           </div>
         )}

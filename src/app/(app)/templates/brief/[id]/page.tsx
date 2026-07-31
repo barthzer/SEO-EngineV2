@@ -11,11 +11,17 @@ export default async function BriefPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ titre?: string }>;
+  searchParams: Promise<{ titre?: string; from?: string }>;
 }) {
   const { id } = await params;
-  const { titre } = await searchParams;
+  const { titre, from } = await searchParams;
   const template = getTemplate(decodeURIComponent(id));
   if (!template) notFound();
-  return <ContentBriefView template={template} title={titre?.trim() || "Nouveau contenu"} />;
+  return (
+    <ContentBriefView
+      template={template}
+      title={titre?.trim() || "Nouveau contenu"}
+      optimize={from === "analyse"}
+    />
+  );
 }

@@ -20,6 +20,7 @@ import {
   ArrowPathIcon,
   SparklesIcon,
   PlusIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/Button";
 import { Checkbox } from "@/components/Checkbox";
@@ -59,6 +60,69 @@ function buildTitles(topicName: string, seed: number): TitleSuggestion[] {
     ...p,
     recommended: i === 0,
   }));
+}
+
+/* ── Mode « analyse » : actions sémantiques + contenu actuel de la page ───── */
+
+/** Actions à mener issues de l'analyse (Synthèse + Contenu). Mock paramétré par le mot-clé. */
+function buildSemanticActions(keyword: string): { id: string; label: string }[] {
+  return [
+    { id: "sa1", label: `Réécrire l'introduction avec « ${keyword} » dès la première phrase` },
+    { id: "sa2", label: "Ajouter les sections H2 manquantes vs pages les plus citées" },
+    { id: "sa3", label: "Combler les gaps d'entités sémantiques détectés" },
+    { id: "sa4", label: "Densifier la couverture du champ lexical cible" },
+    { id: "sa5", label: "Ajouter une FAQ answer-first sur les requêtes associées" },
+    { id: "sa6", label: "Optimiser la balise title et la meta description" },
+  ];
+}
+
+type PageBlock = { tag: "h1" | "h2"; text: string } | { tag: "p"; text: string };
+
+/** Contenu actuel (mock) de la page en cours d'optimisation. */
+function buildPageContent(keyword: string): PageBlock[] {
+  const t = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+  return [
+    { tag: "h1", text: t },
+    { tag: "p", text: `Cette page traite de ${keyword}. Le contenu actuel est affiché ici tel qu'il est publié en ligne : il servira de base à l'optimisation à partir des recommandations de l'analyse.` },
+    { tag: "h2", text: "Introduction" },
+    { tag: "p", text: `Le sujet « ${keyword} » est abordé de manière générale. L'analyse relève une intention de recherche partiellement couverte et des sections manquantes par rapport aux pages les mieux citées sur la requête.` },
+    { tag: "h2", text: "Points clés" },
+    { tag: "p", text: "Les paragraphes existants couvrent les bases mais manquent de profondeur sur les entités attendues. La densité sémantique est en dessous de la médiane des concurrents." },
+    { tag: "p", text: "Plusieurs passages gagneraient à être réécrits en format answer-first pour améliorer la visibilité dans les réponses IA (AI Overviews)." },
+    { tag: "h2", text: "Conclusion" },
+    { tag: "p", text: "La conclusion actuelle ne propose pas d'appel à l'action clair et ne renvoie pas vers les pages piliers du site. Le maillage interne est à renforcer." },
+  ];
+}
+
+/** Aperçu scrollable du contenu actuel de la page (colonne droite, mode analyse). */
+function PageContentPreview({ keyword, url }: { keyword: string; url?: string }) {
+  const blocks = buildPageContent(keyword);
+  return (
+    <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-6 py-3.5">
+        <div className="min-w-0">
+          <p className="type-label font-semibold text-[var(--text-primary)]">Contenu actuel de la page</p>
+          {url && <p className="mt-0.5 truncate type-caption" title={url}>{url}</p>}
+        </div>
+        <span className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 type-micro text-[var(--text-secondary)]">
+          Existant
+        </span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-8 py-7">
+        <div className="mx-auto flex max-w-[640px] flex-col gap-4">
+          {blocks.map((b, i) =>
+            b.tag === "h1" ? (
+              <h1 key={i} className="type-h1 font-bold leading-tight">{b.text}</h1>
+            ) : b.tag === "h2" ? (
+              <h2 key={i} className="mt-2 type-h3">{b.text}</h2>
+            ) : (
+              <p key={i} className="type-body text-[var(--text-secondary)]">{b.text}</p>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ── Favicon plateforme (logos réels via Google s2) ─────────────────────── */
@@ -103,11 +167,11 @@ function ConfigField({
         className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3 text-left transition-colors hover:border-[var(--border-medium)]"
       >
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[13px] font-semibold text-[var(--text-primary)]">{label}</span>
-          {hint && <span className="text-[11px] text-[var(--text-muted)]">{hint}</span>}
+          <span className="type-label font-semibold text-[var(--text-primary)]">{label}</span>
+          {hint && <span className="type-micro">{hint}</span>}
         </div>
         <div className="mt-1 flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1 truncate text-[14px]">{value}</div>
+          <div className="min-w-0 flex-1 truncate type-body">{value}</div>
           <ChevronDownIcon className={`h-4 w-4 flex-shrink-0 text-[var(--text-muted)] transition-transform ${open ? "rotate-180" : ""}`} />
         </div>
       </button>
@@ -129,7 +193,7 @@ function PanelFooter({
   onReset?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between border-t border-[var(--border-subtle)] px-4 py-2.5 text-[12px] text-[var(--text-muted)]">
+    <div className="flex items-center justify-between border-t border-[var(--border-subtle)] px-4 py-2.5 type-caption text-[var(--text-muted)]">
       {onReset ? (
         <button onClick={onReset} className="font-medium transition-colors hover:text-[var(--text-primary)]">
           Réinitialiser la sélection
@@ -160,10 +224,23 @@ function Radio({ selected }: { selected: boolean }) {
 }
 
 /* ── Configurateur ──────────────────────────────────────────────────────── */
-export function TemplateConfigurator({ template }: { template: WorkflowTemplate }) {
+export function TemplateConfigurator({
+  template,
+  analyse,
+}: {
+  template: WorkflowTemplate;
+  analyse?: { keyword: string; url?: string };
+}) {
   const router = useRouter();
   const toast = useToast();
   const TemplateIcon = templateIcon(template.icon);
+
+  // Mode « optimisation d'une page existante » (depuis l'analyse d'une URL).
+  const analyseMode = !!analyse;
+  const semanticActions = useMemo(
+    () => (analyse ? buildSemanticActions(analyse.keyword) : []),
+    [analyse]
+  );
 
   const [step, setStep] = useState(1);
   const [openField, setOpenField] = useState<string | null>("sujet");
@@ -171,6 +248,16 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
 
   const [topicId, setTopicId] = useState<string | null>(null);
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set());
+  // Actions sémantiques cochées (mode analyse) — toutes pré-cochées.
+  const [selectedActions, setSelectedActions] = useState<Set<string>>(
+    () => new Set(analyse ? buildSemanticActions(analyse.keyword).map((a) => a.id) : [])
+  );
+  const toggleAction = (id: string) =>
+    setSelectedActions((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   const [platforms, setPlatforms] = useState<LlmPlatform[]>(DEFAULT_SETUP.platforms);
   const [brandVoice, setBrandVoice] = useState<string>(template.params.brandVoice ?? "");
   const [audience, setAudience] = useState<string>("");
@@ -209,7 +296,11 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
   const togglePlatform = (k: LlmPlatform) =>
     setPlatforms((prev) => (prev.includes(k) ? prev.filter((p) => p !== k) : [...prev, k]));
 
-  const canGenerate = !!topic && selectedPrompts.size > 0;
+  // En mode analyse, le sujet est fixé (mot-clé de la page) et les actions remplacent les prompts.
+  const subjectName = analyseMode ? analyse!.keyword : topic?.name ?? null;
+  const canGenerate = analyseMode
+    ? selectedActions.size > 0
+    : !!topic && selectedPrompts.size > 0;
 
   // Génération de titres : phase « shimmer » (dégradé horizontal) puis apparition.
   const runTitleGen = (seed: number, name: string) => {
@@ -223,16 +314,16 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
     }, 900);
   };
   const goToTitles = () => {
-    if (!topic) return;
+    if (!subjectName) return;
     setTitleSeed(0);
     setStep(2);
-    runTitleGen(0, topic.name);
+    runTitleGen(0, subjectName);
   };
   const regenerateTitles = () => {
-    if (!topic) return;
+    if (!subjectName) return;
     const next = titleSeed + 1;
     setTitleSeed(next);
-    runTitleGen(next, topic.name);
+    runTitleGen(next, subjectName);
   };
   const back = () => (step === 2 ? setStep(1) : router.back());
 
@@ -245,7 +336,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
     <div className="page-enter flex h-full flex-col overflow-hidden">
       {/* Retour */}
       <div className="flex-shrink-0 px-6 pt-5 pb-3">
-        <button onClick={back} className="flex items-center gap-1.5 text-[14px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+        <button onClick={back} className="flex items-center gap-1.5 type-body-strong text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
           <ChevronLeftIcon className="h-4 w-4" />
           Retour
         </button>
@@ -257,28 +348,34 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
         <div className="flex w-full max-w-[440px] flex-shrink-0 flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
           {/* Header + stepper (sans croix) */}
           <div className="flex-shrink-0 px-6 pt-5 pb-4">
-            <div className="mb-6 flex items-center gap-2">
-              {[1, 2].map((s) => (
-                <div key={s} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${s <= step ? "bg-[var(--text-primary)]" : "bg-[var(--border-subtle)]"}`} />
-              ))}
-            </div>
+            {/* Stepper masqué en mode analyse : une seule étape (pas de génération de titre,
+                le titre de la page existante est conservé). */}
+            {!analyseMode && (
+              <div className="mb-6 flex items-center gap-2">
+                {[1, 2].map((s) => (
+                  <div key={s} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${s <= step ? "bg-[var(--text-primary)]" : "bg-[var(--border-subtle)]"}`} />
+                ))}
+              </div>
+            )}
             {step === 1 ? (
               <>
-                <h1 className="text-[18px] font-semibold tracking-heading text-[var(--text-primary)]">Configuration du contenu</h1>
-                <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-                  Rédigez un contenu long optimisé pour l'IA à partir de l'analyse des pages les plus citées.
+                <h1 className="type-h3">Configuration du contenu</h1>
+                <p className="mt-1 type-body-sm">
+                  {analyseMode
+                    ? "Optimisez le contenu de cette page à partir des recommandations de l'analyse."
+                    : "Rédigez un contenu long optimisé pour l'IA à partir de l'analyse des pages les plus citées."}
                 </p>
                 <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[var(--bg-subtle)] px-3 py-2">
                   <IconBadge icon={TemplateIcon} size="sm" />
-                  <span className="text-[13px] font-medium text-[var(--text-primary)]">{template.name}</span>
+                  <span className="type-label text-[var(--text-primary)]">{template.name}</span>
                 </div>
               </>
             ) : (
               <>
-                <h1 className="text-[18px] font-semibold tracking-heading text-[var(--text-primary)]">
-                  Sélectionner un titre <span className="text-[13px] font-normal text-[var(--text-muted)]">(modifiable ensuite)</span>
+                <h1 className="type-h3">
+                  Sélectionner un titre <span className="type-body-sm text-[var(--text-muted)]">(modifiable ensuite)</span>
                 </h1>
-                <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+                <p className="mt-1 type-body-sm">
                   Inspirés des sources les plus citées dans les réponses IA sur votre sujet.
                 </p>
               </>
@@ -289,7 +386,23 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5">
             {step === 1 ? (
               <div className="flex flex-col gap-3">
-                {/* Sujet */}
+                {/* Sujet — en mode analyse : pré-rempli (mot-clé de la page), coché, non éditable */}
+                {analyseMode ? (
+                  <ConfigField
+                    label="Sujet"
+                    hint="issu de l'analyse"
+                    open={false}
+                    onToggle={() => {}}
+                    value={
+                      <span className="inline-flex items-center gap-2 text-[var(--text-primary)]">
+                        <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-white">
+                          <CheckIcon className="h-3 w-3" strokeWidth={3} />
+                        </span>
+                        {analyse!.keyword}
+                      </span>
+                    }
+                  />
+                ) : (
                 <ConfigField
                   label="Sujet"
                   open={openField === "sujet"}
@@ -297,7 +410,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                   value={topic ? <span className="text-[var(--text-primary)]">{topic.name}</span> : <span className="text-[var(--text-muted)]">Rechercher un sujet</span>}
                 >
                   <div className="mt-2 overflow-hidden rounded-xl border border-[var(--border-subtle)]">
-                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-4 py-2 text-[12px] font-medium text-[var(--text-muted)]">
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-4 py-2 type-caption">
                       <span>Sujet</span>
                       <span>Score de visibilité</span>
                     </div>
@@ -305,7 +418,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                       const vis = avgVis(t.prompts);
                       const active = t.id === topicId;
                       return (
-                        <button key={t.id} onClick={() => selectTopic(t.id)} className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px] transition-colors hover:bg-[var(--bg-subtle)] ${active ? "bg-[var(--bg-subtle)]" : ""}`}>
+                        <button key={t.id} onClick={() => selectTopic(t.id)} className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left type-body transition-colors hover:bg-[var(--bg-subtle)] ${active ? "bg-[var(--bg-subtle)]" : ""}`}>
                           <span className={`truncate ${active ? "font-semibold" : ""} text-[var(--text-primary)]`}>{t.name}</span>
                           <span className="flex-shrink-0 tabular-nums" style={{ color: visColor(vis) }}>{vis.toFixed(1)}%</span>
                         </button>
@@ -314,8 +427,30 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                     <PanelFooter page={topicPage} totalPages={topicTotalPages} onPage={setTopicPage} onReset={topicId ? () => { setTopicId(null); setSelectedPrompts(new Set()); } : undefined} />
                   </div>
                 </ConfigField>
+                )}
 
-                {/* Prompts */}
+                {/* Actions à mener (mode analyse) OU Prompts (mode création) */}
+                {analyseMode ? (
+                  <ConfigField
+                    label={`Actions à mener (${selectedActions.size})`}
+                    hint="recommandations de l'analyse"
+                    open={openField === "actions"}
+                    onToggle={() => toggle("actions")}
+                    value={selectedActions.size > 0 ? <span className="text-[var(--text-primary)]">{selectedActions.size} actions sélectionnées</span> : <span className="text-[var(--text-muted)]">Sélectionner des actions</span>}
+                  >
+                    <div className="mt-2 overflow-hidden rounded-xl border border-[var(--border-subtle)]">
+                      <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-4 py-2 type-caption">
+                        Actions sémantiques (Synthèse &amp; Contenu)
+                      </div>
+                      {semanticActions.map((a) => (
+                        <div key={a.id} role="button" tabIndex={0} onClick={() => toggleAction(a.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAction(a.id); } }} className="flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-subtle)]">
+                          <span className="mt-0.5 flex-shrink-0"><Checkbox checked={selectedActions.has(a.id)} onChange={() => toggleAction(a.id)} /></span>
+                          <span className="min-w-0 flex-1 type-body-sm text-[var(--text-primary)]">{a.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </ConfigField>
+                ) : (
                 <ConfigField
                   label={topic ? `Prompts (${selectedPrompts.size})` : "Prompts"}
                   disabled={!topic}
@@ -324,7 +459,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                   value={selectedPrompts.size > 0 ? <span className="text-[var(--text-primary)]">{selectedPrompts.size} prompts sélectionnés</span> : <span className="text-[var(--text-muted)]">Sélectionner des prompts</span>}
                 >
                   <div className="mt-2 overflow-hidden rounded-xl border border-[var(--border-subtle)]">
-                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-4 py-2 text-[12px] font-medium text-[var(--text-muted)]">
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-4 py-2 type-caption">
                       <span>Prompt</span>
                       <span>Score de visibilité</span>
                     </div>
@@ -333,14 +468,15 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                       return (
                         <div key={p.id} role="button" tabIndex={0} onClick={() => togglePrompt(p.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePrompt(p.id); } }} className="flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-subtle)]">
                           <span className="mt-0.5 flex-shrink-0"><Checkbox checked={selectedPrompts.has(p.id)} onChange={() => togglePrompt(p.id)} /></span>
-                          <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--text-primary)]">{p.text}</span>
-                          <span className="flex-shrink-0 text-[13px] tabular-nums" style={{ color: visColor(vis) }}>{vis.toFixed(1)}%</span>
+                          <span className="min-w-0 flex-1 type-body-sm text-[var(--text-primary)]">{p.text}</span>
+                          <span className="flex-shrink-0 type-label tabular-nums" style={{ color: visColor(vis) }}>{vis.toFixed(1)}%</span>
                         </div>
                       );
                     })}
                     <PanelFooter page={promptPage} totalPages={promptTotalPages} onPage={setPromptPage} onReset={() => setSelectedPrompts(new Set())} />
                   </div>
                 </ConfigField>
+                )}
 
                 {/* Plateformes */}
                 <ConfigField
@@ -361,7 +497,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                       <div key={p.key} role="button" tabIndex={0} onClick={() => togglePlatform(p.key)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePlatform(p.key); } }} className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-[var(--bg-subtle)]">
                         <Checkbox checked={platforms.includes(p.key)} onChange={() => togglePlatform(p.key)} />
                         <Favicon domain={p.domain} />
-                        <span className="text-[14px] text-[var(--text-primary)]">{p.label}</span>
+                        <span className="type-body">{p.label}</span>
                       </div>
                     ))}
                   </div>
@@ -376,7 +512,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                   value={<span className="text-[var(--text-muted)]">Rechercher des pages citées</span>}
                 >
                   <div className="mt-2 rounded-xl border border-dashed border-[var(--border-medium)] px-4 py-6 text-center">
-                    <p className="text-[13px] text-[var(--text-muted)]">
+                    <p className="type-body-sm">
                       {topic ? "Les pages les plus citées sur ce sujet seront proposées après analyse." : "Sélectionnez d'abord un sujet pour voir les pages citées."}
                     </p>
                   </div>
@@ -392,7 +528,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                 >
                   <div className="mt-2 flex flex-col gap-0.5 rounded-xl border border-[var(--border-subtle)] p-2">
                     {brandVoices.map((v) => (
-                      <button key={v} onClick={() => { setBrandVoice(v); setOpenField(null); }} className={`rounded-lg px-2.5 py-2 text-left text-[14px] transition-colors hover:bg-[var(--bg-subtle)] ${v === brandVoice ? "bg-[var(--bg-subtle)] font-medium" : ""}`}>{v}</button>
+                      <button key={v} onClick={() => { setBrandVoice(v); setOpenField(null); }} className={`rounded-lg px-2.5 py-2 text-left type-body transition-colors hover:bg-[var(--bg-subtle)] ${v === brandVoice ? "bg-[var(--bg-subtle)] font-medium" : ""}`}>{v}</button>
                     ))}
                   </div>
                 </ConfigField>
@@ -407,7 +543,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                 >
                   <div className="mt-2 flex flex-col gap-0.5 rounded-xl border border-[var(--border-subtle)] p-2">
                     {AUDIENCES.map((a) => (
-                      <button key={a} onClick={() => { setAudience(a); setOpenField(null); }} className={`rounded-lg px-2.5 py-2 text-left text-[14px] transition-colors hover:bg-[var(--bg-subtle)] ${a === audience ? "bg-[var(--bg-subtle)] font-medium" : ""}`}>{a}</button>
+                      <button key={a} onClick={() => { setAudience(a); setOpenField(null); }} className={`rounded-lg px-2.5 py-2 text-left type-body transition-colors hover:bg-[var(--bg-subtle)] ${a === audience ? "bg-[var(--bg-subtle)] font-medium" : ""}`}>{a}</button>
                     ))}
                   </div>
                 </ConfigField>
@@ -415,11 +551,11 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                 {/* Instructions */}
                 {instructionsOpen ? (
                   <div>
-                    <p className="mb-1.5 text-[13px] font-semibold text-[var(--text-primary)]">Instructions additionnelles</p>
+                    <p className="mb-1.5 type-label font-semibold text-[var(--text-primary)]">Instructions additionnelles</p>
                     <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} placeholder="Consignes de rédaction, angle, ton, contraintes…" className={fieldCls} />
                   </div>
                 ) : (
-                  <button onClick={() => setInstructionsOpen(true)} className="self-start text-[13px] font-medium text-[var(--text-secondary)] underline underline-offset-2 transition-colors hover:text-[var(--text-primary)]">
+                  <button onClick={() => setInstructionsOpen(true)} className="self-start type-label underline underline-offset-2 transition-colors hover:text-[var(--text-primary)]">
                     Ajouter des instructions
                   </button>
                 )}
@@ -447,11 +583,11 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                     <button key={t.title} onClick={() => setSelectedTitle(t.title)} className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors ${sel ? "border-[var(--border-strong)] bg-[var(--bg-subtle)]" : "border-[var(--border-subtle)] hover:border-[var(--border-medium)]"}`}>
                       <Radio selected={sel} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-medium leading-snug text-[var(--text-primary)]">{t.title}</p>
+                        <p className="type-body-strong">{t.title}</p>
                         <div className="mt-1.5 flex items-center gap-2">
-                          <span className="text-[12px] text-[var(--text-muted)]">{t.type}</span>
+                          <span className="type-caption">{t.type}</span>
                           {t.recommended && (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ color: "var(--color-success)", backgroundColor: "var(--color-success-bg)" }}>
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 type-micro" style={{ color: "var(--color-success)", backgroundColor: "var(--color-success-bg)" }}>
                               Recommandé
                             </span>
                           )}
@@ -461,7 +597,7 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
                   );
                 })}
                 <div className="flex justify-end pt-1">
-                  <button onClick={regenerateTitles} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]">
+                  <button onClick={regenerateTitles} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 type-label transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]">
                     <ArrowPathIcon className="h-4 w-4" />
                     Suggérer de nouveaux titres
                   </button>
@@ -474,10 +610,23 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
           {/* CTA */}
           <div className="flex-shrink-0 border-t border-[var(--border-subtle)] p-4">
             {step === 1 ? (
-              <Button variant="primary" disabled={!canGenerate} className="w-full justify-center" onClick={goToTitles}>
-                Générer les titres
-                <ChevronRightIcon className="h-4 w-4" />
-              </Button>
+              analyseMode ? (
+                /* Mode analyse : pas d'étape titre → directement le brief (titre = page existante). */
+                <Button
+                  variant="primary"
+                  disabled={!canGenerate}
+                  className="w-full justify-center"
+                  onClick={() => router.push(`/templates/brief/${encodeURIComponent(template.id)}?titre=${encodeURIComponent(analyse!.keyword)}&from=analyse`)}
+                >
+                  Générer le brief de contenu
+                  <ChevronRightIcon className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button variant="primary" disabled={!canGenerate} className="w-full justify-center" onClick={goToTitles}>
+                  Générer les titres
+                  <ChevronRightIcon className="h-4 w-4" />
+                </Button>
+              )
             ) : (
               <Button variant="primary" disabled={!selectedTitle} className="w-full justify-center" onClick={() => router.push(`/templates/brief/${encodeURIComponent(template.id)}?titre=${encodeURIComponent(selectedTitle ?? "")}`)}>
                 Générer le brief de contenu
@@ -487,18 +636,24 @@ export function TemplateConfigurator({ template }: { template: WorkflowTemplate 
           </div>
         </div>
 
-        {/* Colonne aperçu — centrée, non scrollable, sans encart ni fond */}
-        <div className="flex min-w-0 flex-1 items-center justify-center overflow-hidden">
-          <div className="max-w-sm px-6 text-center">
-            <div className="flex justify-center">
-              <DocStackIllustration icon={PlusIcon as ElementType} className="w-[220px]" />
+        {/* Colonne aperçu :
+             - mode analyse : contenu actuel de la page (scrollable), à optimiser ;
+             - mode création : illustration + invite (page sans existant). */}
+        {analyseMode ? (
+          <PageContentPreview keyword={analyse!.keyword} url={analyse!.url} />
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center justify-center overflow-hidden">
+            <div className="max-w-sm px-6 text-center">
+              <div className="flex justify-center">
+                <DocStackIllustration icon={PlusIcon as ElementType} className="w-[220px]" />
+              </div>
+              <h2 className="mt-6 type-h3">Commencez par configurer votre contenu</h2>
+              <p className="mt-1.5 type-body-sm">
+                Renseignez les détails dans le panneau de gauche pour optimiser votre contenu pour l'IA.
+              </p>
             </div>
-            <h2 className="mt-6 text-[16px] font-semibold text-[var(--text-primary)]">Commencez par configurer votre contenu</h2>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-muted)]">
-              Renseignez les détails dans le panneau de gauche pour optimiser votre contenu pour l'IA.
-            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

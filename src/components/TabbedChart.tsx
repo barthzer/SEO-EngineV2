@@ -44,11 +44,11 @@ export function TabbedChart({
             const isActive = v.key === current?.key;
             return (
               <div key={v.key} className="flex items-center gap-2">
-                {i > 0 && <span className="text-[14px] text-[var(--text-muted)]" aria-hidden="true">·</span>}
+                {i > 0 && <span className="type-body text-[var(--text-muted)]" aria-hidden="true">·</span>}
                 <button
                   type="button"
                   onClick={() => setActive(v.key)}
-                  className={`rounded-md text-[16px] font-semibold tracking-subheading transition-colors ${
+                  className={`rounded-md type-h3 transition-colors ${
                     isActive
                       ? "text-[var(--text-primary)]"
                       : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"

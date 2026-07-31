@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {mounted && createPortal(
         <div
           aria-live="polite"
-          className="pointer-events-none fixed inset-x-0 bottom-8 z-[500] flex justify-center"
+          className="pointer-events-none fixed inset-x-0 bottom-8 z-[2000] flex justify-center"
         >
           <div
             className="flex items-center gap-3 rounded-2xl px-5 py-3.5 text-[16px] font-medium shadow-[0_8px_40px_rgba(0,0,0,0.22)] transition-all duration-300"

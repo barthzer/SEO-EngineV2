@@ -42,7 +42,7 @@ export function Sparkline({
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   if (data.length < 2) {
-    return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
+    return <span className="type-body-sm text-[var(--text-muted)]">—</span>;
   }
 
   const max = Math.max(...data);
@@ -63,25 +63,35 @@ export function Sparkline({
   const gradId = `sparkline-grad-${reactId}`;
   const svg = (
     <svg width={width} height={height} className="overflow-visible">
-      {area && (
-        <>
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.28 }} />
-              <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
-            </linearGradient>
-          </defs>
-          <path d={areaD} fill={`url(#${gradId})`} />
-        </>
-      )}
-      <path
-        d={lineD}
-        fill="none"
-        style={{ stroke: color }}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <defs>
+        {area && (
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.28 }} />
+            <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
+          </linearGradient>
+        )}
+        {/* Fade des extrémités : la courbe (et l'aire) s'estompent aux bords. */}
+        <linearGradient id={`${gradId}-edge`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="white" stopOpacity="0" />
+          <stop offset="0.08" stopColor="white" stopOpacity="1" />
+          <stop offset="0.92" stopColor="white" stopOpacity="1" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+        <mask id={`${gradId}-edgemask`}>
+          <rect x={0} y={0} width={width} height={height} fill={`url(#${gradId}-edge)`} />
+        </mask>
+      </defs>
+      <g mask={`url(#${gradId}-edgemask)`}>
+        {area && <path d={areaD} fill={`url(#${gradId})`} />}
+        <path
+          d={lineD}
+          fill="none"
+          style={{ stroke: color }}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
       {showDotsOnHover && pts.map((p, i) => (
         <circle
           key={i}
@@ -148,8 +158,8 @@ export function Sparkline({
             formatTooltip(hovValue, hovLabel, hoverIdx ?? 0)
           ) : (
             <div className="flex flex-col gap-0.5">
-              {hovLabel && <span className="text-[11px] text-white/60">{hovLabel}</span>}
-              <span className="text-[13px] font-semibold text-white">{formatValue(hovValue)}</span>
+              {hovLabel && <span className="type-micro text-white/60">{hovLabel}</span>}
+              <span className="type-label text-white">{formatValue(hovValue)}</span>
             </div>
           )}
         </ChartTooltip>

@@ -28,12 +28,12 @@ export function PositionBarChart() {
         return (
           <div className="flex max-w-[260px] flex-col gap-1.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[13px] font-semibold text-white">{item.label}</span>
-              <span className="text-[11px] text-white/60">{pct} % du total</span>
+              <span className="type-label font-semibold text-white">{item.label}</span>
+              <span className="type-micro text-white/60">{pct} % du total</span>
             </div>
-            <div className="text-[12px] font-medium text-white">{item.value.toLocaleString("fr-FR")} mots-clés</div>
+            <div className="type-caption font-medium text-white">{item.value.toLocaleString("fr-FR")} mots-clés</div>
             {d && (
-              <div className="mt-1 space-y-1 border-t border-white/10 pt-2 text-[11px] leading-snug text-white/70">
+              <div className="mt-1 space-y-1 border-t border-white/10 pt-2 type-micro leading-snug text-white/70">
                 <div>{d.description}</div>
                 <div><span className="text-white/55">CTR estimé : </span>{d.ctrEstime}</div>
                 <div><span className="text-white/55">→ </span>{d.recommandation}</div>

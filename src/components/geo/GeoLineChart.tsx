@@ -82,9 +82,9 @@ export function GeoLineChart({
     <div className="flex flex-col gap-3">
       <div className="relative" style={{ height }}>
         <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
-          {/* Grille (lignes horizontales seules — les labels d'axes sont en HTML) */}
-          {ticks.map((t) => (
-            <line key={t} x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="var(--border-subtle)" strokeWidth={1} />
+          {/* Grille verticale — alignée sur les labels de l'axe X (plus de lignes horizontales) */}
+          {labels.map((_, i) => (
+            <line key={`grid-${i}`} x1={x(i)} y1={padT} x2={x(i)} y2={H - padB} stroke="var(--border-subtle)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
           ))}
           {/* Lignes (les points/dots sont rendus en HTML pour éviter la distorsion) */}
           {visible.map((s) => {

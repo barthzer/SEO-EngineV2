@@ -35,7 +35,7 @@ export function Callout({ variant = "info", children, className = "" }: CalloutP
       style={{ backgroundColor: v.bg, borderColor: v.border }}
     >
       <Icon color={v.iconColor} />
-      <div className="text-[13px] leading-relaxed" style={{ color: v.iconColor }}>
+      <div className="type-body-sm leading-relaxed" style={{ color: v.iconColor }}>
         {children}
       </div>
     </div>

@@ -66,10 +66,10 @@ export function ReportCard({ report, clientName, consultantName }: ReportCardPro
         {/* Header — titre + meta à gauche, CTA Télécharger à droite */}
         <div className="flex items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
-            <h3 className="text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">
+            <h3 className="type-h3">
               Rapport {report.month}
             </h3>
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-[var(--text-muted)]">
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 type-caption text-[var(--text-muted)]">
               <span className="tabular-nums">{report.pages} pages</span>
               <span aria-hidden className="text-[var(--border-medium)]">·</span>
               <span className="tabular-nums">{fileSize}</span>
@@ -101,7 +101,7 @@ export function ReportCard({ report, clientName, consultantName }: ReportCardPro
         <hr className="-mx-5 my-4 border-0 border-t border-[var(--border-subtle)]" />
 
         {/* Résumé pleine largeur */}
-        <p className="max-w-[640px] text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        <p className="max-w-[640px] type-body-sm">
           {report.summary}
         </p>
       </article>

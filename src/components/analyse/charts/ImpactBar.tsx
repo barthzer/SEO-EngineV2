@@ -20,7 +20,7 @@ export function ImpactBar({ value }: { value: number }) {
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
         <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[12px] font-medium tabular-nums" style={{ color }}>{value}</span>
+      <span className="type-label tabular-nums" style={{ color }}>{value}</span>
     </div>
   );
 }
