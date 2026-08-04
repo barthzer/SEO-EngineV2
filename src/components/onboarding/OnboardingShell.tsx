@@ -104,16 +104,20 @@ export function OnboardingShell({
         </div>
       </section>
 
-      {/* ─── COLONNE DROITE 50% — gradient + dashboard preview ─── */}
+      {/* ─── COLONNE DROITE 50% — gradient de marque + dashboard preview ───
+          NB : l'ancien `url('/bg.jpg')` n'a jamais été versionné → dégradé à la place. */}
       <aside
         className="relative w-1/2 flex-shrink-0 overflow-hidden"
         style={{
-          backgroundImage: "url('/bg.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
+          backgroundImage:
+            "radial-gradient(120% 120% at 15% 0%, #5B67FF 0%, #3D4FFF 42%, #241A66 100%)",
         }}
       >
+        {/* Texture pointillée subtile par-dessus le dégradé */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-soft-light"
+          style={{ backgroundImage: "url('/onboarding-dots.png')", backgroundSize: "340px" }}
+        />
         <div className="relative h-full">{preview}</div>
       </aside>
     </div>

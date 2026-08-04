@@ -67,7 +67,7 @@ export const NAV_SECTIONS: NavSection[] = [
   { id: "urls",        label: "URLs",                 tabs: ["briefs"],                                        group: "principal" },
   // ── Analyse : les données du projet (ordre : axes de score alignés) ──
   { id: "audit",       label: "Audits",               tabs: ["audit"],                                         group: "analyse" },
-  { id: "contenu",     label: "Sémantique",           tabs: ["seo", "tracking", "univers", "cannibal", "benchmark"], group: "analyse" },
+  { id: "contenu",     label: "Sémantique",           tabs: ["seo", "tracking", "cannibal", "benchmark"], group: "analyse" },
   { id: "netlinking",  label: "Popularité",           tabs: ["netlinking"],                                    group: "analyse" },
   { id: "geo",         label: "Visibilité IA",        tabs: ["geo"],                                           group: "analyse" },
   { id: "performance", label: "Rapports",             tabs: ["forecast", "sea"],                               group: "analyse" },

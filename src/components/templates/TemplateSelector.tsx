@@ -22,6 +22,7 @@ import {
   XMarkIcon,
   StarIcon as StarOutline,
   PlusIcon,
+  PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import { useModalTransition } from "@/hooks/useModalTransition";
@@ -29,6 +30,7 @@ import { Button } from "@/components/Button";
 import { SearchInput } from "@/components/SearchInput";
 import { FilterTabs, type FilterTab } from "@/components/FilterTabs";
 import { templateIcon, DocStackIllustration } from "@/components/templates/ui";
+import { TemplateEditorModal } from "@/components/templates/TemplateEditorModal";
 import {
   getTemplates,
   sortTemplates,
@@ -44,32 +46,44 @@ function SelectorCard({
   favorite,
   onToggleFavorite,
   onUse,
+  onEdit,
 }: {
   template: WorkflowTemplate;
   favorite: boolean;
   onToggleFavorite: () => void;
   onUse: () => void;
+  onEdit: () => void;
 }) {
   const Icon = templateIcon(template.icon);
   return (
     <div className="flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 transition-all duration-200 hover:border-[var(--border-medium)] hover:shadow-[var(--shadow-card)]">
-      {/* Badge catégorie + étoile */}
+      {/* Badge catégorie + actions */}
       <div className="flex items-start justify-between">
         <span className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-2 py-0.5 type-micro text-[var(--text-secondary)]">
           {PAGE_TYPE_LABEL[template.pageType]}
         </span>
-        <button
-          type="button"
-          onClick={onToggleFavorite}
-          aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]"
-        >
-          {favorite ? (
-            <StarSolid className="h-4 w-4" style={{ color: "var(--color-warning)" }} />
-          ) : (
-            <StarOutline className="h-4 w-4" />
-          )}
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label="Modifier le template"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+          >
+            <PencilSquareIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]"
+          >
+            {favorite ? (
+              <StarSolid className="h-4 w-4" style={{ color: "var(--color-warning)" }} />
+            ) : (
+              <StarOutline className="h-4 w-4" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Illustration */}
@@ -129,11 +143,22 @@ export function TemplateSelector({
   const [cat, setCat] = useState<TemplatePageType | "all">("all");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
+  // Liste locale (mock) : permet de créer / modifier un template sans quitter le flux.
+  const [templates, setTemplates] = useState<WorkflowTemplate[]>(() => getTemplates());
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<WorkflowTemplate | null>(null);
+  const openCreate = () => { setEditTarget(null); setEditorOpen(true); };
+  const openEdit = (t: WorkflowTemplate) => { setEditTarget(t); setEditorOpen(true); };
+  const saveTemplate = (t: WorkflowTemplate) => {
+    setTemplates((prev) => (prev.some((x) => x.id === t.id) ? prev.map((x) => (x.id === t.id ? t : x)) : [t, ...prev]));
+    setEditorOpen(false);
+  };
+
   const base = useMemo(() => {
-    let l = getTemplates();
+    let l = templates;
     if (context) l = l.filter((t) => t.contexts.includes(context));
     return sortTemplates(l);
-  }, [context]);
+  }, [templates, context]);
 
   // Onglets de catégorie = types de page présents dans le contexte courant.
   const cats = useMemo(() => {
@@ -185,13 +210,19 @@ export function TemplateSelector({
             <h2 className="type-h3">{title}</h2>
             {subtitle && <p className="mt-0.5 type-body-sm">{subtitle}</p>}
           </div>
-          <button
-            onClick={requestClose}
-            aria-label="Fermer"
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={openCreate}>
+              <PlusIcon className="h-4 w-4" />
+              Nouveau template
+            </Button>
+            <button
+              onClick={requestClose}
+              aria-label="Fermer"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -278,6 +309,7 @@ export function TemplateSelector({
                       favorite={favorites.has(t.id)}
                       onToggleFavorite={() => toggleFav(t.id)}
                       onUse={() => onSelect(t)}
+                      onEdit={() => openEdit(t)}
                     />
                   ))}
                 </div>
@@ -286,6 +318,14 @@ export function TemplateSelector({
           </div>
         </div>
       </div>
+
+      {editorOpen && (
+        <TemplateEditorModal
+          template={editTarget}
+          onSave={saveTemplate}
+          onClose={() => setEditorOpen(false)}
+        />
+      )}
     </div>,
     document.body
   );

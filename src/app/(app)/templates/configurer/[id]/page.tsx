@@ -14,12 +14,16 @@ export default async function ConfigurerPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string; keyword?: string; url?: string }>;
+  searchParams: Promise<{ from?: string; keyword?: string; url?: string; subject?: string }>;
 }) {
   const { id } = await params;
-  const { from, keyword, url } = await searchParams;
-  const template = getTemplate(decodeURIComponent(id));
-  if (!template) notFound();
+  const { from, keyword, url, subject } = await searchParams;
+  // Sentinelle « sans-template » : configuration démarrée sans template (from scratch /
+  // opportunité) — l'utilisateur pourra en ajouter un via « Ajouter un template ».
+  const noTemplate = id === "sans-template";
+  const template = noTemplate ? undefined : getTemplate(decodeURIComponent(id));
+  if (!noTemplate && !template) notFound();
   const analyse = from === "analyse" && keyword ? { keyword, url: url ?? "" } : undefined;
-  return <TemplateConfigurator template={template} analyse={analyse} />;
+  const initialSubject = subject ? decodeURIComponent(subject) : undefined;
+  return <TemplateConfigurator template={template} analyse={analyse} initialSubject={initialSubject} />;
 }

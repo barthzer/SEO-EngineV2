@@ -11,19 +11,22 @@
  * V1 : maquette (données mock + timers). Persistance = tâche future.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, ArrowPathIcon,
   ClipboardIcon, ArrowDownTrayIcon, CheckIcon, ChevronDownIcon,
 } from "@heroicons/react/24/outline";
+import { Target, ListChecks, HelpCircle, Lightbulb, Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/Button";
 import { InfoNote } from "@/components/InfoNote";
 import { IconBadge } from "@/components/IconBadge";
+import { FilterTabs } from "@/components/FilterTabs";
 import { templateIcon } from "@/components/templates/ui";
 import { type WorkflowTemplate } from "@/data/templates";
 
 type Phase = "brief" | "generating" | "final";
+type BriefView = "redactionnel" | "analyse";
 
 const BRIEF_STEPS = [
   "Démarrage du workflow", "Collecte des citations", "Recherche Perplexity", "Résultats de recherche",
@@ -143,6 +146,132 @@ function DocBlock({ block }: { block: Block }) {
   );
 }
 
+/* ── Onglet « Analyse SEO » : brief structuré issu de la SERP + données sémantiques ──
+   Intention · Thématiques (mots-clés) · Questions · Propositions de valeur · Style. */
+
+const SEO_INTENT = "Informationnelle";
+const SEO_THEMES: { title: string; tags: string[] }[] = [
+  { title: "Présentation des services d'une agence SEO à Paris", tags: ["services SEO", "agence SEO Paris", "optimisation SEO"] },
+  { title: "Critères de sélection d'une agence SEO", tags: ["choisir agence SEO", "critères agence SEO", "meilleure agence SEO"] },
+  { title: "Tendances actuelles du SEO à Paris", tags: ["tendances SEO", "SEO Paris", "SEO 2026"] },
+  { title: "Études de cas d'agences SEO parisiennes", tags: ["études de cas SEO", "succès SEO Paris", "exemples SEO"] },
+];
+const SEO_QUESTIONS = [
+  "Quels services propose une agence SEO à Paris ?",
+  "Comment choisir la meilleure agence SEO à Paris ?",
+  "Quelles sont les tendances actuelles du SEO à Paris ?",
+  "Quels sont des exemples de succès d'agences SEO à Paris ?",
+];
+const SEO_VALUE_PROPS = [
+  "Mettre en avant l'expertise locale des agences SEO parisiennes.",
+  "Souligner les réussites spécifiques des agences SEO à Paris.",
+  "Présenter des données ou études de cas exclusives pour démontrer l'efficacité des stratégies SEO locales.",
+];
+const SEO_STYLE_TAGS = ["informatif", "professionnel"];
+const SEO_STYLE_NOTES = [
+  "Utiliser un ton informatif et professionnel pour inspirer confiance.",
+  "Éviter le jargon technique non expliqué pour garantir la compréhension par tous les lecteurs.",
+  "Inclure des exemples concrets et des études de cas pour illustrer les points abordés.",
+];
+
+/** Carte de section du brief SEO (icône accent + titre + contenu). */
+function AnalysisCard({ icon, title, children, className = "" }: { icon: ElementType; title: string; children: ReactNode; className?: string }) {
+  return (
+    <section className={`rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6 ${className}`}>
+      <div className="mb-4 flex items-center gap-2.5">
+        <IconBadge icon={icon} size="sm" color="var(--accent-primary)" bg="var(--accent-primary-soft)" />
+        <h2 className="type-h3">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Petit tag mot-clé (thématiques). */
+function KeywordTag({ children }: { children: ReactNode }) {
+  return <span className="inline-flex items-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-2 py-0.5 type-micro text-[var(--text-secondary)]">{children}</span>;
+}
+
+/** Vue « Analyse SEO » — le brief structuré (SERP + sémantique). */
+function SeoAnalysisPanel() {
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-5 px-8 py-8">
+        {/* Avertissement source */}
+        <div className="flex items-start gap-2.5 rounded-2xl bg-[var(--color-warning-bg)] px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-[var(--color-warning)]" />
+          <p className="type-body-sm text-[var(--text-primary)]">
+            Brief basé sur la SERP et les données sémantiques. Le contenu des pages concurrentes n&apos;a pas pu être analysé.
+          </p>
+        </div>
+
+        {/* Intention de recherche */}
+        <AnalysisCard icon={Target} title="Intention de recherche">
+          <span className="inline-flex items-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-3 py-1 type-label text-[var(--text-primary)]">
+            {SEO_INTENT}
+          </span>
+        </AnalysisCard>
+
+        {/* Thématiques à couvrir */}
+        <AnalysisCard icon={ListChecks} title="Thématiques à couvrir">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SEO_THEMES.map((t) => (
+              <div key={t.title} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] p-4">
+                <p className="type-title text-[var(--text-primary)]">{t.title}</p>
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {t.tags.map((tag) => <KeywordTag key={tag}>{tag}</KeywordTag>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalysisCard>
+
+        {/* Questions à traiter + Propositions de valeur */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <AnalysisCard icon={HelpCircle} title="Questions à traiter">
+            <ul className="flex flex-col gap-3">
+              {SEO_QUESTIONS.map((q) => (
+                <li key={q} className="flex gap-2.5 type-body text-[var(--text-secondary)]">
+                  <span className="flex-shrink-0 type-body-strong text-[var(--accent-primary)]">?</span>
+                  {q}
+                </li>
+              ))}
+            </ul>
+          </AnalysisCard>
+
+          <AnalysisCard icon={Lightbulb} title="Propositions de valeur">
+            <ul className="flex flex-col gap-3">
+              {SEO_VALUE_PROPS.map((v) => (
+                <li key={v} className="flex gap-2.5 type-body text-[var(--text-secondary)]">
+                  <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-[var(--accent-primary)]" />
+                  {v}
+                </li>
+              ))}
+            </ul>
+          </AnalysisCard>
+        </div>
+
+        {/* Style et ton */}
+        <AnalysisCard icon={Sparkles} title="Style et ton">
+          <div className="flex flex-wrap gap-1.5">
+            {SEO_STYLE_TAGS.map((s) => (
+              <span key={s} className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 type-caption text-[var(--text-secondary)]">{s}</span>
+            ))}
+          </div>
+          <ul className="mt-4 flex flex-col gap-2">
+            {SEO_STYLE_NOTES.map((n) => (
+              <li key={n} className="flex gap-2.5 type-body text-[var(--text-secondary)]">
+                <span className="mt-2 h-1 w-1 flex-shrink-0 rounded-full bg-[var(--text-muted)]" />
+                {n}
+              </li>
+            ))}
+          </ul>
+        </AnalysisCard>
+      </div>
+    </div>
+  );
+}
+
 export function ContentBriefView({
   template,
   title,
@@ -157,6 +286,7 @@ export function ContentBriefView({
   const router = useRouter();
   const TemplateIcon = templateIcon(template.icon);
 
+  const [view, setView] = useState<BriefView>("redactionnel");
   const [phase, setPhase] = useState<Phase>("brief");
   const [genStep, setGenStep] = useState(0); // 0..3 pendant la génération
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -207,7 +337,22 @@ export function ContentBriefView({
         <Button variant="secondary" size="sm"><ArrowDownTrayIcon className="h-4 w-4" />Exporter<ChevronDownIcon className="h-3.5 w-3.5 text-[var(--text-muted)]" /></Button>
       </div>
 
-      {/* ── Corps : document (gauche) + workflow (droite) ── */}
+      {/* ── Onglets : Brief rédactionnel (document) / Analyse SEO (brief structuré) ── */}
+      <div className="flex flex-shrink-0 items-center border-b border-[var(--border-subtle)] px-6 py-2.5">
+        <FilterTabs<BriefView>
+          tabs={[
+            { key: "redactionnel", label: "Brief rédactionnel" },
+            { key: "analyse",      label: "Analyse SEO" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      </div>
+
+      {view === "analyse" ? (
+        <SeoAnalysisPanel />
+      ) : (
+      /* ── Corps : document (gauche) + workflow (droite) ── */
       <div className="flex min-h-0 flex-1">
         {/* Document */}
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -340,6 +485,7 @@ export function ContentBriefView({
           </div>
         </aside>
       </div>
+      )}
     </div>
   );
 }

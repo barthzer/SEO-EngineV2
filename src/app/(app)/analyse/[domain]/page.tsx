@@ -35,7 +35,6 @@ import { contentBlocs } from "@/components/analyse/contentBlocs";
 import { NotesView } from "@/components/analyse/NotesView";
 import { BenchmarkView } from "@/components/analyse/BenchmarkView";
 import { VisibiliteIAView } from "@/components/geo/VisibiliteIAView";
-import { UniversSemantiqueView } from "@/components/UniversSemantiqueView";
 import { RankTracker } from "@/components/RankTracker";
 import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
 import { useDrawer } from "@/context/DrawerContext";
@@ -135,7 +134,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   const { show: showToast } = useToast();
   // Tab state is driven by `?tab=` in the URL so the sidebar can navigate to it directly.
   const rawTab = (searchParams.get("tab") ?? "general") as Tab;
-  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","univers","recommandations","opportunites","creation","historique","notes","benchmark","geo"] as Tab[]).includes(rawTab) ? rawTab : "general";
+  const tab: Tab = (["general","briefs","seo","tracking","sea","forecast","netlinking","audit","cannibal","recommandations","opportunites","creation","historique","notes","benchmark","geo"] as Tab[]).includes(rawTab) ? rawTab : "general";
   const setTab = (next: Tab) => {
     const sp = new URLSearchParams(searchParams.toString());
     sp.delete("cat"); // le filtre catégorie ne survit pas à un changement d'onglet manuel
@@ -740,7 +739,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         {tab === "opportunites" && <OpportunitesView domain={decodedDomain} initialModule={searchParams.get("cat")} />}
 
         {/* Créer du contenu — blocs stratégiques de production (optimiser / identifier / from scratch / GEO). */}
-        {tab === "creation" && <CreationView domain={decodedDomain} onNewBrief={() => setUrlModal("new-brief")} />}
+        {tab === "creation" && <CreationView />}
 
         {/* B2 — Historique (onglet "Suivi") : timeline d'actions livrées + impact agrégé par mois. */}
         {tab === "historique" && <HistoriqueView />}
@@ -749,13 +748,13 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
 
         {tab === "cannibal" && <CannibalView />}
 
-        {tab === "univers" && <UniversSemantiqueView title={TAB_TITLES.univers} subtitle={TAB_SUBTITLES.univers} onOpenPageByUrl={openPageByUrl} />}
 
         {tab === "recommandations" && (
           <RecommandationsView
             title={TAB_TITLES.recommandations}
             subtitle={TAB_SUBTITLES.recommandations}
             onOpenPageByUrl={openPageByUrl}
+            onGoToCreation={() => setTab("creation")}
           />
         )}
 

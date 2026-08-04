@@ -90,7 +90,7 @@ function ChoiceCard({
   );
 }
 
-export function CreationView({ onNewBrief }: { domain: string; onNewBrief: () => void }) {
+export function CreationView() {
   const router = useRouter();
   const [selectorOpen, setSelectorOpen] = useState(false);
 
@@ -102,7 +102,7 @@ export function CreationView({ onNewBrief }: { domain: string; onNewBrief: () =>
           title="Créer from scratch"
           description="Mot-clé + type de page : analyse SERP automatique, structure et maillage cible générés."
           features={["Recherche de mots-clés", "Analyse IA complète", "Structure d'URL", "Maillage cible", "Calendrier éditorial"]}
-          onClick={onNewBrief}
+          onClick={() => router.push("/templates/configurer/sans-template")}
         />
         <ChoiceCard
           illustration="/blocs/optimiser.svg"

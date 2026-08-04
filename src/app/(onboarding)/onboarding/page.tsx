@@ -19,6 +19,9 @@ const SESSION = {
 export default function OnboardingPage() {
   const router = useRouter();
   const { data, step, update, next, back } = useOnboardingState();
+  // Domaine normalisé (retire protocole + chemin) — l'input accepte une URL collée,
+  // mais la validation ET la navigation doivent porter sur le domaine seul.
+  const projectDomain = data.firstProjectDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   /* Validation par step → désactive le CTA si invalide */
   const isStepValid = (() => {
     switch (step) {
@@ -26,7 +29,7 @@ export default function OnboardingPage() {
       case 1: return !!data.role && !!data.seniority;
       case 2: return data.workspaceName.trim().length >= 2 && !!data.teamSize;
       case 3: return !!data.primaryCountry && !!data.primaryLanguage;
-      case 4: return /^[a-z0-9-]+(\.[a-z]{2,})+$/i.test(data.firstProjectDomain.trim());
+      case 4: return /^[a-z0-9-]+(\.[a-z]{2,})+$/i.test(projectDomain);
       case 5: return true;
       default: return false;
     }
@@ -34,7 +37,7 @@ export default function OnboardingPage() {
 
   function handleFinish() {
     update({ completedAt: Date.now() });
-    router.push(`/analyse/${encodeURIComponent(data.firstProjectDomain)}`);
+    router.push(`/analyse/${encodeURIComponent(projectDomain)}`);
   }
 
   function handleSkipAll() {

@@ -263,6 +263,18 @@ export function TableWide<T>({
                         </div>
                       ))}
                     </div>
+                    {trailingAction && (
+                      /* Ancre 0-largeur épinglée à droite : ne réserve AUCUNE place dans
+                         le flux (sinon elle rognerait la colonne flex sticky à gauche).
+                         L'action est un overlay absolu qui déborde vers la gauche. */
+                      <div className="sticky right-0 z-[2] w-0 flex-shrink-0 self-stretch">
+                        <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-3 opacity-0 transition-opacity group-hover:opacity-100"
+                          style={{ width: trailingActionWidth, background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 45%)" }}
+                          onClick={(e) => e.stopPropagation()}>
+                          {trailingAction(row, idx)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })

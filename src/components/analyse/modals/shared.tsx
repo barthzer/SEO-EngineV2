@@ -11,8 +11,42 @@
  */
 
 import { createPortal } from "react-dom";
+import { useLayoutEffect, useRef, useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useModalTransition } from "@/hooks/useModalTransition";
+
+/**
+ * AnimateHeight — anime en douceur la hauteur de son contenu quand celui-ci
+ * change (ex. passage d'étape dans une modale multi-étapes). Mesure la hauteur
+ * naturelle du contenu (ResizeObserver) et la pose en hauteur explicite + transition.
+ * `overflow` reste visible → les dropdowns/tooltips internes ne sont pas rognés.
+ */
+function AnimateHeight({ children }: { children: React.ReactNode }) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(undefined);
+
+  // Mesure à CHAQUE rendu (donc à chaque changement d'étape/contenu) : fiable et
+  // synchrone, contrairement au ResizeObserver seul qui rate parfois les swaps React.
+  useLayoutEffect(() => {
+    const el = innerRef.current;
+    if (el) setHeight(el.offsetHeight);
+  });
+
+  // + ResizeObserver pour les changements asynchrones (textarea redimensionné, images…).
+  useLayoutEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div style={{ height, transition: "height 300ms cubic-bezier(0.16, 1, 0.3, 1)" }}>
+      <div ref={innerRef}>{children}</div>
+    </div>
+  );
+}
 
 export function ModalShell({
   onClose,
@@ -40,10 +74,10 @@ export function ModalShell({
         className={`t-modal ${modalClass} relative w-full rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
         style={{ maxWidth: `${maxWidth}px` }}
       >
-        <button onClick={requestClose} className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
+        <button onClick={requestClose} className="absolute right-6 top-6 z-10 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]">
           <XMarkIcon className="h-5 w-5" />
         </button>
-        {children}
+        <AnimateHeight>{children}</AnimateHeight>
       </div>
     </div>,
     document.body

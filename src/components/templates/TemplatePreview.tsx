@@ -87,7 +87,17 @@ export function TemplatePreviewContent({
         <MetaField label="Version" value={`v${template.version}`} />
       </div>
 
+      {/* Prompt (Markdown) — cœur éditable du template */}
+      {template.content && (
+        <Section title="Prompt">
+          <pre className="max-h-[360px] overflow-auto whitespace-pre-wrap rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card-static)] p-4 font-mono text-[12.5px] leading-relaxed text-[var(--text-secondary)]">
+            {template.content}
+          </pre>
+        </Section>
+      )}
+
       {/* Structure éditoriale */}
+      {template.structure.length > 0 && (
       <Section title="Structure éditoriale">
         <div className="flex flex-col gap-1">
           {template.structure.map((n) => (
@@ -106,6 +116,7 @@ export function TemplatePreviewContent({
           ))}
         </div>
       </Section>
+      )}
 
       {/* Paramètres de génération */}
       <Section title="Paramètres de génération">
@@ -177,6 +188,7 @@ export function TemplatePreviewContent({
       )}
 
       {/* Workflow */}
+      {template.steps.length > 0 && (
       <Section title={`Workflow · ${template.steps.length} étapes`}>
         <div className="flex flex-col gap-2">
           {template.steps.map((s, i) => (
@@ -200,6 +212,7 @@ export function TemplatePreviewContent({
           ))}
         </div>
       </Section>
+      )}
     </div>
   );
 }

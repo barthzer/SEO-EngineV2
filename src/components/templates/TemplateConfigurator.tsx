@@ -28,9 +28,10 @@ import { IconBadge } from "@/components/IconBadge";
 import { fieldCls } from "@/components/analyse/modals/shared";
 import { useToast } from "@/context/ToastContext";
 import { templateIcon, DocStackIllustration } from "@/components/templates/ui";
+import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { type WorkflowTemplate } from "@/data/templates";
 import { SUGGESTED_LISTS, DEFAULT_SETUP } from "@/components/geo/data";
-import { LLM_PLATFORMS, type LlmPlatform, type Prompt } from "@/components/geo/types";
+import { LLM_PLATFORMS, type LlmPlatform, type Prompt, type TopicList } from "@/components/geo/types";
 import { visColor } from "@/components/geo/ui";
 
 const PAGE_SIZE = 5;
@@ -223,17 +224,47 @@ function Radio({ selected }: { selected: boolean }) {
   );
 }
 
+/** Sujet synthétique construit depuis un mot-clé (génération d'une opportunité).
+ *  Permet de pré-remplir le champ « Sujet » du mode création avec un mot-clé
+ *  arbitraire (hors listes suggérées) et des prompts dérivés. */
+function buildSubjectTopic(keyword: string): TopicList {
+  const k = keyword.trim();
+  const cap = k.charAt(0).toUpperCase() + k.slice(1);
+  const mk = (text: string, volume: number, i: number): Prompt => ({
+    id: `opp-p${i}`, text, volume, language: "fr", region: "FR", active: true, visibility: 0,
+  });
+  return {
+    id: "opp-subject",
+    name: cap,
+    source: "suggested",
+    selected: true,
+    prompts: [
+      mk(`Quelle est la meilleure solution pour « ${k} » ?`, 880, 1),
+      mk(`${cap} : comment bien choisir ?`, 720, 2),
+      mk(`${cap} — comparatif et avis`, 590, 3),
+      mk(`Combien coûte ${k} ?`, 480, 4),
+    ],
+  };
+}
+
 /* ── Configurateur ──────────────────────────────────────────────────────── */
 export function TemplateConfigurator({
-  template,
+  template: initialTemplate,
   analyse,
+  initialSubject,
 }: {
-  template: WorkflowTemplate;
+  /** Template pré-sélectionné. Optionnel : from scratch / opportunité démarrent sans template. */
+  template?: WorkflowTemplate;
   analyse?: { keyword: string; url?: string };
+  /** Mot-clé pré-rempli en « Sujet » (mode création, depuis une opportunité). */
+  initialSubject?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
-  const TemplateIcon = templateIcon(template.icon);
+  // Template choisi : peut être fourni au départ, ou ajouté via « Ajouter un template ».
+  const [template, setTemplate] = useState<WorkflowTemplate | null>(initialTemplate ?? null);
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
+  const briefTemplateId = template?.id ?? "sys-geo-uplift";
 
   // Mode « optimisation d'une page existante » (depuis l'analyse d'une URL).
   const analyseMode = !!analyse;
@@ -242,12 +273,22 @@ export function TemplateConfigurator({
     [analyse]
   );
 
+  // Sujet pré-rempli depuis une opportunité (mode création uniquement).
+  const subjectTopic = useMemo<TopicList | null>(
+    () => (initialSubject && !analyse ? buildSubjectTopic(initialSubject) : null),
+    [initialSubject, analyse]
+  );
+  // Génération depuis une opportunité : sujet imposé + pas de prompts (query fan-out).
+  const opportunityMode = !!subjectTopic;
+
   const [step, setStep] = useState(1);
-  const [openField, setOpenField] = useState<string | null>("sujet");
+  const [openField, setOpenField] = useState<string | null>(subjectTopic ? "prompts" : "sujet");
   const toggle = (f: string) => setOpenField((cur) => (cur === f ? null : f));
 
-  const [topicId, setTopicId] = useState<string | null>(null);
-  const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set());
+  const [topicId, setTopicId] = useState<string | null>(subjectTopic?.id ?? null);
+  const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(
+    () => new Set(subjectTopic ? subjectTopic.prompts.map((p) => p.id) : [])
+  );
   // Actions sémantiques cochées (mode analyse) — toutes pré-cochées.
   const [selectedActions, setSelectedActions] = useState<Set<string>>(
     () => new Set(analyse ? buildSemanticActions(analyse.keyword).map((a) => a.id) : [])
@@ -259,7 +300,7 @@ export function TemplateConfigurator({
       return next;
     });
   const [platforms, setPlatforms] = useState<LlmPlatform[]>(DEFAULT_SETUP.platforms);
-  const [brandVoice, setBrandVoice] = useState<string>(template.params.brandVoice ?? "");
+  const [brandVoice, setBrandVoice] = useState<string>(initialTemplate?.params.brandVoice ?? "");
   const [audience, setAudience] = useState<string>("");
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [instructions, setInstructions] = useState("");
@@ -273,7 +314,10 @@ export function TemplateConfigurator({
   const [topicPage, setTopicPage] = useState(1);
   const [promptPage, setPromptPage] = useState(1);
 
-  const topic = useMemo(() => SUGGESTED_LISTS.find((l) => l.id === topicId) ?? null, [topicId]);
+  const topic = useMemo(
+    () => (subjectTopic && topicId === subjectTopic.id ? subjectTopic : SUGGESTED_LISTS.find((l) => l.id === topicId) ?? null),
+    [topicId, subjectTopic]
+  );
   const topicPrompts = topic?.prompts ?? [];
   const brandVoices = useMemo(
     () => (brandVoice && !BRAND_VOICES.includes(brandVoice) ? [brandVoice, ...BRAND_VOICES] : BRAND_VOICES),
@@ -300,6 +344,8 @@ export function TemplateConfigurator({
   const subjectName = analyseMode ? analyse!.keyword : topic?.name ?? null;
   const canGenerate = analyseMode
     ? selectedActions.size > 0
+    : opportunityMode
+    ? !!topic
     : !!topic && selectedPrompts.size > 0;
 
   // Génération de titres : phase « shimmer » (dégradé horizontal) puis apparition.
@@ -365,10 +411,22 @@ export function TemplateConfigurator({
                     ? "Optimisez le contenu de cette page à partir des recommandations de l'analyse."
                     : "Rédigez un contenu long optimisé pour l'IA à partir de l'analyse des pages les plus citées."}
                 </p>
-                <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[var(--bg-subtle)] px-3 py-2">
-                  <IconBadge icon={TemplateIcon} size="sm" />
-                  <span className="type-label text-[var(--text-primary)]">{template.name}</span>
-                </div>
+                {template ? (
+                  <div className="mt-3 flex items-center gap-2.5 rounded-xl bg-[var(--bg-subtle)] px-3 py-2">
+                    <IconBadge icon={templateIcon(template.icon)} size="sm" />
+                    <span className="type-label text-[var(--text-primary)]">{template.name}</span>
+                    {!analyseMode && (
+                      <button type="button" onClick={() => setTemplateSelectorOpen(true)} className="ml-auto type-caption font-medium text-[var(--text-muted)] underline underline-offset-2 transition-colors hover:text-[var(--text-primary)]">
+                        Changer
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setTemplateSelectorOpen(true)} className="mt-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-[var(--border-medium)] px-3 py-2.5 type-label font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]">
+                    <PlusIcon className="h-4 w-4" />
+                    Ajouter un template
+                  </button>
+                )}
               </>
             ) : (
               <>
@@ -450,7 +508,7 @@ export function TemplateConfigurator({
                       ))}
                     </div>
                   </ConfigField>
-                ) : (
+                ) : opportunityMode ? null : (
                 <ConfigField
                   label={topic ? `Prompts (${selectedPrompts.size})` : "Prompts"}
                   disabled={!topic}
@@ -616,7 +674,7 @@ export function TemplateConfigurator({
                   variant="primary"
                   disabled={!canGenerate}
                   className="w-full justify-center"
-                  onClick={() => router.push(`/templates/brief/${encodeURIComponent(template.id)}?titre=${encodeURIComponent(analyse!.keyword)}&from=analyse`)}
+                  onClick={() => router.push(`/templates/brief/${encodeURIComponent(briefTemplateId)}?titre=${encodeURIComponent(analyse!.keyword)}&from=analyse`)}
                 >
                   Générer le brief de contenu
                   <ChevronRightIcon className="h-4 w-4" />
@@ -628,7 +686,7 @@ export function TemplateConfigurator({
                 </Button>
               )
             ) : (
-              <Button variant="primary" disabled={!selectedTitle} className="w-full justify-center" onClick={() => router.push(`/templates/brief/${encodeURIComponent(template.id)}?titre=${encodeURIComponent(selectedTitle ?? "")}`)}>
+              <Button variant="primary" disabled={!selectedTitle} className="w-full justify-center" onClick={() => router.push(`/templates/brief/${encodeURIComponent(briefTemplateId)}?titre=${encodeURIComponent(selectedTitle ?? "")}`)}>
                 Générer le brief de contenu
                 <ChevronRightIcon className="h-4 w-4" />
               </Button>
@@ -655,6 +713,15 @@ export function TemplateConfigurator({
           </div>
         )}
       </div>
+
+      {templateSelectorOpen && (
+        <TemplateSelector
+          context="from_scratch"
+          subtitle="Choisissez un process éprouvé pour cadrer la génération du contenu."
+          onSelect={(t) => { setTemplate(t); setTemplateSelectorOpen(false); }}
+          onClose={() => setTemplateSelectorOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -52,15 +52,36 @@ function DsSelect({ value, options, onChange }: { value: string; options: { valu
   );
 }
 
-export function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () => void; initialKeyword?: string }) {
+export type BriefGenerateConfig = {
+  keyword: string;
+  lang: string;
+  pageType: string;
+};
+
+export function NewBriefModal({
+  onClose,
+  initialKeyword = "",
+  onGenerate,
+}: {
+  onClose: () => void;
+  initialKeyword?: string;
+  onGenerate?: (cfg: BriefGenerateConfig) => void;
+}) {
   const [keyword, setKeyword] = useState(initialKeyword);
   const [lang, setLang] = useState("fr");
   const [pageType, setPageType] = useState("auto");
 
+  const canSubmit = keyword.trim().length > 0;
+
+  function submit() {
+    onGenerate?.({ keyword: keyword.trim(), lang, pageType });
+    onClose();
+  }
+
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="pr-10 type-h2">Créer une analyse SEO</h2>
-      <p className="mt-1 type-body-sm">Générez une analyse complète pour un nouveau contenu (mot-clé sans page existante)</p>
+      <h2 className="pr-10 type-h2">Configuration du contenu</h2>
+      <p className="mt-1 type-body-sm">Configure la nouvelle page à créer pour ce mot-clé et lance l&apos;analyse SEO.</p>
       <div className="mt-6 flex flex-col gap-4">
         <FormField label="Mot-clé cible" required>
           <input type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="ex : meilleur aspirateur sans fil" autoFocus className={fieldCls} />
@@ -72,12 +93,12 @@ export function NewBriefModal({ onClose, initialKeyword = "" }: { onClose: () =>
           <DsSelect value={pageType} options={PAGE_TYPES} onChange={setPageType} />
         </FormField>
         <InfoNote>
-          L'analyse couvrira la SERP et générera : intention de recherche, structure recommandée, thématiques à couvrir, Top 3 concurrents.
+          L&apos;analyse couvrira la SERP et générera : intention de recherche, structure recommandée, thématiques à couvrir, Top 3 concurrents.
         </InfoNote>
       </div>
       <div className="mt-6 flex items-center justify-end gap-3">
         <button onClick={onClose} className="rounded-full px-4 py-2 type-label text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">Annuler</button>
-        <Button disabled={!keyword.trim()} onClick={onClose}>
+        <Button disabled={!canSubmit} onClick={submit}>
           Générer l&apos;analyse
           <ChevronRightIcon className="h-4 w-4" />
         </Button>

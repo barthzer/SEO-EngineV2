@@ -99,6 +99,8 @@ export type WorkflowTemplate = {
   version: number;
   /** true si une nouvelle version système est dispo (template forké/perso). */
   updateAvailable?: boolean;
+  /** Corps du prompt en Markdown — le cœur éditable du template (variables {…}). */
+  content?: string;
 };
 
 /* ── Métadonnées d'affichage (labels + couleurs) ─────────────────────── */

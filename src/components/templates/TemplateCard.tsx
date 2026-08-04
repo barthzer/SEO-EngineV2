@@ -10,7 +10,7 @@ import {
   StarIcon as StarOutline,
   EyeIcon,
   DocumentDuplicateIcon,
-  Cog6ToothIcon,
+  PencilSquareIcon,
   EllipsisHorizontalIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
@@ -27,7 +27,7 @@ export function TemplateCard({
   onPreview,
   onUse,
   onDuplicate,
-  onConfigure,
+  onEdit,
 }: {
   template: WorkflowTemplate;
   favorite: boolean;
@@ -35,7 +35,7 @@ export function TemplateCard({
   onPreview: () => void;
   onUse: () => void;
   onDuplicate: () => void;
-  onConfigure: () => void;
+  onEdit: () => void;
 }) {
   const Icon = templateIcon(template.icon);
   const extra = template.tags.length - 3;
@@ -120,8 +120,8 @@ export function TemplateCard({
           <DropdownItem icon={DocumentDuplicateIcon} onClick={onDuplicate}>
             Dupliquer
           </DropdownItem>
-          <DropdownItem icon={Cog6ToothIcon} onClick={onConfigure}>
-            Configurer
+          <DropdownItem icon={PencilSquareIcon} onClick={onEdit}>
+            Modifier
           </DropdownItem>
         </DropdownMenu>
       </div>
