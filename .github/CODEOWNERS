@@ -1,0 +1,22 @@
+# CODEOWNERS — notification de review, PAS un verrou.
+# N'active PAS "Require review from Code Owners" en branch protection :
+# personne ne doit être bloqué. Ceci sert juste à prévenir le bon owner.
+#
+# ⚠️ Remplacer @backend-dev par le vrai handle GitHub du dev backend.
+
+# ── Front / design (autorité visuelle : Barth) ──────────────────────────
+/src/components/            @barthzer
+/src/styles/                @barthzer
+/src/app/                   @barthzer
+/src/data/                  @barthzer
+/src/context/               @barthzer
+/src/hooks/                 @barthzer
+
+# ── Back / data (dev backend) ───────────────────────────────────────────
+/src/db/                    @backend-dev
+/src/lib/supabase/          @backend-dev
+/src/app/api/               @backend-dev
+/drizzle.config.ts          @backend-dev
+
+# ── Zone partagée : le dev câble, mais l'UI reste front ──────────────────
+# (pas d'owner exclusif ; discuter dans la PR)
