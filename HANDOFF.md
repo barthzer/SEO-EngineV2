@@ -90,7 +90,10 @@ Pour câbler un écran qui tourne encore en mock inline :
 3. **Brancher** via server component / server action ; les Client Components reçoivent la donnée en props ou via un endpoint.
 4. Le **type exporté est le contrat** : tant qu'il ne change pas, front et back avancent en parallèle.
 
-Domaine de référence déjà extrait : **Opportunités** → `src/data/opportunities.ts` + `src/db/queries/opportunities.ts` (stub à remplir).
+Domaines déjà extraits (mock dans `src/data/*`, stub `src/db/queries/*` à remplir) :
+**Opportunités** (`opportunities.ts`), **Équipe** (`team.ts`), **Actions** (`actions.ts`),
+**Suivi** (`suivi.ts`), **Home cockpit** (`home-cockpit.ts`), **Popularité** (`netlinking.ts`),
+**GEO / Visibilité IA** (`geo.ts`). Ce sont tes patrons de référence.
 
 ---
 
