@@ -30,7 +30,7 @@ import { useToast } from "@/context/ToastContext";
 import { templateIcon, DocStackIllustration } from "@/components/templates/ui";
 import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { type WorkflowTemplate } from "@/data/templates";
-import { SUGGESTED_LISTS, DEFAULT_SETUP } from "@/components/geo/data";
+import { SUGGESTED_LISTS, DEFAULT_SETUP } from "@/data/geo";
 import { LLM_PLATFORMS, type LlmPlatform, type Prompt, type TopicList } from "@/components/geo/types";
 import { visColor } from "@/components/geo/ui";
 

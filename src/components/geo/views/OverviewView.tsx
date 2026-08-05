@@ -12,7 +12,7 @@ import {
   leaderboard, geoSummary, visibilityByPlatform, visibilityByPlatformSeries, geoOpportunities, visibilitySeries,
   TOP_DOMAINS, type GeoOpportunity, type PlatformVisibility, type Series, type LeaderRow, type CitedDomain,
 } from "@/components/geo/analytics";
-import { TOP_KEYWORDS, formatVolume } from "@/components/geo/data";
+import { TOP_KEYWORDS, formatVolume } from "@/data/geo";
 import type { GeoSetup } from "@/components/geo/types";
 import { CARD, CARD_SM, visColor } from "@/components/geo/ui";
 

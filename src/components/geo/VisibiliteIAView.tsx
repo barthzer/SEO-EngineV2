@@ -11,7 +11,7 @@ import { DropdownHeader, DropdownItem } from "@/components/DropdownMenu";
 import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { SetupWizard } from "@/components/geo/SetupWizard";
 import { LaunchScreen } from "@/components/geo/LaunchScreen";
-import { DEFAULT_SETUP } from "@/components/geo/data";
+import { DEFAULT_SETUP } from "@/data/geo";
 import { PLATFORM_LABEL, PLATFORM_DOMAIN } from "@/components/geo/analytics";
 import { GEO_VIEWS, type GeoView } from "@/components/geo/nav";
 import { DEFAULT_GEO_FILTERS, type GeoSetup, type GeoFilters, type LlmPlatform } from "@/components/geo/types";

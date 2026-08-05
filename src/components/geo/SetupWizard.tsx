@@ -12,7 +12,7 @@ import {
   LLM_PLATFORMS, REGIONS, LANGUAGES,
   type LlmPlatform, type TopicList, type Prompt, type Competitor, type GeoSetup,
 } from "@/components/geo/types";
-import { SUGGESTED_LISTS, SUGGESTED_COMPETITORS, AI_PROMPT_BANK, randomVolume, topicVolume } from "@/components/geo/data";
+import { SUGGESTED_LISTS, SUGGESTED_COMPETITORS, AI_PROMPT_BANK, randomVolume, topicVolume } from "@/data/geo";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
