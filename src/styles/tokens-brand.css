@@ -180,7 +180,8 @@
 
 /* ──────────────── Fonts ──────────────── */
 :root {
-  --font-sans:    var(--font-instrument-sans);
-  --font-display: var(--font-space-grotesk);
+  /* Corps de texte : Inter · Titres : DM Sans · Mono : Space Grotesk */
+  --font-sans:    var(--font-inter);
+  --font-display: var(--font-dm-sans);
   --font-mono:    var(--font-space-grotesk);
 }

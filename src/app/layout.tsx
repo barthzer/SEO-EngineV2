@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Manrope, Space_Grotesk } from "next/font/google";
+import { Inter, DM_Sans, Space_Grotesk } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+/** Corps de texte */
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+/** Titres */
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
 });
 
+/** Mono (code, valeurs techniques) */
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
@@ -32,7 +35,7 @@ export default function RootLayout({
     <html
       lang="fr"
       data-theme="light"
-      className={`${instrumentSans.variable} ${manrope.variable} ${spaceGrotesk.variable}`}
+      className={`${inter.variable} ${dmSans.variable} ${spaceGrotesk.variable}`}
     >
       <body className="min-h-[100dvh] antialiased">
         <ThemeProvider>{children}</ThemeProvider>
