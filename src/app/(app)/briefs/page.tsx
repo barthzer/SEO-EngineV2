@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { BriefsView, BRIEFS } from "@/components/BriefsView";
+import { BriefsView } from "@/components/BriefsView";
+import { BRIEFS } from "@/data/briefs";
 
 const counts = {
   optimiser: BRIEFS.filter((b) => b.type === "optimiser").length,
