@@ -90,10 +90,32 @@ Pour câbler un écran qui tourne encore en mock inline :
 3. **Brancher** via server component / server action ; les Client Components reçoivent la donnée en props ou via un endpoint.
 4. Le **type exporté est le contrat** : tant qu'il ne change pas, front et back avancent en parallèle.
 
-Domaines déjà extraits (mock dans `src/data/*`, stub `src/db/queries/*` à remplir) :
-**Opportunités** (`opportunities.ts`), **Équipe** (`team.ts`), **Actions** (`actions.ts`),
-**Suivi** (`suivi.ts`), **Home cockpit** (`home-cockpit.ts`), **Popularité** (`netlinking.ts`),
-**GEO / Visibilité IA** (`geo.ts`). Ce sont tes patrons de référence.
+Domaines extraits (mock dans `src/data/*`, stub `src/db/queries/*` à remplir) — **toute la donnée métier de l'app** :
+
+| Vue | `src/data/` |
+|---|---|
+| URLs / Briefs | `briefs.ts` |
+| Positions | `positions.ts` |
+| Cannibalisation | `cannibal.ts` |
+| Benchmark sémantique | `benchmark.ts` |
+| Charts sémantique | `charts-semantique.ts` |
+| Audit Technique | `audit-technique.ts` |
+| Audit Sémantique | `audit-editorial.ts` |
+| Audit Popularité | `audit-netlinking.ts` |
+| Audit Visibilité IA | `audit-geo.ts` |
+| Popularité | `netlinking.ts` |
+| Visibilité IA (setup / analytics) | `geo.ts` · `geo-analytics.ts` |
+| Opportunités | `opportunities.ts` |
+| Actions | `actions.ts` |
+| Suivi | `suivi.ts` |
+| Vue d'ensemble projet | `overview-pulse.ts` |
+| Home cockpit | `home-cockpit.ts` |
+| Équipe | `team.ts` |
+| Production | `production.ts` |
+| Projets / Templates | `projects.ts` · `templates.ts` |
+
+Ce qui reste **volontairement** dans les composants : la config UI (options de formulaire,
+`*_TABS`, `*_COLUMNS`, `*_ORDER`, palettes de couleurs, référentiels pays/langues/rôles).
 
 ---
 
