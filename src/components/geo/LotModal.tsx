@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Tooltip } from "@/components/Tooltip";
 import { VisibilityAnalytics, PromptRankingTable } from "@/components/geo/views/VisibilityView";
-import { lotSeed, topicRankings } from "@/components/geo/analytics";
+import { lotSeed, topicRankings } from "@/data/geo-analytics";
 import type { GeoSetup, TopicList } from "@/components/geo/types";
 
 /**

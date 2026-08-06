@@ -13,7 +13,7 @@ import {
   positiveShare, positiveSentimentSeries, sentimentThemes, brandFromDomain,
   sentimentByPlatform, sentimentByPlatformSeries,
   PLATFORM_LABEL, PLATFORM_DOMAIN, type SentimentTheme, type ThemeExample,
-} from "@/components/geo/analytics";
+} from "@/data/geo-analytics";
 import { REGIONS, type GeoSetup, type LlmPlatform } from "@/components/geo/types";
 import { CARD, PLATFORM_COLOR } from "@/components/geo/ui";
 import { Section, SplitCard } from "@/components/geo/views/VisibilityView";

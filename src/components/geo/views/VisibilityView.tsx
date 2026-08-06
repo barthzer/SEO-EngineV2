@@ -12,7 +12,7 @@ import {
   visibilitySeries, averagePositionSeries, shareOfVoice, leaderboard, topicRankings,
   brandFromDomain, enrichPrompts, platformMatrix, PLATFORM_LABEL, PLATFORM_DOMAIN,
   type TopicRanking, type RankBrand, type PromptRanking, type EnrichedPrompt,
-} from "@/components/geo/analytics";
+} from "@/data/geo-analytics";
 import type { GeoSetup, LlmPlatform } from "@/components/geo/types";
 import { CARD, PLATFORM_COLOR } from "@/components/geo/ui";
 

@@ -11,7 +11,7 @@ import { ColPill } from "@/components/ColPill";
 import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { TableWide } from "@/components/TableWide";
 import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
-import { enrichPrompts, PLATFORM_DOMAIN, PLATFORM_LABEL, type EnrichedPrompt } from "@/components/geo/analytics";
+import { enrichPrompts, PLATFORM_DOMAIN, PLATFORM_LABEL, type EnrichedPrompt } from "@/data/geo-analytics";
 import type { GeoSetup, TopicList, Prompt, LlmPlatform, GeoFilters, PromptSentiment } from "@/components/geo/types";
 import { CARD_SM, SentimentPill, visColor, VolumeBars, volumeLevel, RegionFlag, TagPill } from "@/components/geo/ui";
 import { PromptModal } from "@/components/geo/PromptModal";

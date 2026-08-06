@@ -9,7 +9,7 @@ import { Flag } from "@/components/Flag";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 import { useToast } from "@/context/ToastContext";
 import { LLM_PLATFORMS, REGIONS, LANGUAGES, type GeoSetup, type Competitor, type TopicList } from "@/components/geo/types";
-import { PLATFORM_DOMAIN } from "@/components/geo/analytics";
+import { PLATFORM_DOMAIN } from "@/data/geo-analytics";
 import { CARD } from "@/components/geo/ui";
 import { ModalShell } from "@/components/analyse/modals/shared";
 import { Favicon } from "@/components/geo/views/OverviewView";

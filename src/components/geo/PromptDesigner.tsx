@@ -12,7 +12,7 @@ import { TableWide } from "@/components/TableWide";
 import { Flag } from "@/components/Flag";
 import { useToast } from "@/context/ToastContext";
 import { AI_PROMPT_BANK, randomVolume } from "@/data/geo";
-import { PLATFORM_LABEL, PLATFORM_DOMAIN } from "@/components/geo/analytics";
+import { PLATFORM_LABEL, PLATFORM_DOMAIN } from "@/data/geo-analytics";
 import { LANGUAGES, type GeoSetup, type TopicList, type Prompt, type LlmPlatform } from "@/components/geo/types";
 import { CARD_SM } from "@/components/geo/ui";
 import { Favicon } from "@/components/geo/views/OverviewView";

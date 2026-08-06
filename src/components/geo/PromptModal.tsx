@@ -10,7 +10,7 @@ import { Favicon } from "@/components/geo/views/OverviewView";
 import {
   promptResults, promptFanout, brandFromDomain, PLATFORM_LABEL, PLATFORM_DOMAIN,
   type EnrichedPrompt,
-} from "@/components/geo/analytics";
+} from "@/data/geo-analytics";
 import { REGIONS, type GeoSetup } from "@/components/geo/types";
 
 /** Versions d'analyse effectuées (mock) — affichées dans la colonne de droite. */

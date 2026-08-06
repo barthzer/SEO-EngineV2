@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Series } from "@/components/geo/analytics";
+import type { Series } from "@/data/geo-analytics";
 
 /**
  * GeoLineChart — multi-lignes SVG (toi vs concurrents / par modèle IA), tokens DS.

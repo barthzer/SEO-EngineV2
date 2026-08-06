@@ -9,7 +9,7 @@ import { SearchInput } from "@/components/SearchInput";
 import {
   topCitationDomains, citationShareSeries, citationTypes, topCitationPages,
   CITATION_CAT_CFG, type CitationCat, type CitationDomain, type CitationPage,
-} from "@/components/geo/analytics";
+} from "@/data/geo-analytics";
 import type { GeoSetup } from "@/components/geo/types";
 import { Section, SplitCard } from "@/components/geo/views/VisibilityView";
 import { Favicon } from "@/components/geo/views/OverviewView";

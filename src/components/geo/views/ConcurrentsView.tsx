@@ -14,7 +14,7 @@ import { Section } from "@/components/geo/views/VisibilityView";
 import {
   leaderboard, visibilitySeries, shareOfVoice, brandFromDomain, platformMatrix,
   PLATFORM_LABEL, PLATFORM_DOMAIN, type LeaderRow, type MatrixRow,
-} from "@/components/geo/analytics";
+} from "@/data/geo-analytics";
 import type { GeoSetup, LlmPlatform } from "@/components/geo/types";
 import { CARD } from "@/components/geo/ui";
 
