@@ -1,32 +1,11 @@
 "use client";
 
+import { FLUC, VISIBILITY_BY_PERIOD } from "@/data/charts-semantique";
+
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { ChartTooltip } from "@/components/Tooltip";
 import { FilterTabs } from "@/components/FilterTabs";
 
-const VISIBILITY_DATA = [
-  { month: "Mai",   value: 18  },
-  { month: "Juin",  value: 28  },
-  { month: "Juil",  value: 35  },
-  { month: "Août",  value: 43  },
-  { month: "Sept",  value: 58  },
-  { month: "Oct",   value: 67  },
-  { month: "Nov",   value: 72  },
-  { month: "Déc",   value: 79  },
-  { month: "Janv",  value: 87  },
-  { month: "Févr",  value: 92  },
-  { month: "Mars",  value: 99  },
-  { month: "Avr",   value: 107 },
-];
-
-// Fluctuations déterministes pour les 4 sous-points entre chaque mois
-const FLUC = [1, 0, 2, 0, 0, -2, 0, 1, 0, 3, 0, -1, 0, 0, 2, 0, -3, 0, 0, 1, 0, 2, 0, 0, -1, 0, 0, -2, 1, 0, 0, 3, 0, -1, 0, 0, 2, 0, -2, 0, 0, 1, 0, -3];
-
-const VISIBILITY_BY_PERIOD = {
-  "3m":  VISIBILITY_DATA.slice(-3),
-  "6m":  VISIBILITY_DATA.slice(-6),
-  "1an": VISIBILITY_DATA,
-} as const;
 
 export function VisibilityLineChart({ title, subtitle }: { title?: string; subtitle?: string } = {}) {
   const [period, setPeriod] = useState<"3m" | "6m" | "1an">("1an");

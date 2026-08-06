@@ -1,32 +1,13 @@
 "use client";
 
+import { TOP_PAGES_ALL, type TopPage } from "@/data/charts-semantique";
+
 import { useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { SearchInput } from "@/components/SearchInput";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 
-type TopPage = {
-  url: string;
-  clicks: number;
-  impressions: number;
-  position: number;
-  ctr: string;
-  trend: number[];
-};
-
-const TOP_PAGES_ALL: TopPage[] = [
-  { url: "/blog/seo-local",            clicks: 3240, impressions: 53100, position: 4.2,  ctr: "6.1%", trend: [18,22,28,24,32,30,36] },
-  { url: "/services/audit-seo",        clicks: 2180, impressions: 50700, position: 7.8,  ctr: "4.3%", trend: [20,18,22,25,21,24,22] },
-  { url: "/blog/link-building",        clicks: 1640, impressions: 52900, position: 11.2, ctr: "3.1%", trend: [12,14,13,16,15,18,17] },
-  { url: "/",                          clicks: 1320, impressions: 15200, position: 3.1,  ctr: "8.7%", trend: [10,11,10,12,13,11,13] },
-  { url: "/blog/core-web-vitals",      clicks:  980, impressions: 25800, position: 9.4,  ctr: "3.8%", trend: [8,9,11,10,12,11,12]  },
-  { url: "/services/netlinking",       clicks:  870, impressions: 19400, position: 12.1, ctr: "4.5%", trend: [6,7,8,7,9,8,10]      },
-  { url: "/blog/balises-title",        clicks:  730, impressions: 17800, position: 8.6,  ctr: "4.1%", trend: [5,6,7,7,8,9,9]       },
-  { url: "/services/seo-ecommerce",    clicks:  610, impressions: 22300, position: 14.3, ctr: "2.7%", trend: [4,5,4,6,5,7,6]       },
-  { url: "/blog/redirection-301",      clicks:  540, impressions: 14600, position: 10.8, ctr: "3.7%", trend: [4,4,5,5,6,5,7]       },
-  { url: "/blog/schema-markup",        clicks:  490, impressions: 16200, position: 13.5, ctr: "3.0%", trend: [3,4,4,5,5,5,6]       },
-];
 
 function MiniSparkline({ vals }: { vals: number[] }) {
   const max = Math.max(...vals);

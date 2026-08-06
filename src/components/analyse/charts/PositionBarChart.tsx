@@ -1,13 +1,9 @@
 "use client";
 
+import { POSITION_BARS } from "@/data/charts-semantique";
+
 import { VerticalBarChart } from "@/components/VerticalBarChart";
 
-const POSITION_BARS = [
-  { label: "Top 3",    value: 2  },
-  { label: "4 – 10",   value: 3  },
-  { label: "11 – 50",  value: 8  },
-  { label: "51 – 100", value: 14 },
-];
 
 const POSITION_TOOLTIP_DETAILS: Record<string, { description: string; ctrEstime: string; recommandation: string }> = {
   "Top 3":    { description: "Première page, zone d'or",       ctrEstime: "~22–30 %", recommandation: "Maintenir et défendre les positions" },

@@ -1,26 +1,12 @@
 "use client";
 
+import { ORGANIC_YOU, ORGANIC_COMPETITORS, type OrganicRow } from "@/data/charts-semantique";
+
 import { useState } from "react";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { DeltaIndicator } from "@/components/DeltaIndicator";
 import { ColHeaderInfo, TfTip, CfTip, BasTip, RefDomTip } from "../RecommandationsView";
 
-type OrganicRow = { domain: string; tf: number; cf: number; bas: number; refDomains: number; isYou?: boolean };
-
-const ORGANIC_YOU: OrganicRow = { domain: "votre-site.fr", tf: 28, cf: 41, bas: 12, refDomains: 520, isYou: true };
-
-const ORGANIC_COMPETITORS: OrganicRow[] = [
-  { domain: "noiise.com",                                 tf: 49, cf: 48, bas: 0,  refDomains: 1637 },
-  { domain: "lk-interactive.fr",                          tf: 19, cf: 38, bas: 47, refDomains: 308 },
-  { domain: "cybercite.fr",                               tf: 42, cf: 44, bas: 9,  refDomains: 902 },
-  { domain: "eskimoz.fr",                                 tf: 21, cf: 47, bas: 13, refDomains: 1427 },
-  { domain: "seo.fr",                                     tf: 51, cf: 46, bas: 16, refDomains: 1640 },
-  { domain: "alioze.com",                                 tf: 14, cf: 42, bas: 0,  refDomains: 833 },
-  { domain: "agencebespoke.com",                          tf: 13, cf: 42, bas: 48, refDomains: 369 },
-  { domain: "adveris.fr",                                 tf: 37, cf: 45, bas: 47, refDomains: 736 },
-  { domain: "axess.fr",                                   tf: 44, cf: 47, bas: 3,  refDomains: 1232 },
-  { domain: "centre-formation-referencement-naturel.com", tf: 16, cf: 34, bas: 52, refDomains: 136 },
-];
 
 function DomainSquircle({ domain }: { domain: string }) {
   const [error, setError] = useState(false);
