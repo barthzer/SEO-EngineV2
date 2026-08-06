@@ -353,8 +353,8 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
               {/* Droite — Santé du projet (scores cliquables), comme avant */}
               <div className="flex min-w-0 flex-col rounded-2xl border border-[var(--border-subtle)]">
                 <div className="px-5 pb-4 pt-5">
-                  <p className="text-[18px] font-semibold tracking-subheading text-[var(--text-primary)]">Santé du projet</p>
-                  <p className="mt-1.5 text-[14px] leading-snug tracking-caption text-[var(--text-secondary)]">
+                  <p className="type-h3">Santé du projet</p>
+                  <p className="mt-1.5 type-body text-[var(--text-secondary)]">
                     Score global <span className="font-semibold">59/100</span>
                   </p>
                 </div>

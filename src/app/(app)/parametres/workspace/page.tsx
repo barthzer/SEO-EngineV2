@@ -80,7 +80,7 @@ export default function WorkspaceSettingsPage() {
             <div className="flex items-start justify-between gap-6">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-[18px] font-semibold text-[var(--text-primary)]">Agence</p>
+                  <p className="type-h3">Agence</p>
                   <span className="rounded-full bg-[var(--color-success-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-success)]">Actif</span>
                 </div>
                 <p className="mt-1 text-[13px] text-[var(--text-muted)]">149 € / mois · renouvellement le 3 août 2026</p>
