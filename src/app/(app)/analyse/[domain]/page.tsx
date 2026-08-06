@@ -107,6 +107,7 @@ import { FilterTabs } from "@/components/FilterTabs";
 import { ImportCSVModal } from "@/components/analyse/modals/ImportCSVModal";
 import { AddUrlModal } from "@/components/analyse/modals/AddUrlModal";
 import { NewBriefModal } from "@/components/analyse/modals/NewBriefModal";
+import { AskAiPanel } from "@/components/chat/AskAiPanel";
 import { ImportModal } from "@/components/analyse/modals/ImportModal";
 import { ConnectModal, ConnBadge, type Tool } from "@/components/analyse/modals/ConnectModal";
 import { ModalShell } from "@/components/analyse/modals/shared";
@@ -184,6 +185,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
   const [ga4Connected, setGa4Connected] = useState(true);
   const [connectModal, setConnectModal] = useState<Tool | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  // Panneau « Demander à l'IA » — UI assistant-ui, encore marquée « bientôt »
+  // côté produit mais fonctionnelle pour tester le rendu et les états.
+  const [askAiOpen, setAskAiOpen] = useState(false);
   // URL ouverte depuis une autre vue (ex. UniversSemantique) — ouvre la SidePanel
   // par-dessus l'onglet courant (BriefsView reste monté en permanence pour ça).
   const [pendingBriefUrl, setPendingBriefUrl] = useState<string | null>(null);
@@ -245,7 +249,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
           <Button
             size="md"
             variant="secondary"
-            onClick={() => showToast("Demander à l'IA — bientôt disponible", <ChatAiIcon className="h-5 w-5" />)}
+            onClick={() => setAskAiOpen(true)}
           >
             <ChatAiIcon className="h-4 w-4" />
             Demander
@@ -843,6 +847,7 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
       />
     )}
 
+    {askAiOpen && <AskAiPanel onClose={() => setAskAiOpen(false)} />}
     {importModalOpen && <ImportModal onClose={() => setImportModalOpen(false)} />}
     {urlModal === "import-csv" && <ImportCSVModal onClose={() => setUrlModal(null)} />}
     {urlModal === "add-url"    && <AddUrlModal    onClose={() => setUrlModal(null)} />}

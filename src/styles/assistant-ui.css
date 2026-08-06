@@ -1,0 +1,68 @@
+/**
+ * Pont assistant-ui → Design System GSE.
+ *
+ * `@assistant-ui/styles` (classes .aui-*) consomme des variables de type shadcn
+ * (--background, --foreground, --primary, --muted…). On ne veut PAS installer
+ * shadcn ni dupliquer un second thème : on se contente de **mapper** ces noms
+ * sur nos tokens DS existants (tokens-brand.css) et sur nos fonts.
+ *
+ * Conséquence : assistant-ui suit automatiquement le thème clair/sombre du DS,
+ * puisque nos tokens changent déjà via [data-theme].
+ *
+ * Import : dans src/app/globals.css, APRÈS @assistant-ui/styles/index.css.
+ */
+
+.aui-root,
+[class*="aui-"] {
+  /* ── Surfaces ─────────────────────────────────────────────────────── */
+  --background: var(--bg-card);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--dropdown-bg);
+  --popover-foreground: var(--text-primary);
+
+  /* ── Accent / actions ─────────────────────────────────────────────── */
+  --primary: var(--accent-primary);
+  --primary-foreground: #fff;
+  --secondary: var(--bg-secondary);
+  --secondary-foreground: var(--text-primary);
+  --accent: var(--bg-subtle);
+  --accent-foreground: var(--text-primary);
+
+  /* ── Texte secondaire / atténué ───────────────────────────────────── */
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-secondary);
+
+  /* ── Bordures & champs ────────────────────────────────────────────── */
+  --border: var(--border-subtle);
+  --input: var(--input-bg);
+  --ring: var(--accent-primary);
+
+  /* ── États ────────────────────────────────────────────────────────── */
+  --destructive: var(--color-danger);
+  --destructive-foreground: #fff;
+
+  /* ── Rayon : aligné sur nos cartes (rounded-2xl ≈ 16px) ───────────── */
+  --radius: 0.75rem;
+}
+
+/* ── Typographie : nos fonts, pas celles par défaut ──────────────────── */
+[class*="aui-"] {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Titres internes d'assistant-ui → notre police display */
+.aui-thread-welcome-message,
+.aui-thread-welcome-title {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: var(--tracking-heading, -0.04em);
+}
+
+/* Code / blocs techniques → notre mono */
+.aui-md-code,
+.aui-md-pre,
+[class*="aui-"] code,
+[class*="aui-"] pre {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}

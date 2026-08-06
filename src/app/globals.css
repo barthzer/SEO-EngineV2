@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "../styles/tokens-core.css";
 @import "../styles/tokens-brand.css";
+@import "@assistant-ui/styles/index.css";
+@import "../styles/assistant-ui.css";
 
 /* ──────────────── Tailwind 4 theme bridge ──────────────── */
 @theme inline {
