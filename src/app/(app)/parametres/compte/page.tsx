@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { useToast } from "@/context/ToastContext";
+import { AvatarUpload } from "@/components/parametres/AvatarUpload";
 import { CheckCircleIcon, UserIcon, BellIcon, ShieldCheckIcon, CommandLineIcon } from "@heroicons/react/24/outline";
 import {
   SettingsScaffold, Section, Field, Input, LangueSelect, ToggleRow,
@@ -41,6 +42,8 @@ export default function CompteSettingsPage() {
   const [name, setName] = useState("Barthélemy");
   const [email, setEmail] = useState("clients.lagenceweb@gmail.com");
   const [langue, setLangue] = useState("fr");
+  // Photo de profil (data URL en mémoire — prototype sans stockage backend).
+  const [photo, setPhoto] = useState<string | null>(null);
 
   const [notifReport, setNotifReport] = useState(true);
   const [notifPosition, setNotifPosition] = useState(true);
@@ -56,6 +59,15 @@ export default function CompteSettingsPage() {
         <div className="flex flex-col gap-8">
           <Section title="Profil" description="Vos informations personnelles, utilisées pour les signatures et l'attribution des actions.">
             <div className="flex flex-col gap-4">
+              <Field label="Photo de profil">
+                <AvatarUpload
+                  name={name}
+                  photoSeed="barthelemy-l-seo"
+                  value={photo}
+                  onChange={setPhoto}
+                  onError={(m) => showToast(m)}
+                />
+              </Field>
               <Field label="Prénom / Nom"><Input value={name} onChange={setName} placeholder="Votre nom" /></Field>
               <Field label="Email"><Input value={email} onChange={setEmail} type="email" placeholder="email@exemple.com" /></Field>
               <Field label="Langue de l'interface"><LangueSelect value={langue} onChange={setLangue} /></Field>
