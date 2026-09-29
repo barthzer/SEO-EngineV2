@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { Fragment, useState, useEffect, useRef, type ReactNode } from "react";
 import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { DropdownMenu, DropdownItem } from "@/components/DropdownMenu";
 import { Checkbox } from "@/components/Checkbox";
@@ -71,6 +71,11 @@ interface TableWideProps<T> {
   /** Épingle horizontalement la colonne de sélection + la 1re colonne (nom).
    *  Requiert `minWidth` pour produire un scroll horizontal. */
   stickyLeft?: boolean;
+  /** Lignes dépliables (modes standard et stickyLeft) : contenu rendu sous la ligne quand
+   *  `isExpanded(row)` est vrai. L'état ouvert/fermé est contrôlé par le parent
+   *  (typiquement via `onRowClick`). Ex. : détail mot-clé par mot-clé d'un groupe. */
+  renderExpanded?: (row: T) => ReactNode;
+  isExpanded?: (row: T) => boolean;
   className?: string;
 }
 
@@ -101,6 +106,8 @@ export function TableWide<T>({
   onToggleRow,
   onToggleAll,
   stickyLeft = false,
+  renderExpanded,
+  isExpanded,
   className = "",
 }: TableWideProps<T>) {
   /* Sort interne — clé de colonne + direction. Cycle desc → asc → off au clic header. */
@@ -108,6 +115,17 @@ export function TableWide<T>({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   /* Scroll horizontal — l'ombre des colonnes sticky n'apparaît qu'une fois défilé. */
   const [scrolled, setScrolled] = useState(false);
+  /* Largeur visible du conteneur horizontal (mode sticky) : le panneau déplié y est
+     épinglé pour rester fixe pendant que les colonnes de la ligne défilent. */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [viewportW, setViewportW] = useState(0);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !renderExpanded) return;
+    const ro = new ResizeObserver(() => setViewportW(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stickyLeft, renderExpanded]);
   function toggleSort(k: string) {
     if (sortKey !== k) { setSortKey(k); setSortDir("desc"); return; }
     if (sortDir === "desc") { setSortDir("asc"); return; }
@@ -187,7 +205,7 @@ export function TableWide<T>({
     // aux colonnes fixes en vue étroite. On prend le max avec le `minWidth` fourni.
     const stickyMinWidth = Math.max(
       minWidth ?? 0,
-      columns.reduce((sum, c) => sum + c.width, 0) + 12 * columns.length + 80
+      columns.reduce((sum, c) => sum + c.width, 0) + 12 * columns.length + 80 + (trailingAction ? trailingActionWidth : 0)
     );
     const pageKeys = pageRows.map(rowKey);
     const allSelected = selectable && pageKeys.length > 0 && pageKeys.every((k) => selected?.has(k));
@@ -218,7 +236,7 @@ export function TableWide<T>({
 
     return (
       <div className={`flex flex-col ${bordered ? "overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]" : ""} ${className}`}>
-        <div className="overflow-x-auto overflow-y-clip" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
+        <div ref={scrollRef} className="overflow-x-auto overflow-y-clip" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
           <div style={{ minWidth: stickyMinWidth }} className={contentWidthClass}>
             {/* Header */}
             <div className={`sticky top-0 z-[15] flex h-10 items-center border-b border-[var(--border-subtle)] ${headerBgClass}`}>
@@ -230,6 +248,8 @@ export function TableWide<T>({
                 {restCols.map((col) => (
                   <div key={col.key} className="flex-shrink-0 min-w-0" style={{ width: col.width }}>{headerInner(col)}</div>
                 ))}
+                {/* Emplacement réservé à l'action de survol (même largeur en en-tête et en ligne). */}
+                {trailingAction && <div aria-hidden className="flex-shrink-0" style={{ width: trailingActionWidth }} />}
               </div>
             </div>
 
@@ -242,17 +262,20 @@ export function TableWide<T>({
                 const idx = (safePage - 1) * pageSize + i;
                 const active = isRowActive?.(row) ?? false;
                 const isSel = !!selected?.has(k);
-                const rowBg = active ? "bg-[var(--bg-card-hover-flat)]" : "bg-[var(--bg-primary)] hover:bg-[var(--bg-card-hover-flat)]";
+                const expanded = !!renderExpanded && (isExpanded?.(row) ?? false);
+                const isLast = i === pageRows.length - 1;
+                const rowBg = active || expanded ? "bg-[var(--bg-card-hover-flat)]" : "bg-[var(--bg-primary)] hover:bg-[var(--bg-card-hover-flat)]";
                 return (
+                  <Fragment key={k}>
                   <div
-                    key={k}
                     role={onRowClick ? "button" : undefined}
+                    aria-expanded={renderExpanded ? expanded : undefined}
                     tabIndex={onRowClick ? 0 : undefined}
                     onClick={onRowClick ? () => onRowClick(row, idx) : undefined}
                     onKeyDown={onRowClick ? (e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onRowClick(row, idx); } } : undefined}
-                    className={`group flex w-full items-stretch text-left transition-colors ${onRowClick ? "cursor-pointer" : ""} ${i < pageRows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""} ${rowBg}`}
+                    className={`group flex w-full items-stretch text-left transition-colors ${onRowClick ? "cursor-pointer" : ""} ${!isLast && !expanded ? "border-b border-[var(--border-subtle)]" : ""} ${rowBg}`}
                   >
-                    <StickyGroup active={active} grow={firstCol.flex}>
+                    <StickyGroup active={active || expanded} grow={firstCol.flex}>
                       {selectable && <Checkbox checked={isSel} onChange={() => onToggleRow?.(k)} />}
                       <div className={`min-w-0 self-center py-3 font-normal text-[var(--text-secondary)] ${firstCol.flex ? "flex-1" : ""}`} style={firstCol.flex ? { minWidth: firstCol.width, maxWidth: firstCol.maxWidth } : { width: firstCol.width }}>{firstCol.render(row, idx)}</div>
                     </StickyGroup>
@@ -262,6 +285,8 @@ export function TableWide<T>({
                           {col.render(row, idx)}
                         </div>
                       ))}
+                      {/* Emplacement réservé : l'action de survol s'y pose sans masquer la dernière colonne. */}
+                      {trailingAction && <div aria-hidden className="flex-shrink-0" style={{ width: trailingActionWidth }} />}
                     </div>
                     {trailingAction && (
                       /* Ancre 0-largeur épinglée à droite : ne réserve AUCUNE place dans
@@ -276,6 +301,16 @@ export function TableWide<T>({
                       </div>
                     )}
                   </div>
+                  {/* Panneau déplié (ex. détail mot-clé d'un groupe) : épinglé sur la zone
+                      visible, il ne défile pas horizontalement avec les colonnes. */}
+                  {expanded && (
+                    <div className={!isLast ? "border-b border-[var(--border-subtle)]" : ""}>
+                      <div className="sticky left-0" style={viewportW ? { width: viewportW } : undefined}>
+                        {renderExpanded!(row)}
+                      </div>
+                    </div>
+                  )}
+                  </Fragment>
                 );
               })
             )}
@@ -305,6 +340,7 @@ export function TableWide<T>({
             </div>
           ))}
           {trailingChevron && <div className="w-12 flex-shrink-0 min-w-0" />}
+          {trailingAction && <div aria-hidden className="flex-shrink-0" style={{ width: trailingActionWidth }} />}
         </div>
         {trailingChevron && <div className={`sticky right-0 w-16 flex-shrink-0 min-w-0 ${headerBgClass}`} />}
       </div>
@@ -319,9 +355,11 @@ export function TableWide<T>({
       const active = isRowActive?.(row) ?? false;
       const interactive = !!onRowClick;
       const hoverable = interactive || !!trailingAction;
+      const expanded = !!renderExpanded && (isExpanded?.(row) ?? false);
+      const isLast = i === pageRows.length - 1;
       const wrapperClass = `group relative w-full text-left transition-colors ${
-        i < pageRows.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-      } ${active ? "bg-[var(--bg-card-hover)]" : hoverable ? "hover:bg-[var(--bg-card-hover)]" : ""}`;
+        !isLast && !expanded ? "border-b border-[var(--border-subtle)]" : ""
+      } ${active || expanded ? "bg-[var(--bg-card-hover)]" : hoverable ? "hover:bg-[var(--bg-card-hover)]" : ""}`;
       const innerClass = "flex items-center gap-3 py-3";
 
       const inner = (
@@ -333,32 +371,49 @@ export function TableWide<T>({
               {col.render(row, (safePage - 1) * pageSize + i)}
             </div>
           ))}
+          {trailingAction && <div aria-hidden className="flex-shrink-0" style={{ width: trailingActionWidth }} />}
           {trailingChevron && (
             <div className="w-12 flex-shrink-0 min-w-0 flex items-center justify-end">
               <ChevronRightIcon className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
           )}
           {trailingAction && (
-            <div className="sticky right-0 flex flex-shrink-0 items-center justify-end self-stretch pr-3 opacity-0 transition-opacity group-hover:opacity-100"
-              style={{ width: trailingActionWidth, background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 50%)" }}
-              onClick={(e) => e.stopPropagation()}>
-              {trailingAction(row, (safePage - 1) * pageSize + i)}
+            /* Ancre 0-largeur épinglée à droite : ne réserve aucune place dans le flux
+               (sinon la colonne flex se rétrécit et les colonnes se décalent vs l'en-tête). */
+            <div className="sticky right-0 z-[2] w-0 flex-shrink-0 self-stretch">
+              <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-3 opacity-0 transition-opacity group-hover:opacity-100"
+                style={{ width: trailingActionWidth, background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 45%)" }}
+                onClick={(e) => e.stopPropagation()}>
+                {trailingAction(row, (safePage - 1) * pageSize + i)}
+              </div>
             </div>
           )}
         </>
       );
 
-      return interactive ? (
-        <button key={k} type="button" onClick={() => onRowClick!(row, (safePage - 1) * pageSize + i)} className={wrapperClass}>
+      const rowEl = interactive ? (
+        <button type="button" aria-expanded={renderExpanded ? expanded : undefined} onClick={() => onRowClick!(row, (safePage - 1) * pageSize + i)} className={wrapperClass}>
           <div className={innerClass} style={rowPadStyles}>{inner}</div>
           {trailingChevron && (
             <div className="absolute inset-y-0 right-0 w-16 bg-[var(--bg-primary)] group-hover:bg-[var(--bg-card-hover)]" />
           )}
         </button>
       ) : (
-        <div key={k} className={wrapperClass}>
+        <div className={wrapperClass}>
           <div className={innerClass} style={rowPadStyles}>{inner}</div>
         </div>
+      );
+
+      return (
+        <Fragment key={k}>
+          {rowEl}
+          {/* Panneau déplié — hors du <button> de ligne (contenu interactif autorisé). */}
+          {expanded && (
+            <div className={!isLast ? "border-b border-[var(--border-subtle)]" : ""}>
+              {renderExpanded!(row)}
+            </div>
+          )}
+        </Fragment>
       );
     })
   );

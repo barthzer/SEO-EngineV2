@@ -45,7 +45,7 @@ export const TAB_SUBTITLES: Partial<Record<Tab, string>> = {
   cannibal: "Pages en conflit de positionnement — dilution du trafic et des signaux de pertinence.",
   univers:  "Identifiez les opportunités de contenu pour renforcer votre couverture sémantique.",
   tracking: "8 mots-clés · Dernier check : 04 mai, 14:00",
-  recommandations: "Identifiez les pages manquantes via l'étude de mots-clés croisée avec vos concurrents",
+  recommandations: "Les besoins à couvrir, regroupés par sujet et classés par priorité.",
   opportunites: "Toutes les actions à mener sur le projet, priorisées par impact et regroupées par statut.",
   creation: "Créez une nouvelle page : partez de zéro ou d'un template éprouvé.",
   historique: "Toutes les actions livrées par mois, source du rapport mensuel client.",

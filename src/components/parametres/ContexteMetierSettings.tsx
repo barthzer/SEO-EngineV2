@@ -10,7 +10,8 @@
 import { useState } from "react";
 import { ArrowUpTrayIcon, DocumentTextIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
-import { Section } from "@/components/parametres/settingsUi";
+import { Button } from "@/components/Button";
+import { Section, Input } from "@/components/parametres/settingsUi";
 
 const TEMPLATE_BRIEF = `# BRIEF MÉTIER CLIENT — [NOM DU CLIENT / SITE]
 # À remplir par le consultant SEO. Cette analyse est injectée dans les prompts LLM
@@ -95,6 +96,58 @@ const TEMPLATE_SKILL = `# SKILL RÉDACTIONNEL — [NOM DU PROJET]
 **Exemples d'articles approuvés :** [ex: URL d'articles de référence]
 **Ligne éditoriale de référence :** [ex: Nom du média ou blog de référence]`;
 
+
+/**
+ * Offres prioritaires — offres que le client veut développer en priorité.
+ * Utilisées par le calcul de priorité des Opportunités : les besoins qui s'y
+ * rattachent remontent en tête de liste (mention « Offre prioritaire »).
+ */
+function OffresPrioritairesSettings() {
+  const [offers, setOffers] = useState<string[]>(["Accompagnement SEO", "Audit SEO", "Accompagnement GEO"]);
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (v && !offers.some((o) => o.toLowerCase() === v.toLowerCase())) setOffers((prev) => [...prev, v]);
+    setDraft("");
+  };
+
+  return (
+    <Section
+      title="Offres prioritaires"
+      description="Les offres que le client veut développer en priorité. Les opportunités qui s'y rattachent remontent en tête de liste."
+    >
+      <div className="flex flex-col gap-3">
+        {offers.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {offers.map((o) => (
+              <span key={o} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1 type-caption font-medium text-[var(--text-primary)]">
+                {o}
+                <button
+                  type="button"
+                  aria-label={`Retirer ${o}`}
+                  onClick={() => setOffers((prev) => prev.filter((x) => x !== o))}
+                  className="text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+                >
+                  <XMarkIcon className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="type-body-sm">Aucune offre déclarée : toutes les opportunités sont classées sur le seul potentiel SEO.</p>
+        )}
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => { e.preventDefault(); add(); }}
+        >
+          <div className="w-72"><Input value={draft} onChange={setDraft} placeholder="ex. Audit SEO, Formation, Refonte de site" /></div>
+          <Button size="sm" variant="secondary" type="submit" disabled={!draft.trim()}>Ajouter</Button>
+        </form>
+      </div>
+    </Section>
+  );
+}
+
 type DocKey = "brief" | "skill";
 
 export function ContexteMetierSettings() {
@@ -119,6 +172,8 @@ export function ContexteMetierSettings() {
   ];
 
   return (
+    <>
+    <OffresPrioritairesSettings />
     <Section title="Contexte métier" description="Ces documents adaptent les recommandations SEO à votre activité et vos standards rédactionnels — ils sont injectés dans les prompts IA.">
       <div className="flex flex-col gap-3">
         {cards.map((card) => (
@@ -190,5 +245,6 @@ export function ContexteMetierSettings() {
         ))}
       </div>
     </Section>
+    </>
   );
 }

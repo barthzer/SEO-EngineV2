@@ -1,64 +1,115 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+/**
+ * Opportunités — vue « par besoin ».
+ *
+ * Une ligne = un besoin (groupe de mots-clés de même sujet, issu de l'étude).
+ * Le détail mot-clé par mot-clé s'affiche en dépliant la ligne. La recherche
+ * fouille aussi les mots-clés des groupes et ouvre ceux qui correspondent.
+ *
+ * - Priorité calculée (back) : gain × difficulté × distance à la page 1,
+ *   + bonus des « offres prioritaires » du projet. Affichée comme sur Actions.
+ * - Classification Conquête / Consolidation (ex-P1/P2, qui n'étaient pas une priorité).
+ * - Besoins sans difficulté mesurée : bloc replié en bas, jamais en tête de liste.
+ * - Statut (En attente / Traitée / Ignorée) : filtre multi-sélection comme Actions.
+ */
+
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon, ChevronRightIcon, ArrowUpRightIcon } from "@heroicons/react/24/outline";
-import {
-  Sparkles as LSparkles,
-  Target as LTarget,
-  CheckCircle2,
-  Download,
-  RefreshCw,
-  X as LX,
-  Loader2,
-} from "lucide-react";
+import { CheckIcon, ChevronRightIcon, ChevronDownIcon, ArrowUpRightIcon, PlusIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { Sparkles as LSparkles, Download, RefreshCw, Loader2, Layers, TrendingUp, Zap, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/Button";
 import { Tooltip } from "@/components/Tooltip";
-import { TableWide, type ColumnDef } from "@/components/TableWide";
+import { TableWide, STICKY_EDGE, type ColumnDef } from "@/components/TableWide";
 import { SearchInput } from "@/components/SearchInput";
 import { ColPill } from "@/components/ColPill";
-import { FilterTabs } from "@/components/FilterTabs";
+import { ResetFiltersButton } from "@/components/ResetFiltersButton";
+import { DropdownMenu, DropdownHeader, DropdownItem } from "@/components/DropdownMenu";
 import { EmptyState } from "@/components/EmptyState";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
+import { Pill } from "@/components/Pill";
+import { PriorityBadge, PRIORITY_LEVELS, type ActionPriorityLevel } from "@/components/PriorityBars";
+import { useToast } from "@/context/ToastContext";
 import { KeywordStudyModal } from "@/components/analyse/modals/KeywordStudyModal";
 import {
-  type OppRow,
+  type OppGroup,
+  type OppKeyword,
+  type OppStatus,
+  type OppClassification,
   type StudyIntent,
-  type StudyPrio,
-  type OppType,
-  INITIAL_ROWS,
-  EXTRA_ROWS,
+  OPP_GROUPS,
+  EXTRA_GROUPS,
 } from "@/data/opportunities";
 
-/* ── Opportunités — modèle unifié (étude de mots-clés + opportunités sémantiques) ──
-   Le contrat de type (OppRow…) et les fixtures mock sont dans src/data/opportunities.ts
-   (domaine de référence pour le handoff back — voir HANDOFF.md). Ici : la présentation. */
+/* ── Config de présentation (la donnée est dans src/data/opportunities.ts) ── */
 
-const TYPE_CFG: Record<OppType, { label: string; color: string }> = {
-  etude:      { label: "Étude",      color: "var(--accent-primary)" },
-  semantique: { label: "Sémantique", color: "#A855F7" },
+const CLASSIF_ORDER: OppClassification[] = ["conquete", "consolidation"];
+const CLASSIF_CFG: Record<OppClassification, { label: string; color: string; bg: string; tip: string }> = {
+  conquete: {
+    label: "Conquête",
+    color: "var(--accent-primary)",
+    bg: "var(--accent-primary-soft)",
+    tip: "Le site n'est pas encore positionné sur ce besoin : il faut gagner des positions, souvent avec une nouvelle page.",
+  },
+  consolidation: {
+    label: "Consolidation",
+    color: "#0D9488",
+    bg: "rgba(13,148,136,0.10)",
+    tip: "Le site est déjà positionné : il faut renforcer la page existante pour atteindre la première page.",
+  },
 };
 
-const SOURCE_CFG: Record<"PAA" | "Related", { label: string; color: string }> = {
-  PAA:     { label: "PAA",     color: "#A855F7" },
-  Related: { label: "Related", color: "var(--accent-primary)" },
+const STATUS_ORDER: OppStatus[] = ["en_attente", "traitee", "ignoree"];
+const STATUS_CFG: Record<OppStatus, { label: string; color: string }> = {
+  en_attente: { label: "En attente", color: "var(--color-warning)" },
+  traitee:    { label: "Traitée",    color: "var(--color-success)" },
+  ignoree:    { label: "Ignorée",    color: "var(--text-muted)" },
+};
+const DEFAULT_STATUSES: OppStatus[] = ["en_attente"];
+
+const PRIORITY_ORDER: ActionPriorityLevel[] = ["high", "mid", "low"];
+const PRIO_RANK: Record<ActionPriorityLevel, number> = { high: 3, mid: 2, low: 1 };
+
+const INTENT_CFG: Record<StudyIntent, { color: string; bg: string }> = {
+  Commercial:     { color: "#0891B2", bg: "rgba(6,182,212,0.12)" },
+  Transactionnel: { color: "#9333EA", bg: "rgba(168,85,247,0.10)" },
+  Informationnel: { color: "#6B7280", bg: "rgba(107,114,128,0.10)" },
 };
 
-const INTENT_CFG: Record<StudyIntent, { label: string; color: string; bg: string }> = {
-  Commercial:     { label: "Comm.",  color: "#0891B2", bg: "rgba(6,182,212,0.12)" },
-  Transactionnel: { label: "Trans.", color: "#9333EA", bg: "rgba(168,85,247,0.10)" },
-  Informationnel: { label: "Info.",  color: "#6B7280", bg: "rgba(107,114,128,0.10)" },
-};
+function diffLevel(d: number): { label: string; color: string; bg: string } {
+  if (d <= 30) return { label: "Facile", color: "var(--color-success)", bg: "var(--color-success-bg)" };
+  if (d <= 60) return { label: "Moyenne", color: "#B45309", bg: "var(--color-warning-bg)" };
+  return { label: "Difficile", color: "var(--color-danger)", bg: "var(--color-danger-bg)" };
+}
 
-const PRIO_CFG: Record<StudyPrio, { color: string; bg: string }> = {
-  P0: { color: "var(--color-danger)", bg: "var(--color-danger-bg)" },
-  P1: { color: "var(--color-danger)", bg: "var(--color-danger-bg)" },
-  P2: { color: "#B45309", bg: "rgba(245,158,11,0.12)" },
-  P3: { color: "#6B7280", bg: "rgba(107,114,128,0.10)" },
-};
+/** Pill colorée de colonne — même gabarit que le badge de priorité (Actions). */
+function ColorPill({ color, bg, children }: { color: string; bg: string; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 type-caption font-medium" style={{ color, backgroundColor: bg }}>
+      {children}
+    </span>
+  );
+}
 
-/** Contenu de tooltip détaillé (titre + explication) — réutilisé sur Type/Source/Intent. */
+/** Quick win : proche de la page 1 (positions 8 à 20) et difficulté accessible. */
+function isQuickWin(g: OppGroup) {
+  return (
+    g.status === "en_attente" &&
+    g.difficulty != null && g.difficulty <= 45 &&
+    g.bestPosition != null && g.bestPosition >= 8 && g.bestPosition <= 20
+  );
+}
+
+const LOADING_STEPS = [
+  "Lecture du fichier Semrush",
+  "Croisement avec la Search Console",
+  "Regroupement des mots-clés par besoin",
+  "Calcul du gain et de la priorité",
+  "Génération du rapport",
+];
+
+/** Contenu de tooltip détaillé (titre + explication). */
 function Tip({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="flex flex-col gap-1">
@@ -68,29 +119,148 @@ function Tip({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-const TYPE_TIP: Record<OppType, { title: string; desc: string }> = {
-  etude:      { title: "Opportunité d'étude", desc: "Mot-clé issu de l'étude concurrentielle (Semrush) — page manquante ou sous-optimisée face à la SERP." },
-  semantique: { title: "Opportunité sémantique", desc: "Détectée via l'analyse sémantique (PAA / recherches associées) — thématique proche non encore couverte." },
-};
+/* ── Petits composants de cellule ─────────────────────────────────────── */
 
-const SOURCE_TIP: Record<"PAA" | "Related", { title: string; desc: string }> = {
-  PAA:     { title: "People Also Ask", desc: "Questions « Autres questions posées » affichées par Google — fort signal d'intention informationnelle." },
-  Related: { title: "Recherches associées", desc: "Requêtes proches suggérées par Google en bas de SERP — élargissent la couverture d'un cluster." },
-};
+function ClassifTag({ c }: { c: OppClassification }) {
+  const cfg = CLASSIF_CFG[c];
+  return (
+    <Tooltip portal rich side="top" label={<Tip title={cfg.label} desc={cfg.tip} />}>
+      <span className="inline-flex cursor-default">
+        <ColorPill color={cfg.color} bg={cfg.bg}>{cfg.label}</ColorPill>
+      </span>
+    </Tooltip>
+  );
+}
 
-const INTENT_TIP: Record<StudyIntent, { title: string; desc: string }> = {
-  Commercial:     { title: "Intention commerciale", desc: "L'internaute compare des solutions ou prestataires avant de décider (ex. « meilleure agence seo »)." },
-  Transactionnel: { title: "Intention transactionnelle", desc: "Proche de l'achat : demande de devis, tarif, prise de contact (ex. « prix audit seo »)." },
-  Informationnel: { title: "Intention informationnelle", desc: "Recherche d'information, pas d'achat immédiat — idéal pour du contenu éducatif / TOFU." },
-};
+function StatusDropdown({ status, onChange }: { status: OppStatus; onChange: (s: OppStatus) => void }) {
+  const cfg = STATUS_CFG[status];
+  return (
+    <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu
+        width={180}
+        trigger={
+          <button type="button" className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 type-caption text-[var(--text-primary)] transition-colors hover:border-[var(--border-medium)]">
+            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: cfg.color }} />
+            {cfg.label}
+            <ChevronDownIcon className="h-3 w-3 text-[var(--text-muted)]" />
+          </button>
+        }
+      >
+        {STATUS_ORDER.map((s) => (
+          <DropdownItem key={s} selected={s === status} onClick={() => onChange(s)}>
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: STATUS_CFG[s].color }} />
+              {STATUS_CFG[s].label}
+            </span>
+          </DropdownItem>
+        ))}
+      </DropdownMenu>
+    </span>
+  );
+}
 
-const LOADING_STEPS = [
-  "Lecture du fichier Semrush",
-  "Identification des concurrents",
-  "Détection des clusters sémantiques",
-  "Calcul des opportunités",
-  "Génération du rapport",
-];
+/** Texte coupé sur une ligne ; tooltip avec le texte complet au survol, seulement s'il est coupé. */
+function TruncatedText({ text, className = "" }: { text: string; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [cut, setCut] = useState(false);
+  // Re-mesure à chaque bascule : l'enveloppe du tooltip remonte le <span>.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setCut(el.scrollWidth > el.clientWidth + 1));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [cut]);
+  return (
+    <Tooltip portal side="top" label={text} disabled={!cut} className="w-full min-w-0">
+      <span ref={ref} className={`block min-w-0 truncate ${className}`}>{text}</span>
+    </Tooltip>
+  );
+}
+
+/** Détail mot-clé par mot-clé (ligne dépliée).
+ *  Scroll horizontal propre au détail (les colonnes du besoin ne bougent pas) ;
+ *  la colonne Mot-clé reste sticky, comme la 1re colonne du tableau. */
+function KeywordDetail({ g, query, onOpenUrl }: { g: OppGroup; query: string; onOpenUrl?: (url: string) => void }) {
+  const rows: OppKeyword[] = [...g.keywords].sort((a, b) => Number(!!b.main) - Number(!!a.main) || b.volume - a.volume);
+  const [scrolled, setScrolled] = useState(false);
+  // Même logique que la ligne groupée : valeur (volume) → effort (difficulté) → distance (position) → page → contexte.
+  const grid = "grid grid-cols-[256px_100px_120px_110px_minmax(180px,1fr)_140px] items-center gap-3 pr-4";
+  const stickyCell = "sticky left-0 z-[1] flex min-w-0 items-center gap-2 self-stretch pl-4";
+  const edge = (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-y-0 right-0 w-6"
+      style={{ transform: "translateX(100%)", background: STICKY_EDGE, opacity: scrolled ? 1 : 0, transition: "opacity 140ms ease" }}
+    />
+  );
+  return (
+    <div className="bg-[var(--bg-card-hover-flat)] py-3 pr-4" style={{ paddingLeft: "calc(var(--page-px) + 26px)" }}>
+      <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)]">
+        <div className="overflow-x-auto" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
+          <div style={{ minWidth: 980 }}>
+            <div className={`${grid} border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] type-caption`}>
+              <span className={`${stickyCell} relative bg-[var(--bg-card-static)] py-2`}>Mot-clé{edge}</span>
+              <span>Volume</span>
+              <span>Difficulté</span>
+              <span>Position</span>
+              <span>URL qui ranke</span>
+              <span>Intention</span>
+            </div>
+            {rows.map((k) => {
+              const hit = !!query && k.keyword.toLowerCase().includes(query);
+              return (
+                <div key={k.keyword} className={`${grid} border-b border-[var(--border-subtle)] last:border-b-0`}>
+                  <span className={`${stickyCell} relative bg-[var(--bg-primary)] py-2.5`}>
+                    <span className="min-w-0 flex-1">
+                      <TruncatedText text={k.keyword} className={`type-label text-[var(--text-primary)] ${hit ? "font-semibold" : ""}`} />
+                    </span>
+                    {k.main && (
+                      <span className="flex-shrink-0 rounded-full border border-[var(--border-subtle)] px-1.5 py-0.5 type-micro text-[var(--text-secondary)]">Principal</span>
+                    )}
+                    {edge}
+                  </span>
+                  <span>
+                    <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-1 type-caption font-medium tabular-nums text-[var(--text-primary)]">
+                      {k.volume.toLocaleString("fr-FR")}
+                    </span>
+                  </span>
+                  <span>
+                    {k.kd != null ? (
+                      <ColorPill color={diffLevel(k.kd).color} bg={diffLevel(k.kd).bg}>
+                        {diffLevel(k.kd).label}
+                        <span className="tabular-nums opacity-70">{k.kd}</span>
+                      </ColorPill>
+                    ) : (
+                      <span className="type-caption text-[var(--text-muted)]">À mesurer</span>
+                    )}
+                  </span>
+                  <span className="type-label tabular-nums text-[var(--text-primary)]">{k.position != null ? `#${k.position}` : <span className="type-caption text-[var(--text-muted)]">Hors top 100</span>}</span>
+                  <span className="min-w-0">
+                    {k.url ? (
+                      <button type="button" onClick={() => onOpenUrl?.(k.url!)} className="block max-w-full truncate text-left font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)]">
+                        {k.url}
+                      </button>
+                    ) : (
+                      <span className="type-caption text-[var(--text-muted)]">Aucune</span>
+                    )}
+                  </span>
+                  <span>
+                    {k.intent ? (
+                      <ColorPill color={INTENT_CFG[k.intent].color} bg={INTENT_CFG[k.intent].bg}>{k.intent}</ColorPill>
+                    ) : (
+                      <span className="type-caption text-[var(--text-muted)]">Non définie</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ── Vue Opportunités ────────────────────────────────────────────────── */
 
@@ -107,17 +277,23 @@ export function RecommandationsView({
   onGoToCreation?: () => void;
 } = {}) {
   const router = useRouter();
+  const { show: showToast } = useToast();
   const [studyOpen, setStudyOpen] = useState(false);
   const [studyState, setStudyState] = useState<"empty" | "loading" | "done">("done");
   const [loadingStep, setLoadingStep] = useState(0);
-  const [rows, setRows] = useState<OppRow[]>(INITIAL_ROWS);
-  const [tab, setTab] = useState<"en_attente" | "traitee">("en_attente");
-  /* Filters & search */
-  const [search, setSearch] = useState("");
-  const [filterPriority, setFilterPriority] = useState<"all" | StudyPrio>("all");
-  const [filterType, setFilterType] = useState<"all" | OppType>("all");
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [groups, setGroups] = useState<OppGroup[]>(OPP_GROUPS);
 
+  /* Filtres */
+  const [search, setSearch] = useState("");
+  const [activeStatuses, setActiveStatuses] = useState<Set<OppStatus>>(() => new Set(DEFAULT_STATUSES));
+  const [activeClassif, setActiveClassif] = useState<Set<OppClassification>>(new Set());
+  const [activePriorities, setActivePriorities] = useState<Set<ActionPriorityLevel>>(new Set());
+
+  /* Dépliage : override manuel, sinon ouverture auto quand la recherche touche un mot-clé du groupe */
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const [qualifyOpen, setQualifyOpen] = useState(false);
+
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   function clearTimers() {
     timersRef.current.forEach((t) => clearTimeout(t));
     timersRef.current = [];
@@ -136,122 +312,199 @@ export function RecommandationsView({
     });
     timersRef.current.push(setTimeout(() => {
       setStudyState("done");
-      setRows((prev) => {
-        const have = new Set(prev.map((r) => r.id));
-        const found = EXTRA_ROWS.filter((r) => !have.has(r.id));
-        return [...found, ...prev];
+      setGroups((prev) => {
+        const have = new Set(prev.map((g) => g.id));
+        return [...EXTRA_GROUPS.filter((g) => !have.has(g.id)), ...prev];
       });
     }, acc + 250));
   }
 
-  /* Générer → redirige vers la page « Configuration du contenu » (nouvelle page, sans
-     template pré-sélectionné), sujet pré-rempli avec le mot-clé de l'opportunité. */
-  function goGenerate(r: OppRow) {
-    router.push(`/templates/configurer/sans-template?subject=${encodeURIComponent(r.keyword)}`);
+  /* Générer → page « Configuration du contenu », sujet pré-rempli avec le besoin. */
+  function goGenerate(g: OppGroup) {
+    router.push(`/templates/configurer/sans-template?subject=${encodeURIComponent(g.subject)}`);
   }
 
-  const pending = rows.filter((r) => r.status === "en_attente");
-  const done = rows.filter((r) => r.status === "traitee");
+  function setStatus(g: OppGroup, s: OppStatus) {
+    if (s === g.status) return;
+    setGroups((prev) => prev.map((x) => (x.id === g.id ? { ...x, status: s } : x)));
+    showToast(`« ${g.subject} » : ${STATUS_CFG[s].label.toLowerCase()}`, <CheckCircleIcon className="h-5 w-5" />);
+  }
 
-  /* KPIs */
-  const actionnables = pending.filter((r) => r.priority === "P1" || r.priority === "P2").length;
+  const toggleFrom = <V,>(setter: React.Dispatch<React.SetStateAction<Set<V>>>, v: V) =>
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(v)) next.delete(v); else next.add(v);
+      return next;
+    });
 
-  /* Filtered rows for the active tab */
-  const base = tab === "en_attente" ? pending : done;
-  const filteredRows = base.filter((r) => {
-    if (search && !r.keyword.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterPriority !== "all" && r.priority !== filterPriority) return false;
-    if (filterType !== "all" && r.type !== filterType) return false;
+  /* ── Filtrage ── */
+  const q = search.trim().toLowerCase();
+  const filtered = useMemo(() => groups.filter((g) => {
+    if (activeStatuses.size > 0 && !activeStatuses.has(g.status)) return false;
+    if (activeClassif.size > 0 && !activeClassif.has(g.classification)) return false;
+    if (activePriorities.size > 0 && (!g.priority || !activePriorities.has(g.priority))) return false;
+    if (q && !g.subject.toLowerCase().includes(q) && !g.keywords.some((k) => k.keyword.toLowerCase().includes(q))) return false;
     return true;
-  });
+  }), [groups, activeStatuses, activeClassif, activePriorities, q]);
 
-  /* Colonnes communes (unifiées) */
-  const baseCols: ColumnDef<OppRow>[] = [
-    { key: "keyword", header: "Mot-clé", width: 220, flex: true,
-      render: (r) => <span className="block truncate text-[13px] text-[var(--text-primary)]" title={r.keyword}>{r.keyword}</span> },
-    { key: "type", header: "Type", width: 116,
-      render: (r) => {
-        const cfg = TYPE_CFG[r.type];
-        return (
-          <Tooltip portal rich side="top" label={<Tip {...TYPE_TIP[r.type]} />}>
-            <span className="inline-flex cursor-default items-center gap-1.5 rounded-full bg-[var(--bg-subtle)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-secondary)]">
-              <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: cfg.color }} />
-              {cfg.label}
+  /* Classés (priorité > offre prioritaire > gain) — les « à qualifier » à part, jamais en tête. */
+  const ranked = useMemo(() => filtered
+    .filter((g) => g.difficulty != null)
+    .sort((a, b) =>
+      (b.priority ? PRIO_RANK[b.priority] : 0) - (a.priority ? PRIO_RANK[a.priority] : 0) ||
+      Number(!!b.offer) - Number(!!a.offer) ||
+      b.gain - a.gain,
+    ), [filtered]);
+  const toQualify = useMemo(() => filtered.filter((g) => g.difficulty == null).sort((a, b) => b.gain - a.gain), [filtered]);
+
+  /* Ouverture auto : le mot-clé cherché est dans le groupe mais pas dans le sujet. */
+  const autoOpen = useMemo(() => {
+    if (!q) return new Set<string>();
+    return new Set(filtered.filter((g) => !g.subject.toLowerCase().includes(q) && g.keywords.some((k) => k.keyword.toLowerCase().includes(q))).map((g) => g.id));
+  }, [filtered, q]);
+  const isOpen = (id: string) => openMap[id] ?? autoOpen.has(id);
+  const toggleOpen = (g: OppGroup) => setOpenMap((m) => ({ ...m, [g.id]: !isOpen(g.id) }));
+
+  /* ── KPIs (sur tout le projet, indépendants des filtres) ── */
+  const pending = groups.filter((g) => g.status === "en_attente");
+  const kwPending = pending.reduce((s, g) => s + g.keywords.length, 0);
+  const gainPending = pending.reduce((s, g) => s + g.gain, 0);
+  const quickWins = pending.filter(isQuickWin).length;
+  const doneCount = groups.filter((g) => g.status === "traitee").length;
+
+  /* ── Labels des filtres ── */
+  const statusLabel = activeStatuses.size === 0 ? "Statut"
+    : activeStatuses.size === 1 ? STATUS_CFG[Array.from(activeStatuses)[0]].label
+      : `Statut · ${activeStatuses.size}`;
+  const classifLabel = activeClassif.size === 0 ? "Type"
+    : activeClassif.size === 1 ? CLASSIF_CFG[Array.from(activeClassif)[0]].label
+      : `Type · ${activeClassif.size}`;
+  const priorityLabel = activePriorities.size === 0 ? "Priorité"
+    : activePriorities.size === 1 ? PRIORITY_LEVELS[Array.from(activePriorities)[0]].label
+      : `Priorité · ${activePriorities.size}`;
+
+  const statusesAreDefault = activeStatuses.size === DEFAULT_STATUSES.length && DEFAULT_STATUSES.every((s) => activeStatuses.has(s));
+  const hasActiveFilters = search !== "" || !statusesAreDefault || activeClassif.size > 0 || activePriorities.size > 0;
+  function resetFilters() {
+    setSearch("");
+    setActiveStatuses(new Set(DEFAULT_STATUSES));
+    setActiveClassif(new Set());
+    setActivePriorities(new Set());
+  }
+
+  /* ── Colonnes (une ligne = un besoin) ── */
+  const columns: ColumnDef<OppGroup>[] = [
+    { key: "subject", header: "Besoin", width: 280, flex: true,
+      render: (g) => (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <ChevronRightIcon className={`h-4 w-4 flex-shrink-0 text-[var(--text-muted)] transition-transform duration-200 ${isOpen(g.id) ? "rotate-90" : ""}`} />
+          <span className="min-w-0">
+            <TruncatedText text={g.subject} className="type-body-strong text-[var(--text-primary)]" />
+            <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className="whitespace-nowrap type-caption text-[var(--text-muted)]">{g.keywords.length} mots-clés</span>
+              {isQuickWin(g) && (
+                <Tooltip portal rich side="top" label={<Tip title="Quick win" desc="Déjà proche de la première page (positions 8 à 20) avec une difficulté accessible : c'est le plus rapide à rentabiliser." />}>
+                  <span className="inline-flex cursor-default">
+                    <Pill color="var(--color-success)" bg="var(--color-success-bg)">Quick win</Pill>
+                  </span>
+                </Tooltip>
+              )}
+              {g.offer && (
+                <Tooltip portal rich side="top" label={<Tip title="Offre prioritaire" desc={`Rattaché à l'offre « ${g.offer} » déclarée dans les paramètres du projet : ce besoin est favorisé dans l'ordre de la liste.`} />}>
+                  <span className="inline-flex cursor-default">
+                    <Pill color="#7C3AED" bg="rgba(124,58,237,0.10)">Offre prioritaire</Pill>
+                  </span>
+                </Tooltip>
+              )}
             </span>
-          </Tooltip>
+          </span>
+        </span>
+      ) },
+    { key: "priority",
+      header: <ColHeaderInfo label="Priorité" tooltip={<Tip title="Priorité calculée" desc="Croise le gain, la difficulté et la distance à la première page. Les besoins liés aux offres prioritaires du projet sont favorisés." />} />,
+      width: 120, sortable: true, sortValue: (g) => (g.priority ? PRIO_RANK[g.priority] : 0),
+      render: (g) => g.priority ? <PriorityBadge level={g.priority} /> : <span className="type-caption text-[var(--text-muted)]">À qualifier</span> },
+    { key: "gain",
+      header: <ColHeaderInfo label="Gain / mois" tooltip={<Tip title="Gain estimé" desc="Clics mensuels supplémentaires si le besoin est traité. Calculé sur le groupe entier, sans additionner les mots-clés entre eux." />} />,
+      width: 120, sortable: true, sortValue: (g) => g.gain,
+      render: (g) => (
+        <span className="type-label tabular-nums text-[var(--text-primary)]">
+          +{g.gain.toLocaleString("fr-FR")} <span className="type-caption text-[var(--text-muted)]">clics</span>
+        </span>
+      ) },
+    { key: "difficulty", header: "Difficulté", width: 130, sortable: true, sortValue: (g) => g.difficulty ?? -1,
+      render: (g) => {
+        if (g.difficulty == null) return <span className="type-caption text-[var(--text-muted)]">À mesurer</span>;
+        const lvl = diffLevel(g.difficulty);
+        return (
+          <ColorPill color={lvl.color} bg={lvl.bg}>
+            {lvl.label}
+            <span className="tabular-nums opacity-70">{g.difficulty}</span>
+          </ColorPill>
         );
       } },
-    { key: "source", header: "Source", width: 90,
-      render: (r) => r.source
-        ? <Tooltip portal rich side="top" label={<Tip {...SOURCE_TIP[r.source]} />}><span className="inline-flex cursor-default items-center rounded-md px-2 py-1 text-[12px] font-medium" style={{ color: SOURCE_CFG[r.source].color, backgroundColor: `color-mix(in oklab, ${SOURCE_CFG[r.source].color} 12%, transparent)` }}>{SOURCE_CFG[r.source].label}</span></Tooltip>
-        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "volume", header: "Volume", width: 90, align: "right", sortable: true, sortValue: (r) => r.volume,
-      render: (r) => <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.volume.toLocaleString("fr-FR")}</span> },
-    { key: "kd", header: <ColHeaderInfo label="KD" align="right" tooltip={<KdTip />} />, width: 70, align: "right", sortable: true, sortValue: (r) => r.kd ?? -1,
-      render: (r) => r.kd != null ? <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.kd}</span> : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "kei", header: <ColHeaderInfo label="KEI" align="right" tooltip={<KeiTip />} />, width: 100, align: "right", sortable: true, sortValue: (r) => r.kei ?? -1,
-      render: (r) => r.kei != null ? <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.kei.toLocaleString("fr-FR")}</span> : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "score", header: "Score", width: 64, align: "right", sortable: true, sortValue: (r) => r.score ?? -1,
-      render: (r) => {
-        if (r.score == null || r.score === 0) return <span className="text-[13px] text-[var(--text-muted)]">—</span>;
-        const color = r.score >= 75 ? "var(--color-success)" : r.score >= 60 ? "var(--color-warning)" : "var(--color-danger)";
-        return <span className="text-[13px] font-semibold tabular-nums" style={{ color }}>{r.score}</span>;
-      } },
-    { key: "trafic", header: "Trafic est.", width: 88, align: "right", sortable: true, sortValue: (r) => r.trafic ?? -1,
-      render: (r) => r.trafic != null ? <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">{r.trafic}</span> : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "position", header: "Position", width: 72, align: "right", sortable: true, sortValue: (r) => r.position ?? 9999,
-      render: (r) => r.position != null ? <span className="text-[13px] font-semibold tabular-nums text-[var(--text-primary)]">#{r.position}</span> : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "intent", header: "Intent", width: 88,
-      render: (r) => r.intent
-        ? <Tooltip portal rich side="top" label={<Tip {...INTENT_TIP[r.intent]} />}><span className="inline-flex cursor-default items-center rounded-md px-2 py-1 text-[12px] font-medium" style={{ color: INTENT_CFG[r.intent].color, backgroundColor: INTENT_CFG[r.intent].bg }}>{INTENT_CFG[r.intent].label}</span></Tooltip>
-        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "priority", header: "Priorité", width: 80,
-      render: (r) => <span className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium" style={{ color: PRIO_CFG[r.priority].color, backgroundColor: PRIO_CFG[r.priority].bg }}>{r.priority}</span> },
-    { key: "matched", header: "URL(s) matchée(s)", width: 220,
-      render: (r) => r.matchedUrls.length > 0
-        ? (
-          <span className="flex min-w-0 flex-col gap-0.5">
-            {r.matchedUrls.slice(0, 2).map((u) => (
-              <button key={u.url} type="button" onClick={(e) => { e.stopPropagation(); onOpenPageByUrl?.(u.url); }}
-                className="inline-flex min-w-0 items-center gap-1.5 text-left">
-                <span className="truncate font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)]">{u.url}</span>
-                <span className="flex-shrink-0 rounded bg-[var(--bg-subtle)] px-1 text-[11px] tabular-nums text-[var(--text-muted)]">#{u.pos}</span>
-              </button>
-            ))}
-          </span>
-        )
-        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
-    { key: "pageCible", header: "Page cible", width: 220,
-      render: (r) => r.pageCible
-        ? (
-          <button type="button" onClick={(e) => { e.stopPropagation(); onOpenPageByUrl?.(r.pageCible!); }}
-            className="inline-flex max-w-full min-w-0 items-center rounded-md px-1 py-0.5 -mx-1 transition-colors hover:bg-[var(--bg-subtle)]">
-            <span className="truncate font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)]">{r.pageCible}</span>
-          </button>
-        )
-        : <span className="text-[13px] text-[var(--text-muted)]">—</span> },
+    { key: "position",
+      header: <ColHeaderInfo label="Position" tooltip={<Tip title="Meilleure position" desc="Meilleure position actuelle du site parmi les mots-clés du besoin. C'est la distance à la première page." />} />,
+      width: 100, sortable: true, sortValue: (g) => g.bestPosition ?? 999,
+      render: (g) => g.bestPosition != null
+        ? <span className="type-label font-semibold tabular-nums text-[var(--text-primary)]">#{g.bestPosition}</span>
+        : <span className="type-caption text-[var(--text-muted)]">Hors top 100</span> },
+    { key: "classification", header: "Type", width: 130,
+      render: (g) => <ClassifTag c={g.classification} /> },
+    { key: "target", header: "Page cible", width: 200,
+      render: (g) => g.targetUrl ? (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onOpenPageByUrl?.(g.targetUrl!); }}
+          className="-mx-1 inline-flex max-w-full min-w-0 items-center rounded-md px-1 py-0.5 transition-colors hover:bg-[var(--bg-subtle)]">
+          <span className="truncate font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)]">{g.targetUrl}</span>
+        </button>
+      ) : (
+        <span className="inline-flex items-center gap-1 type-caption text-[var(--text-muted)]">
+          <PlusIcon className="h-3.5 w-3.5" />
+          À créer
+        </span>
+      ) },
+    { key: "status", header: "Statut", width: 140,
+      render: (g) => <StatusDropdown status={g.status} onChange={(s) => setStatus(g, s)} /> },
   ];
 
   /* Action épinglée à droite, révélée au survol (comme le chevron du tableau URLs). */
-  const trailingAction = (r: OppRow) =>
-    tab === "en_attente" ? (
-      <Button size="sm" onClick={(e) => { e.stopPropagation(); goGenerate(r); }}>
-        Générer
-        <ChevronRightIcon className="h-3.5 w-3.5" />
-      </Button>
-    ) : (
-      <span className="flex items-center justify-end gap-2">
-        <span className="type-caption text-[var(--text-muted)]">Nouvelle page</span>
-        <button type="button"
-          onClick={(e) => { e.stopPropagation(); onGoToCreation?.(); }}
+  const trailingAction = (g: OppGroup) => {
+    if (g.status === "en_attente") {
+      return (
+        <Button size="sm" onClick={(e) => { e.stopPropagation(); goGenerate(g); }}>
+          Générer
+          <ChevronRightIcon className="h-3.5 w-3.5" />
+        </Button>
+      );
+    }
+    if (g.status === "traitee") {
+      return (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onGoToCreation?.(); }}
           className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2.5 py-1 type-caption font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]">
           Voir le brief
           <ArrowUpRightIcon className="h-3 w-3" />
         </button>
-      </span>
+      );
+    }
+    return (
+      <button type="button" onClick={(e) => { e.stopPropagation(); setStatus(g, "en_attente"); }}
+        className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] px-2.5 py-1 type-caption font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]">
+        Remettre en attente
+      </button>
     );
+  };
 
-  const columns = baseCols;
+  const tableProps = {
+    columns,
+    rowKey: (g: OppGroup) => g.id,
+    onRowClick: (g: OppGroup) => toggleOpen(g),
+    isExpanded: (g: OppGroup) => isOpen(g.id),
+    renderExpanded: (g: OppGroup) => <KeywordDetail g={g} query={q} onOpenUrl={onOpenPageByUrl} />,
+    trailingAction,
+    trailingActionWidth: 170,
+    minWidth: 1180,
+    stickyLeft: true,
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -276,8 +529,8 @@ export function RecommandationsView({
           <EmptyState
             icon={<LSparkles className="h-7 w-7" />}
             title="Aucune opportunité"
-            description="Lancez une étude pour identifier les mots-clés et opportunités face à vos concurrents."
-            action={<Button onClick={() => setStudyOpen(true)}><LSparkles className="h-4 w-4" />Lancer une étude de mots-clés</Button>}
+            description="Lancez une étude pour identifier les besoins à couvrir face à vos concurrents."
+            action={<Button onClick={() => setStudyOpen(true)}>Lancer une étude de mots-clés<ChevronRightIcon className="h-4 w-4" /></Button>}
           />
         </div>
       )}
@@ -290,7 +543,7 @@ export function RecommandationsView({
               <Loader2 className="h-7 w-7 animate-spin text-[var(--accent-primary)]" />
             </div>
             <p className="type-h2">Étude en cours…</p>
-            <p className="mt-1 type-body-sm">Import des données et croisement avec les concurrents.</p>
+            <p className="mt-1 type-body-sm">Import des données et regroupement des mots-clés par besoin.</p>
             <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)]">
               <div className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-500 ease-out" style={{ width: `${(loadingStep / LOADING_STEPS.length) * 100}%` }} />
             </div>
@@ -298,7 +551,7 @@ export function RecommandationsView({
               {LOADING_STEPS.map((step, i) => {
                 const d = i < loadingStep, a = i === loadingStep;
                 return (
-                  <li key={step} className="flex items-center gap-2.5 text-[13px]">
+                  <li key={step} className="flex items-center gap-2.5 type-label">
                     <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
                       style={{ backgroundColor: d ? "var(--accent-primary)" : a ? "var(--accent-primary-soft)" : "var(--bg-subtle)", color: d ? "white" : "var(--accent-primary)" }}>
                       {d ? <CheckIcon className="h-3 w-3" strokeWidth={3} /> : a ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
@@ -315,48 +568,100 @@ export function RecommandationsView({
       {/* State : done */}
       {studyState === "done" && (
         <>
-          <KpiGroup columns={3}>
-            <KpiCard bare icon={LSparkles}   label="En attente"    value={pending.length.toString()} sub="opportunités à traiter" />
-            <KpiCard bare icon={LTarget}     label="Actionnables"  value={actionnables.toString()} sub="P1 + P2 en attente" />
-            <KpiCard bare icon={CheckCircle2} label="Traitées"     value={done.length.toString()} sub="briefs générés" />
+          <KpiGroup columns={4}>
+            <KpiCard bare icon={Layers}       label="Besoins à traiter" value={pending.length.toString()} sub={`${kwPending} mots-clés regroupés`} />
+            <KpiCard bare icon={TrendingUp}   label="Gain potentiel"    value={`+${gainPending.toLocaleString("fr-FR")}`} sub="clics / mois, sans double comptage" />
+            <KpiCard bare icon={Zap}          label="Quick wins"        value={quickWins.toString()} sub="proches de la page 1 et accessibles" />
+            <KpiCard bare icon={CheckCircle2} label="Traités"           value={doneCount.toString()} sub="briefs générés" />
           </KpiGroup>
 
-          {/* Onglets En attente / Traitées, puis la toolbar (recherche + filtres) en dessous */}
-          <div className="flex flex-col gap-3">
-            <FilterTabs<"en_attente" | "traitee">
-              tabs={[
-                { key: "en_attente", label: "En attente", count: pending.length },
-                { key: "traitee",    label: "Traitées",   count: done.length },
-              ]}
-              value={tab}
-              onChange={setTab}
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un mot-clé…" alwaysExpanded />
-              <ColPill name="type" label={filterType === "all" ? "Tous les types" : TYPE_CFG[filterType].label} active={filterType !== "all"} value={filterType} onChange={(v) => setFilterType(v as "all" | OppType)}
-                items={[{ value: "all", label: "Tous les types" }, { value: "etude", label: "Étude" }, { value: "semantique", label: "Sémantique" }]} />
-              <ColPill name="priorité" label={filterPriority === "all" ? "Toutes les priorités" : `Priorité ${filterPriority}`} active={filterPriority !== "all"} value={filterPriority} onChange={(v) => setFilterPriority(v as "all" | StudyPrio)}
-                items={[{ value: "all", label: "Toutes les priorités" }, { value: "P1", label: "P1" }, { value: "P2", label: "P2" }, { value: "P3", label: "P3" }]} />
-              {(search || filterPriority !== "all" || filterType !== "all") && (
-                <button onClick={() => { setSearch(""); setFilterPriority("all"); setFilterType("all"); }} className="flex items-center gap-1 text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
-                  <LX className="h-3 w-3" />Réinitialiser
-                </button>
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un besoin ou un mot-clé…" alwaysExpanded />
+
+            <ColPill name="statut" label={statusLabel} active={!statusesAreDefault}>
+              {() => (
+                <>
+                  <DropdownHeader>Filtrer par statut</DropdownHeader>
+                  {STATUS_ORDER.map((s) => (
+                    <DropdownItem key={s} selected={activeStatuses.has(s)} onClick={() => toggleFrom(setActiveStatuses, s)} keepOpen checkbox>
+                      <span className="flex w-full items-center justify-between gap-3">
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: STATUS_CFG[s].color }} />
+                          {STATUS_CFG[s].label}
+                        </span>
+                        <span className="type-caption opacity-60">{groups.filter((g) => g.status === s).length}</span>
+                      </span>
+                    </DropdownItem>
+                  ))}
+                </>
               )}
-            </div>
+            </ColPill>
+
+            <ColPill name="type" label={classifLabel} active={activeClassif.size > 0}>
+              {() => (
+                <>
+                  <DropdownHeader>Filtrer par type</DropdownHeader>
+                  {CLASSIF_ORDER.map((c) => (
+                    <DropdownItem key={c} selected={activeClassif.has(c)} onClick={() => toggleFrom(setActiveClassif, c)} keepOpen checkbox>
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: CLASSIF_CFG[c].color }} />
+                        {CLASSIF_CFG[c].label}
+                      </span>
+                    </DropdownItem>
+                  ))}
+                </>
+              )}
+            </ColPill>
+
+            <ColPill name="priorité" label={priorityLabel} active={activePriorities.size > 0}>
+              {() => (
+                <>
+                  <DropdownHeader>Filtrer par priorité</DropdownHeader>
+                  {PRIORITY_ORDER.map((p) => (
+                    <DropdownItem key={p} selected={activePriorities.has(p)} onClick={() => toggleFrom(setActivePriorities, p)} keepOpen checkbox>
+                      <PriorityBadge level={p} />
+                    </DropdownItem>
+                  ))}
+                </>
+              )}
+            </ColPill>
+
+            <ResetFiltersButton show={hasActiveFilters} onReset={resetFilters} />
           </div>
 
-          <TableWide<OppRow>
-            columns={columns}
-            data={filteredRows}
-            rowKey={(r) => r.id}
-            emptyState={tab === "en_attente" ? "Aucune opportunité en attente." : "Aucune opportunité traitée pour l'instant."}
-            minWidth={1560}
+          {/* Besoins classés */}
+          <TableWide<OppGroup>
+            {...tableProps}
+            data={ranked}
+            emptyState={q ? `Aucun besoin ni mot-clé ne contient « ${search} ».` : "Aucun besoin avec ces filtres."}
             pageSize={25}
-            stickyLeft
             bordered
-            trailingAction={trailingAction}
-            trailingActionWidth={tab === "en_attente" ? 150 : 230}
           />
+
+          {/* Besoins à qualifier : difficulté non mesurée → bloc replié, jamais en tête de liste */}
+          {toQualify.length > 0 && (
+            <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+              <button
+                type="button"
+                onClick={() => setQualifyOpen((v) => !v)}
+                aria-expanded={qualifyOpen}
+                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[var(--bg-card-hover)]"
+              >
+                <span className="flex items-center gap-2.5">
+                  <ChevronRightIcon className={`h-4 w-4 text-[var(--text-muted)] transition-transform duration-200 ${qualifyOpen ? "rotate-90" : ""}`} />
+                  <span className="type-body-strong text-[var(--text-primary)]">Difficulté non mesurée</span>
+                  <span className="type-caption text-[var(--text-muted)]">{toQualify.length} besoin{toQualify.length > 1 ? "s" : ""}</span>
+                </span>
+                <span className="hidden type-caption text-[var(--text-muted)] md:block">Non classés : ils ne remontent jamais en tête de liste</span>
+              </button>
+              {qualifyOpen && (
+                <div className="border-t border-[var(--border-subtle)]">
+                  <TableWide<OppGroup> {...tableProps} data={toQualify} hidePagination />
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

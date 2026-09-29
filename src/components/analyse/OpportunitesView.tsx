@@ -37,7 +37,9 @@ import { ResetFiltersButton } from "@/components/ResetFiltersButton";
 import { DropdownMenu, DropdownHeader, DropdownItem } from "@/components/DropdownMenu";
 import { TAB_SUBTITLES } from "@/components/analyse/constants";
 import { pravatarUrl } from "@/lib/avatar";
-import { ChevronRight, ChevronLeft, ChevronDown, ArrowLeft, Calendar, Check, List, Columns3, Globe, FileText, X, Repeat } from "lucide-react";
+import { ChevronRight, ChevronLeft, ChevronDown, ArrowLeft, Calendar, Check, List, Columns3, Globe, FileText, X, Repeat, ListTodo, Hourglass, CirclePause, CircleCheck } from "lucide-react";
+import { KpiCard } from "@/components/KpiCard";
+import { KpiGroup } from "@/components/KpiGroup";
 
 /* ════════════════════════════════════════════════════════════════════════
    TYPES + MOCK DATA
@@ -504,6 +506,26 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
     o.id in owners ? owners[o.id] : o.ownerKey ? OWNERS[o.ownerKey] : undefined;
   const deadlineOf = (o: Opportunity): string | undefined => (o.id in deadlines ? deadlines[o.id] : o.deadline);
 
+  /* ── Chiffres clés (projet entier, indépendants des filtres ; suivent les changements de statut) ── */
+  const kpi = (() => {
+    const by = (s: Status) => OPPORTUNITIES.filter((o) => statusOf(o) === s);
+    const todo = by("todo");
+    const inProgress = by("in_progress");
+    const blocked = by("blocked_client");
+    const done = by("done");
+    const planned = OPPORTUNITIES.filter((o) => statusOf(o) !== "abandoned").length;
+    const people = new Set(inProgress.map((o) => ownerOf(o)?.id).filter(Boolean)).size;
+    return {
+      todo: todo.length,
+      todoHigh: todo.filter((o) => o.priority === "high").length,
+      inProgress: inProgress.length,
+      people,
+      blocked: blocked.length,
+      done: done.length,
+      donePct: planned > 0 ? Math.round((done.length / planned) * 100) : 0,
+    };
+  })();
+
   const hasActiveFilters =
     search.trim() !== "" || activeModule !== null || activePriorities.size > 0 || activeStatuses.size > 0 || activeOwners.size > 0;
 
@@ -633,6 +655,16 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
         <p className="mt-1 type-body text-[var(--text-secondary)]">{TAB_SUBTITLES.opportunites}</p>
       </div>
 
+      {/* Chiffres clés */}
+      <div className="flex-shrink-0">
+        <KpiGroup columns={4}>
+          <KpiCard bare icon={ListTodo}    label="À faire"              value={kpi.todo.toString()}       sub={kpi.todoHigh > 0 ? `dont ${kpi.todoHigh} en priorité haute` : "aucune en priorité haute"} />
+          <KpiCard bare icon={Hourglass}   label="En cours"             value={kpi.inProgress.toString()} sub={`${kpi.people} personne${kpi.people > 1 ? "s" : ""} mobilisée${kpi.people > 1 ? "s" : ""}`} />
+          <KpiCard bare icon={CirclePause} label="Bloquées côté client" value={kpi.blocked.toString()}    sub="en attente d'un retour client" valueColor={kpi.blocked > 0 ? "var(--color-danger)" : undefined} />
+          <KpiCard bare icon={CircleCheck} label="Livrées"              value={kpi.done.toString()}       sub={`${kpi.donePct} % du plan d'action`} />
+        </KpiGroup>
+      </div>
+
       {/* Toolbar */}
           <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
             <SearchInput value={search} onChange={setSearch} placeholder="Rechercher une action…" alwaysExpanded />
@@ -670,10 +702,7 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
                   <DropdownHeader>Filtrer par priorité</DropdownHeader>
                   {PRIORITY_ORDER.map((p) => (
                     <DropdownItem key={p} selected={activePriorities.has(p)} onClick={() => toggleFrom(setActivePriorities, p)} keepOpen checkbox>
-                      <span className="flex items-center gap-2">
-                        <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: PRIORITY_LEVELS[p].color }} />
-                        {PRIORITY_LEVELS[p].label}
-                      </span>
+                      <PriorityBadge level={p} />
                     </DropdownItem>
                   ))}
                 </>
