@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { FilterTabs } from "@/components/FilterTabs";
 import { DonutChart } from "@/components/DonutChart";
 import { AreaChart } from "@/components/AreaChart";
@@ -11,9 +11,14 @@ import { VariationPill } from "@/components/VariationPill";
 import { TriangleAlert, FileText, MousePointerClick, Percent } from "lucide-react";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
+import { Tooltip } from "@/components/Tooltip";
+import { Button } from "@/components/Button";
+import { ModalShell } from "@/components/analyse/modals/shared";
+import { useToast } from "@/context/ToastContext";
+import { ColHeaderInfo, TruncatedText } from "@/components/analyse/RecommandationsView";
 import {
-  CANNIBAL_KWS, CANNIBAL_PAGES, CANNIBAL_HISTORY_BY_PERIOD,
-  type CannibalSev, type CannibalStatus, type CannibalKw, type CannibalPage,
+  CANNIBAL_KWS, CANNIBAL_PAGES, CANNIBAL_HISTORY_BY_PERIOD, CANNIBAL_ACTIONS, IRREVERSIBLE_ACTIONS, DECIDED_STATUSES,
+  type CannibalSev, type CannibalStatus, type CannibalKw, type CannibalPage, type CannibalAction, type CannibalUrl,
 } from "@/data/cannibal";
 
 
@@ -45,19 +50,96 @@ function CannibalSevBadge({ sev }: { sev: CannibalSev }) {
   );
 }
 
-function CannibalActionSelect({ value }: { value: string }) {
-  const opts = ["Garder", "Rediriger", "Fusionner", "Ignorer"];
+/** Pourquoi l'action est difficile à annuler (tooltip de l'indicateur de risque). */
+const RISK_DESC: Partial<Record<CannibalAction, string>> = {
+  Fusionner: "La page secondaire disparaît, son URL est redirigée en 301. Son historique de positions ne revient pas si on fait marche arrière.",
+  Supprimer: "La page est retirée du site. Ses positions et les liens qui pointent vers elle sont perdus si aucune redirection n'est prévue.",
+};
+
+/** Indicateur de risque : à côté des recommandations difficiles à annuler (fusion, suppression). */
+function RiskFlag({ action }: { action: CannibalAction }) {
+  if (!IRREVERSIBLE_ACTIONS.has(action)) return null;
   return (
-    <div className="relative inline-flex">
-      <select
-        defaultValue={value}
-        onClick={(e) => e.stopPropagation()}
-        className="cursor-pointer appearance-none rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] py-1 pl-2.5 pr-6 text-[12px] font-medium text-[var(--text-secondary)] focus:outline-none"
+    <Tooltip portal rich side="top" label={
+      <div className="flex flex-col gap-1">
+        <p className="font-semibold">Difficile à annuler</p>
+        <p className="opacity-75">{RISK_DESC[action]}</p>
+      </div>
+    }>
+      <span
+        aria-label="Difficile à annuler"
+        className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full"
+        style={{ color: "var(--color-warning)", backgroundColor: "var(--color-warning-bg)" }}
       >
-        {opts.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--text-muted)]" />
-    </div>
+        <TriangleAlert className="h-3.5 w-3.5" />
+      </span>
+    </Tooltip>
+  );
+}
+
+/** Action recommandée — dropdown DS ; les actions risquées sont signalées dans la liste. */
+function CannibalActionDropdown({ value, onChange }: { value: CannibalAction; onChange: (next: CannibalAction) => void }) {
+  return (
+    <DropdownMenu
+      width={240}
+      trigger={
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 type-caption font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-card-hover)]"
+        >
+          {value}
+          <ChevronDownIcon className="h-3 w-3 opacity-60" />
+        </button>
+      }
+    >
+      <DropdownHeader>Action recommandée</DropdownHeader>
+      {CANNIBAL_ACTIONS.map((a) => (
+        <DropdownItem key={a} onClick={() => onChange(a)} selected={value === a}>
+          <span className="flex w-full items-center justify-between gap-3">
+            {a}
+            {IRREVERSIBLE_ACTIONS.has(a) && (
+              <span className="inline-flex items-center gap-1 type-micro" style={{ color: "var(--color-warning)" }}>
+                <TriangleAlert className="h-3 w-3" />
+                Difficile à annuler
+              </span>
+            )}
+          </span>
+        </DropdownItem>
+      ))}
+    </DropdownMenu>
+  );
+}
+
+/** Confirmation quand une action risquée est marquée comme décidée. */
+function RiskConfirmModal({ kw, action, onCancel, onConfirm }: {
+  kw: CannibalKw; action: CannibalAction; onCancel: () => void; onConfirm: () => void;
+}) {
+  const [keep, ...others] = kw.urls;
+  const isMerge = action === "Fusionner";
+  return (
+    <ModalShell onClose={onCancel} maxWidth={460}>
+      <h3 className="mb-1.5 type-h3">{isMerge ? "Confirmer la fusion ?" : "Confirmer la suppression ?"}</h3>
+      <p className="mb-5 type-body-sm leading-relaxed">
+        {isMerge
+          ? <>Le contenu sera intégré à <span className="font-mono text-[var(--text-primary)]">{keep.url}</span>, puis l&apos;URL redirigée en 301. C&apos;est difficile à annuler : la page fusionnée disparaît et son historique de positions ne revient pas.</>
+          : <>C&apos;est difficile à annuler : la page est retirée du site, ses positions et les liens qui pointent vers elle sont perdus si aucune redirection n&apos;est prévue.</>}
+      </p>
+      <p className="mb-2 type-caption">{others.length > 1 ? "Pages concernées" : "Page concernée"}</p>
+      <div className="mb-6 flex flex-col divide-y divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)]">
+        {others.map((u) => (
+          <div key={u.url} className="flex items-center justify-between gap-4 px-4 py-3">
+            <span className="min-w-0 truncate font-mono text-[12px] text-[var(--text-primary)]" title={u.url}>{u.url}</span>
+            <span className="flex-shrink-0 type-caption tabular-nums text-[var(--text-secondary)]">{u.clicks} clics / mois</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="secondary" size="md" onClick={onCancel}>Annuler</Button>
+        <Button variant={isMerge ? "primary" : "danger"} size="md" onClick={onConfirm}>
+          {isMerge ? "Confirmer la fusion" : "Confirmer la suppression"}
+        </Button>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -99,117 +181,66 @@ function CannibalStatusDropdown({ status, onChange }: { status: CannibalStatus; 
   );
 }
 
-function CannibalKwRow({ kw }: { kw: CannibalKw }) {
-  const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<CannibalStatus>(kw.status);
-  const totalClicks = kw.urls.reduce((s, u) => s + u.clicks, 0);
-
-  return (
-    <>
-      <tr
-        onClick={() => setOpen(v => !v)}
-        className={`cursor-pointer border-b border-[var(--border-subtle)] last:border-0 transition-colors hover:bg-[var(--bg-card-hover)] ${open ? "bg-[var(--bg-card-hover)]" : ""}`}
-      >
-        <td className="px-6 py-3.5 align-middle">
-          <div className="flex items-center gap-2">
-            <ChevronDownIcon className={`h-3.5 w-3.5 flex-shrink-0 text-[var(--text-muted)] transition-transform ${open ? "rotate-180" : ""}`} />
-            <span className="type-label text-[var(--text-primary)]">{kw.keyword}</span>
-          </div>
-        </td>
-        <td className="px-4 py-3.5 align-middle"><CannibalSevBadge sev={kw.severity} /></td>
-        <td className="px-4 py-3.5 text-center align-middle">
-          <span className="type-label tabular-nums text-[var(--text-primary)]">{kw.urls.length}</span>
-        </td>
-        <td className="px-4 py-3.5 text-right align-middle">
-          <span className="type-label tabular-nums text-[var(--text-primary)]">{totalClicks}</span>
-        </td>
-        <td className="px-4 py-3.5 text-right align-middle">
-          {kw.lostClicks !== null ? (
-            <VariationPill direction="down" className="justify-end">
-              −{kw.lostClicks}
-            </VariationPill>
-          ) : (
-            <span className="type-label tabular-nums text-[var(--text-muted)]">—</span>
-          )}
-        </td>
-        <td className="px-4 py-3.5 text-right align-middle">
-          <span className="type-label tabular-nums text-[var(--text-primary)]">
-            {kw.volume !== null ? kw.volume.toLocaleString("fr-FR") : "—"}
+/** Détail d'un mot-clé cannibalisé (ligne dépliée) : tableau imbriqué TableWide,
+ *  même style que le détail des Opportunités (lignes pleine taille, URL sticky). */
+function ConflictUrlsDetail({ kw }: { kw: CannibalKw }) {
+  const columns: ColumnDef<CannibalUrl>[] = [
+    {
+      key: "url", header: "URL", width: 260, flex: true, maxWidth: 420,
+      render: (u) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="min-w-0 flex-1">
+            <TruncatedText text={u.url} className="font-mono text-[12px] text-[var(--text-primary)]" />
           </span>
-        </td>
-        <td className="px-4 py-3.5 align-middle" onClick={e => e.stopPropagation()}>
-          <CannibalActionSelect value={kw.action} />
-        </td>
-        <td className="pr-6 py-3.5 align-middle" onClick={e => e.stopPropagation()}>
-          <CannibalStatusDropdown status={status} onChange={setStatus} />
-        </td>
-      </tr>
-
-      {open && (
-        <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-          <td colSpan={8} className="px-6 py-5">
-            {/* Détail — table classique, lisible (header type-caption, lignes type-label). */}
-            <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
-              <div className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] px-5 py-3">
-                <span className="type-label text-[var(--text-primary)]">
-                  URLs en conflit sur «&nbsp;{kw.keyword}&nbsp;»
-                </span>
-                <span className="type-caption text-[var(--text-muted)]">Positions = moyenne GSC 28&nbsp;j</span>
-              </div>
-              <table className="w-full table-fixed border-collapse">
-                <colgroup>
-                  <col style={{ width: "34%" }} />
-                  <col style={{ width: "22%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "11%" }} />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                    <th className="px-5 py-3 text-left type-caption">URL</th>
-                    <th className="px-4 py-3 text-left type-caption">Click share</th>
-                    <th className="px-4 py-3 text-right type-caption">Pos. moy.</th>
-                    <th className="px-4 py-3 text-right type-caption">CTR</th>
-                    <th className="px-4 py-3 text-right type-caption">Clics</th>
-                    <th className="px-5 py-3 text-right type-caption">Impressions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kw.urls.map((u, i) => (
-                    <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0">
-                      <td className="px-5 py-3.5">
-                        <span className="block truncate type-label font-mono text-[var(--text-primary)]" title={u.url}>{u.url}</span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-1.5 flex-1 rounded-full bg-[var(--bg-card-hover)]">
-                            <div className="h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${u.clickShare}%` }} />
-                          </div>
-                          <span className="w-9 shrink-0 text-right type-label font-semibold tabular-nums text-[var(--text-primary)]">{u.clickShare}%</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <span className="type-label tabular-nums text-[var(--text-secondary)]">~{u.avgPos.toFixed(1)}</span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <span className="type-label tabular-nums text-[var(--text-secondary)]">{u.ctr}</span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <span className="type-label tabular-nums text-[var(--text-secondary)]">{u.clicks.toLocaleString("fr-FR")}</span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <span className="type-label tabular-nums text-[var(--text-primary)]">{u.impressions.toLocaleString("fr-FR")}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
+          {u.url === kw.urls[0].url && (
+            <span className="flex-shrink-0 rounded-full border border-[var(--border-subtle)] px-1.5 py-0.5 type-micro text-[var(--text-secondary)]">Principale</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "share", header: "Part des clics", width: 180, sortable: true, sortValue: (u) => u.clickShare,
+      render: (u) => (
+        <span className="flex items-center gap-2.5">
+          <span className="h-1.5 flex-1 rounded-full bg-[var(--bg-card-hover)]">
+            <span className="block h-full rounded-full bg-[var(--accent-primary)]" style={{ width: `${u.clickShare}%` }} />
+          </span>
+          <span className="w-9 shrink-0 type-label font-semibold tabular-nums text-[var(--text-primary)]">{u.clickShare}%</span>
+        </span>
+      ),
+    },
+    {
+      key: "pos", width: 110, sortable: true, sortValue: (u) => u.avgPos,
+      header: <ColHeaderInfo label="Pos. moy." tooltip={<div className="flex flex-col gap-1"><p className="font-semibold">Position moyenne</p><p className="opacity-75">Moyenne Search Console sur les 28 derniers jours.</p></div>} />,
+      render: (u) => <span className="type-label tabular-nums text-[var(--text-primary)]">~{u.avgPos.toFixed(1)}</span>,
+    },
+    {
+      key: "ctr", header: "CTR", width: 80,
+      render: (u) => <span className="type-label tabular-nums text-[var(--text-secondary)]">{u.ctr}</span>,
+    },
+    {
+      key: "clicks", header: "Clics", width: 90, sortable: true, sortValue: (u) => u.clicks,
+      render: (u) => <span className="type-label tabular-nums text-[var(--text-primary)]">{u.clicks.toLocaleString("fr-FR")}</span>,
+    },
+    {
+      key: "impressions", header: "Impressions", width: 110, sortable: true, sortValue: (u) => u.impressions,
+      render: (u) => <span className="type-label tabular-nums text-[var(--text-secondary)]">{u.impressions.toLocaleString("fr-FR")}</span>,
+    },
+  ];
+  return (
+    <div className="py-3 pr-4" style={{ paddingLeft: "calc(var(--page-px) + 26px)" }}>
+      <TableWide<CannibalUrl>
+        columns={columns}
+        data={kw.urls}
+        rowKey={(u) => u.url}
+        stickyLeft
+        stickyHeader={false}
+        bordered
+        hidePagination
+        edgePadding="16px"
+        minWidth={900}
+      />
+    </div>
   );
 }
 
@@ -254,6 +285,83 @@ const PAGES_COLUMNS: ColumnDef<CannibalPage>[] = [
 export function CannibalView() {
   const [view, setView] = useState<"keywords" | "pages">("keywords");
   const [histPeriod, setHistPeriod] = useState<"3m" | "6m" | "1an">("6m");
+  const toast = useToast();
+  /* Mots-clés éditables (action + statut) et lignes dépliées. */
+  const [kws, setKws] = useState<CannibalKw[]>(CANNIBAL_KWS);
+  const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
+  const toggleOpen = (k: string) => setOpenKeys((prev) => {
+    const next = new Set(prev);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    return next;
+  });
+  /* Changement en attente de confirmation : action risquée marquée comme décidée. */
+  const [pending, setPending] = useState<{ kw: CannibalKw; status: CannibalStatus; action: CannibalAction } | null>(null);
+  const apply = (keyword: string, status: CannibalStatus, action: CannibalAction) =>
+    setKws((prev) => prev.map((k) => (k.keyword === keyword ? { ...k, status, action } : k)));
+  function change(kw: CannibalKw, status: CannibalStatus, action: CannibalAction) {
+    const alreadyDecided = DECIDED_STATUSES.has(kw.status) && action === kw.action;
+    if (IRREVERSIBLE_ACTIONS.has(action) && DECIDED_STATUSES.has(status) && !alreadyDecided) {
+      setPending({ kw, status, action });
+      return;
+    }
+    apply(kw.keyword, status, action);
+  }
+  function confirmPending() {
+    if (!pending) return;
+    apply(pending.kw.keyword, pending.status, pending.action);
+    toast.show(pending.action === "Fusionner" ? "Fusion marquée comme décidée" : "Suppression marquée comme décidée");
+    setPending(null);
+  }
+
+  const kwColumns: ColumnDef<CannibalKw>[] = [
+    {
+      key: "keyword", header: "Mot-clé", width: 220, flex: true,
+      render: (kw) => (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <ChevronRightIcon className={`h-4 w-4 flex-shrink-0 text-[var(--text-muted)] transition-transform duration-200 ${openKeys.has(kw.keyword) ? "rotate-90" : ""}`} />
+          <span className="min-w-0 flex-1">
+            <TruncatedText text={kw.keyword} className="type-body-strong text-[var(--text-primary)]" />
+          </span>
+        </span>
+      ),
+    },
+    { key: "severity", header: "Sévérité", width: 100, render: (kw) => <CannibalSevBadge sev={kw.severity} /> },
+    {
+      key: "urls", header: "URLs", width: 70, sortable: true, sortValue: (kw) => kw.urls.length,
+      render: (kw) => <span className="type-label tabular-nums text-[var(--text-primary)]">{kw.urls.length}</span>,
+    },
+    {
+      key: "clicks", header: "Clics", width: 80, sortable: true, sortValue: (kw) => kw.urls.reduce((t, u) => t + u.clicks, 0),
+      render: (kw) => <span className="type-label tabular-nums text-[var(--text-primary)]">{kw.urls.reduce((t, u) => t + u.clicks, 0)}</span>,
+    },
+    {
+      key: "lost", header: "Perte est.", width: 100,
+      render: (kw) => kw.lostClicks !== null
+        ? <VariationPill direction="down">−{Math.abs(kw.lostClicks)}</VariationPill>
+        : <span className="type-label text-[var(--text-muted)]">Non mesurée</span>,
+    },
+    {
+      key: "volume", header: "Volume", width: 90, sortable: true, sortValue: (kw) => kw.volume ?? -1,
+      render: (kw) => <span className="type-label tabular-nums text-[var(--text-primary)]">{kw.volume !== null ? kw.volume.toLocaleString("fr-FR") : "Non mesuré"}</span>,
+    },
+    {
+      key: "action", header: "Action", width: 170,
+      render: (kw) => (
+        <span className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <CannibalActionDropdown value={kw.action} onChange={(a) => change(kw, kw.status, a)} />
+          <RiskFlag action={kw.action} />
+        </span>
+      ),
+    },
+    {
+      key: "status", header: "Statut", width: 140,
+      render: (kw) => (
+        <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
+          <CannibalStatusDropdown status={kw.status} onChange={(st) => change(kw, st, kw.action)} />
+        </span>
+      ),
+    },
+  ];
 
   const medium = CANNIBAL_KWS.filter(k => k.severity === "MEDIUM").length;
   const low    = CANNIBAL_KWS.filter(k => k.severity === "LOW").length;
@@ -342,38 +450,19 @@ export function CannibalView() {
         </div>
 
         {view === "keywords" && (
-          <div
-            className="flex flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]"
-            style={{ clipPath: "inset(0 round 1.5rem)" }}
-          >
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col style={{ width: "22%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "14%" }} />
-                <col style={{ width: "14%" }} />
-              </colgroup>
-              <thead>
-                <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] type-caption">
-                  <th className="py-2.5 pl-6 pr-4 text-left">Mot-clé</th>
-                  <th className="px-4 py-2.5 text-left">Sévérité</th>
-                  <th className="px-4 py-2.5 text-center">URLs</th>
-                  <th className="px-4 py-2.5 text-right">Clics</th>
-                  <th className="px-4 py-2.5 text-right">Perte est.</th>
-                  <th className="px-4 py-2.5 text-right">Volume</th>
-                  <th className="px-4 py-2.5 text-left">Action</th>
-                  <th className="py-2.5 pl-4 pr-6 text-left">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {CANNIBAL_KWS.map((kw, i) => <CannibalKwRow key={i} kw={kw} />)}
-              </tbody>
-            </table>
-          </div>
+          <TableWide<CannibalKw>
+            columns={kwColumns}
+            data={kws}
+            rowKey={(kw) => kw.keyword}
+            onRowClick={(kw) => toggleOpen(kw.keyword)}
+            isExpanded={(kw) => openKeys.has(kw.keyword)}
+            renderExpanded={(kw) => <ConflictUrlsDetail kw={kw} />}
+            emptyState="Aucune cannibalisation détectée."
+            minWidth={1080}
+            stickyLeft
+            bordered
+            hidePagination
+          />
         )}
 
         {view === "pages" && (
@@ -388,6 +477,10 @@ export function CannibalView() {
           />
         )}
       </div>
+
+      {pending && (
+        <RiskConfirmModal kw={pending.kw} action={pending.action} onCancel={() => setPending(null)} onConfirm={confirmPending} />
+      )}
     </div>
   );
 }

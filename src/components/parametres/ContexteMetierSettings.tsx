@@ -99,7 +99,7 @@ const TEMPLATE_SKILL = `# SKILL RÉDACTIONNEL — [NOM DU PROJET]
 
 /**
  * Offres prioritaires — offres que le client veut développer en priorité.
- * Utilisées par le calcul de priorité des Opportunités : les besoins qui s'y
+ * Utilisées par le calcul de priorité des Opportunités : les opportunités qui s'y
  * rattachent remontent en tête de liste (mention « Offre prioritaire »).
  */
 function OffresPrioritairesSettings() {
@@ -117,6 +117,13 @@ function OffresPrioritairesSettings() {
       description="Les offres que le client veut développer en priorité. Les opportunités qui s'y rattachent remontent en tête de liste."
     >
       <div className="flex flex-col gap-3">
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => { e.preventDefault(); add(); }}
+        >
+          <div className="w-72"><Input value={draft} onChange={setDraft} placeholder="ex. Audit SEO, Formation, Refonte de site" /></div>
+          <Button size="sm" variant="secondary" type="submit" disabled={!draft.trim()}>Ajouter</Button>
+        </form>
         {offers.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {offers.map((o) => (
@@ -136,13 +143,6 @@ function OffresPrioritairesSettings() {
         ) : (
           <p className="type-body-sm">Aucune offre déclarée : toutes les opportunités sont classées sur le seul potentiel SEO.</p>
         )}
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(e) => { e.preventDefault(); add(); }}
-        >
-          <div className="w-72"><Input value={draft} onChange={setDraft} placeholder="ex. Audit SEO, Formation, Refonte de site" /></div>
-          <Button size="sm" variant="secondary" type="submit" disabled={!draft.trim()}>Ajouter</Button>
-        </form>
       </div>
     </Section>
   );

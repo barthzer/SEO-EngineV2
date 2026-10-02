@@ -13,13 +13,25 @@ export type CannibalSev = "HIGH" | "MEDIUM" | "LOW";
 /** Statut de traitement d'une cannibalisation (éditable par le consultant). */
 export type CannibalStatus = "todo" | "in_progress" | "resolved" | "ignored";
 
+/** Recommandation d'arbitrage sur un conflit. */
+export type CannibalAction = "Garder" | "Rediriger" | "Fusionner" | "Supprimer" | "Ignorer";
+export const CANNIBAL_ACTIONS: CannibalAction[] = ["Garder", "Rediriger", "Fusionner", "Supprimer", "Ignorer"];
+
+/** Actions difficiles à annuler (la page disparaît, son historique ne revient pas).
+ *  Le front affiche un indicateur de risque à côté, et demande une confirmation
+ *  quand le consultant les marque comme décidées (statut En cours ou Résolu). */
+export const IRREVERSIBLE_ACTIONS: ReadonlySet<CannibalAction> = new Set<CannibalAction>(["Fusionner", "Supprimer"]);
+
+/** Statuts qui valent « décision prise » (déclenchent la confirmation si l'action est risquée). */
+export const DECIDED_STATUSES: ReadonlySet<CannibalStatus> = new Set<CannibalStatus>(["in_progress", "resolved"]);
+
 export type CannibalUrl = {
   url: string; clickShare: number; avgPos: number;
   clicks: number; impressions: number; ctr: string;
 };
 export type CannibalKw = {
   keyword: string; severity: CannibalSev; clicks: number; lostClicks: number | null;
-  volume: number | null; action: string; status: CannibalStatus;
+  volume: number | null; action: CannibalAction; status: CannibalStatus;
   urls: CannibalUrl[];
 };
 export type CannibalPage = {
@@ -44,10 +56,17 @@ export const CANNIBAL_KWS: CannibalKw[] = [
     ],
   },
   {
-    keyword: "formation seo", severity: "MEDIUM", clicks: 42, lostClicks: -5, volume: 1700, action: "Garder", status: "todo",
+    keyword: "formation seo", severity: "MEDIUM", clicks: 42, lostClicks: -5, volume: 1700, action: "Fusionner", status: "todo",
     urls: [
       { url: "aw-i.com/formation/formation-seo/", clickShare: 88, avgPos: 4.8,  clicks: 37, impressions: 740, ctr: "5.0%" },
       { url: "aw-i.com/formation/",               clickShare: 12, avgPos: 11.3, clicks: 5,  impressions: 220, ctr: "2.3%" },
+    ],
+  },
+  {
+    keyword: "audit seo gratuit", severity: "LOW", clicks: 12, lostClicks: -2, volume: 590, action: "Supprimer", status: "todo",
+    urls: [
+      { url: "aw-i.com/audit-seo/",                  clickShare: 86, avgPos: 6.4,  clicks: 10, impressions: 410, ctr: "2.4%" },
+      { url: "aw-i.com/blog/audit-seo-gratuit-2019/", clickShare: 14, avgPos: 21.7, clicks: 2,  impressions: 160, ctr: "1.3%" },
     ],
   },
   {

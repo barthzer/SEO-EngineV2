@@ -19,6 +19,9 @@
      pour les éléments stick over qui doivent matcher la row hover SANS doubler le tint
      semi-transparent (ex. dégradé de fade sur sticky column). */
   --bg-card-hover-flat: #F5F5F6;
+  /* Ligne dépliée d'un tableau + son panneau de détail : gris très léger (plus clair
+     que le hover) pour que le sous-tableau blanc ressorte sans assombrir la zone. */
+  --bg-row-expanded:   #FAFAFA;
   /* Réservé aux KpiCard uniquement. Les autres encarts sont en outline. */
   --bg-card-static:    #F8F8F8;
   /* Pills actifs (FilterTabs, ProjectSwitcher trigger). */
@@ -105,6 +108,7 @@
   --bg-card-hover:     #2c2b29;
   /* Mode sombre : bg-card-hover est déjà opaque → la flat version vaut la même chose. */
   --bg-card-hover-flat: #2c2b29;
+  --bg-row-expanded:   #1a1917;
   --bg-footer:         #161514;
   --bg-sidebar:        #161514;
   --bg-sidebar-active: #2c2b29;

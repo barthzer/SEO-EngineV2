@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * Opportunités — vue « par besoin ».
+ * Opportunités — vue regroupée par sujet.
  *
- * Une ligne = un besoin (groupe de mots-clés de même sujet, issu de l'étude).
+ * Une ligne = une opportunité (groupe de mots-clés de même sujet, issu de l'étude).
  * Le détail mot-clé par mot-clé s'affiche en dépliant la ligne. La recherche
  * fouille aussi les mots-clés des groupes et ouvre ceux qui correspondent.
  *
  * - Priorité calculée (back) : gain × difficulté × distance à la page 1,
  *   + bonus des « offres prioritaires » du projet. Affichée comme sur Actions.
  * - Classification Conquête / Consolidation (ex-P1/P2, qui n'étaient pas une priorité).
- * - Besoins sans difficulté mesurée : bloc replié en bas, jamais en tête de liste.
+ * - Opportunités sans difficulté mesurée : bloc replié en bas, jamais en tête de liste.
  * - Statut (En attente / Traitée / Ignorée) : filtre multi-sélection comme Actions.
  */
 
@@ -20,7 +20,7 @@ import { CheckIcon, ChevronRightIcon, ChevronDownIcon, ArrowUpRightIcon, PlusIco
 import { Sparkles as LSparkles, Download, RefreshCw, Loader2, Layers, TrendingUp, Zap, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/Button";
 import { Tooltip } from "@/components/Tooltip";
-import { TableWide, STICKY_EDGE, type ColumnDef } from "@/components/TableWide";
+import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { SearchInput } from "@/components/SearchInput";
 import { ColPill } from "@/components/ColPill";
 import { ResetFiltersButton } from "@/components/ResetFiltersButton";
@@ -50,7 +50,7 @@ const CLASSIF_CFG: Record<OppClassification, { label: string; color: string; bg:
     label: "Conquête",
     color: "var(--accent-primary)",
     bg: "var(--accent-primary-soft)",
-    tip: "Le site n'est pas encore positionné sur ce besoin : il faut gagner des positions, souvent avec une nouvelle page.",
+    tip: "Le site n'est pas encore positionné sur cette opportunité : il faut gagner des positions, souvent avec une nouvelle page.",
   },
   consolidation: {
     label: "Consolidation",
@@ -104,7 +104,7 @@ function isQuickWin(g: OppGroup) {
 const LOADING_STEPS = [
   "Lecture du fichier Semrush",
   "Croisement avec la Search Console",
-  "Regroupement des mots-clés par besoin",
+  "Regroupement des mots-clés en opportunités",
   "Calcul du gain et de la priorité",
   "Génération du rapport",
 ];
@@ -160,7 +160,7 @@ function StatusDropdown({ status, onChange }: { status: OppStatus; onChange: (s:
 }
 
 /** Texte coupé sur une ligne ; tooltip avec le texte complet au survol, seulement s'il est coupé. */
-function TruncatedText({ text, className = "" }: { text: string; className?: string }) {
+export function TruncatedText({ text, className = "" }: { text: string; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [cut, setCut] = useState(false);
   // Re-mesure à chaque bascule : l'enveloppe du tooltip remonte le <span>.
@@ -178,86 +178,84 @@ function TruncatedText({ text, className = "" }: { text: string; className?: str
   );
 }
 
-/** Détail mot-clé par mot-clé (ligne dépliée).
- *  Scroll horizontal propre au détail (les colonnes du besoin ne bougent pas) ;
- *  la colonne Mot-clé reste sticky, comme la 1re colonne du tableau. */
+/** Détail mot-clé par mot-clé (ligne dépliée) : vrai tableau imbriqué (TableWide),
+ *  mêmes hauteurs de ligne et en-têtes que le tableau des opportunités. Scroll horizontal
+ *  propre au détail, colonne Mot-clé sticky. */
 function KeywordDetail({ g, query, onOpenUrl }: { g: OppGroup; query: string; onOpenUrl?: (url: string) => void }) {
   const rows: OppKeyword[] = [...g.keywords].sort((a, b) => Number(!!b.main) - Number(!!a.main) || b.volume - a.volume);
-  const [scrolled, setScrolled] = useState(false);
   // Même logique que la ligne groupée : valeur (volume) → effort (difficulté) → distance (position) → page → contexte.
-  const grid = "grid grid-cols-[256px_100px_120px_110px_minmax(180px,1fr)_140px] items-center gap-3 pr-4";
-  const stickyCell = "sticky left-0 z-[1] flex min-w-0 items-center gap-2 self-stretch pl-4";
-  const edge = (
-    <span
-      aria-hidden
-      className="pointer-events-none absolute inset-y-0 right-0 w-6"
-      style={{ transform: "translateX(100%)", background: STICKY_EDGE, opacity: scrolled ? 1 : 0, transition: "opacity 140ms ease" }}
-    />
-  );
+  const columns: ColumnDef<OppKeyword>[] = [
+    {
+      key: "keyword", header: "Mot-clé", width: 240, flex: true, maxWidth: 360,
+      render: (k) => {
+        const hit = !!query && k.keyword.toLowerCase().includes(query);
+        return (
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 flex-1">
+              <TruncatedText text={k.keyword} className={`type-label text-[var(--text-primary)] ${hit ? "font-semibold" : ""}`} />
+            </span>
+            {k.main && (
+              <span className="flex-shrink-0 rounded-full border border-[var(--border-subtle)] px-1.5 py-0.5 type-micro text-[var(--text-secondary)]">Principal</span>
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      key: "volume", header: "Volume", width: 100, sortable: true, sortValue: (k) => k.volume,
+      render: (k) => (
+        <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-1 type-caption font-medium tabular-nums text-[var(--text-primary)]">
+          {k.volume.toLocaleString("fr-FR")}
+        </span>
+      ),
+    },
+    {
+      key: "kd", header: "Difficulté", width: 130, sortable: true, sortValue: (k) => k.kd ?? -1,
+      render: (k) => k.kd != null ? (
+        <ColorPill color={diffLevel(k.kd).color} bg={diffLevel(k.kd).bg}>
+          {diffLevel(k.kd).label}
+          <span className="tabular-nums opacity-70">{k.kd}</span>
+        </ColorPill>
+      ) : (
+        <span className="type-caption text-[var(--text-muted)]">À mesurer</span>
+      ),
+    },
+    {
+      key: "position", header: "Position", width: 100, sortable: true, sortValue: (k) => k.position ?? 999,
+      render: (k) => k.position != null
+        ? <span className="type-label tabular-nums text-[var(--text-primary)]">#{k.position}</span>
+        : <span className="type-caption text-[var(--text-muted)]">Hors top 100</span>,
+    },
+    {
+      key: "url", header: "URL qui ranke", width: 220,
+      render: (k) => k.url ? (
+        <button type="button" onClick={() => onOpenUrl?.(k.url!)} className="block max-w-full truncate text-left font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)]">
+          {k.url}
+        </button>
+      ) : (
+        <span className="type-caption text-[var(--text-muted)]">Aucune</span>
+      ),
+    },
+    {
+      key: "intent", header: "Intention", width: 140,
+      render: (k) => k.intent
+        ? <ColorPill color={INTENT_CFG[k.intent].color} bg={INTENT_CFG[k.intent].bg}>{k.intent}</ColorPill>
+        : <span className="type-caption text-[var(--text-muted)]">Non définie</span>,
+    },
+  ];
   return (
-    <div className="bg-[var(--bg-card-hover-flat)] py-3 pr-4" style={{ paddingLeft: "calc(var(--page-px) + 26px)" }}>
-      <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-primary)]">
-        <div className="overflow-x-auto" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
-          <div style={{ minWidth: 980 }}>
-            <div className={`${grid} border-b border-[var(--border-subtle)] bg-[var(--bg-card-static)] type-caption`}>
-              <span className={`${stickyCell} relative bg-[var(--bg-card-static)] py-2`}>Mot-clé{edge}</span>
-              <span>Volume</span>
-              <span>Difficulté</span>
-              <span>Position</span>
-              <span>URL qui ranke</span>
-              <span>Intention</span>
-            </div>
-            {rows.map((k) => {
-              const hit = !!query && k.keyword.toLowerCase().includes(query);
-              return (
-                <div key={k.keyword} className={`${grid} border-b border-[var(--border-subtle)] last:border-b-0`}>
-                  <span className={`${stickyCell} relative bg-[var(--bg-primary)] py-2.5`}>
-                    <span className="min-w-0 flex-1">
-                      <TruncatedText text={k.keyword} className={`type-label text-[var(--text-primary)] ${hit ? "font-semibold" : ""}`} />
-                    </span>
-                    {k.main && (
-                      <span className="flex-shrink-0 rounded-full border border-[var(--border-subtle)] px-1.5 py-0.5 type-micro text-[var(--text-secondary)]">Principal</span>
-                    )}
-                    {edge}
-                  </span>
-                  <span>
-                    <span className="inline-flex items-center rounded-full bg-[var(--bg-subtle)] px-2 py-1 type-caption font-medium tabular-nums text-[var(--text-primary)]">
-                      {k.volume.toLocaleString("fr-FR")}
-                    </span>
-                  </span>
-                  <span>
-                    {k.kd != null ? (
-                      <ColorPill color={diffLevel(k.kd).color} bg={diffLevel(k.kd).bg}>
-                        {diffLevel(k.kd).label}
-                        <span className="tabular-nums opacity-70">{k.kd}</span>
-                      </ColorPill>
-                    ) : (
-                      <span className="type-caption text-[var(--text-muted)]">À mesurer</span>
-                    )}
-                  </span>
-                  <span className="type-label tabular-nums text-[var(--text-primary)]">{k.position != null ? `#${k.position}` : <span className="type-caption text-[var(--text-muted)]">Hors top 100</span>}</span>
-                  <span className="min-w-0">
-                    {k.url ? (
-                      <button type="button" onClick={() => onOpenUrl?.(k.url!)} className="block max-w-full truncate text-left font-mono text-[12px] text-[var(--text-secondary)] underline decoration-[var(--border-medium)] decoration-1 underline-offset-[3px] hover:text-[var(--text-primary)]">
-                        {k.url}
-                      </button>
-                    ) : (
-                      <span className="type-caption text-[var(--text-muted)]">Aucune</span>
-                    )}
-                  </span>
-                  <span>
-                    {k.intent ? (
-                      <ColorPill color={INTENT_CFG[k.intent].color} bg={INTENT_CFG[k.intent].bg}>{k.intent}</ColorPill>
-                    ) : (
-                      <span className="type-caption text-[var(--text-muted)]">Non définie</span>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+    <div className="py-3 pr-4" style={{ paddingLeft: "calc(var(--page-px) + 26px)" }}>
+      <TableWide<OppKeyword>
+        columns={columns}
+        data={rows}
+        rowKey={(k) => k.keyword}
+        stickyLeft
+        stickyHeader={false}
+        bordered
+        hidePagination
+        edgePadding="16px"
+        minWidth={980}
+      />
     </div>
   );
 }
@@ -319,7 +317,7 @@ export function RecommandationsView({
     }, acc + 250));
   }
 
-  /* Générer → page « Configuration du contenu », sujet pré-rempli avec le besoin. */
+  /* Générer → page « Configuration du contenu », sujet pré-rempli avec l'opportunité. */
   function goGenerate(g: OppGroup) {
     router.push(`/templates/configurer/sans-template?subject=${encodeURIComponent(g.subject)}`);
   }
@@ -392,9 +390,9 @@ export function RecommandationsView({
     setActivePriorities(new Set());
   }
 
-  /* ── Colonnes (une ligne = un besoin) ── */
+  /* ── Colonnes (une ligne = une opportunité) ── */
   const columns: ColumnDef<OppGroup>[] = [
-    { key: "subject", header: "Besoin", width: 280, flex: true,
+    { key: "subject", header: "Opportunité", width: 280, flex: true,
       render: (g) => (
         <span className="flex min-w-0 items-center gap-2.5">
           <ChevronRightIcon className={`h-4 w-4 flex-shrink-0 text-[var(--text-muted)] transition-transform duration-200 ${isOpen(g.id) ? "rotate-90" : ""}`} />
@@ -410,7 +408,7 @@ export function RecommandationsView({
                 </Tooltip>
               )}
               {g.offer && (
-                <Tooltip portal rich side="top" label={<Tip title="Offre prioritaire" desc={`Rattaché à l'offre « ${g.offer} » déclarée dans les paramètres du projet : ce besoin est favorisé dans l'ordre de la liste.`} />}>
+                <Tooltip portal rich side="top" label={<Tip title="Offre prioritaire" desc={`Rattaché à l'offre « ${g.offer} » déclarée dans les paramètres du projet : cette opportunité est favorisée dans l'ordre de la liste.`} />}>
                   <span className="inline-flex cursor-default">
                     <Pill color="#7C3AED" bg="rgba(124,58,237,0.10)">Offre prioritaire</Pill>
                   </span>
@@ -421,11 +419,11 @@ export function RecommandationsView({
         </span>
       ) },
     { key: "priority",
-      header: <ColHeaderInfo label="Priorité" tooltip={<Tip title="Priorité calculée" desc="Croise le gain, la difficulté et la distance à la première page. Les besoins liés aux offres prioritaires du projet sont favorisés." />} />,
+      header: <ColHeaderInfo label="Priorité" tooltip={<Tip title="Priorité calculée" desc="Croise le gain, la difficulté et la distance à la première page. Les opportunités liées aux offres prioritaires du projet sont favorisées." />} />,
       width: 120, sortable: true, sortValue: (g) => (g.priority ? PRIO_RANK[g.priority] : 0),
       render: (g) => g.priority ? <PriorityBadge level={g.priority} /> : <span className="type-caption text-[var(--text-muted)]">À qualifier</span> },
     { key: "gain",
-      header: <ColHeaderInfo label="Gain / mois" tooltip={<Tip title="Gain estimé" desc="Clics mensuels supplémentaires si le besoin est traité. Calculé sur le groupe entier, sans additionner les mots-clés entre eux." />} />,
+      header: <ColHeaderInfo label="Gain / mois" tooltip={<Tip title="Gain estimé" desc="Clics mensuels supplémentaires si l'opportunité est traitée. Calculé sur le groupe entier, sans additionner les mots-clés entre eux." />} />,
       width: 120, sortable: true, sortValue: (g) => g.gain,
       render: (g) => (
         <span className="type-label tabular-nums text-[var(--text-primary)]">
@@ -444,7 +442,7 @@ export function RecommandationsView({
         );
       } },
     { key: "position",
-      header: <ColHeaderInfo label="Position" tooltip={<Tip title="Meilleure position" desc="Meilleure position actuelle du site parmi les mots-clés du besoin. C'est la distance à la première page." />} />,
+      header: <ColHeaderInfo label="Position" tooltip={<Tip title="Meilleure position" desc="Meilleure position actuelle du site parmi les mots-clés de l'opportunité. C'est la distance à la première page." />} />,
       width: 100, sortable: true, sortValue: (g) => g.bestPosition ?? 999,
       render: (g) => g.bestPosition != null
         ? <span className="type-label font-semibold tabular-nums text-[var(--text-primary)]">#{g.bestPosition}</span>
@@ -529,7 +527,7 @@ export function RecommandationsView({
           <EmptyState
             icon={<LSparkles className="h-7 w-7" />}
             title="Aucune opportunité"
-            description="Lancez une étude pour identifier les besoins à couvrir face à vos concurrents."
+            description="Lancez une étude pour identifier les opportunités face à vos concurrents."
             action={<Button onClick={() => setStudyOpen(true)}>Lancer une étude de mots-clés<ChevronRightIcon className="h-4 w-4" /></Button>}
           />
         </div>
@@ -543,7 +541,7 @@ export function RecommandationsView({
               <Loader2 className="h-7 w-7 animate-spin text-[var(--accent-primary)]" />
             </div>
             <p className="type-h2">Étude en cours…</p>
-            <p className="mt-1 type-body-sm">Import des données et regroupement des mots-clés par besoin.</p>
+            <p className="mt-1 type-body-sm">Import des données et regroupement des mots-clés en opportunités.</p>
             <div className="mt-6 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)]">
               <div className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-500 ease-out" style={{ width: `${(loadingStep / LOADING_STEPS.length) * 100}%` }} />
             </div>
@@ -569,15 +567,15 @@ export function RecommandationsView({
       {studyState === "done" && (
         <>
           <KpiGroup columns={4}>
-            <KpiCard bare icon={Layers}       label="Besoins à traiter" value={pending.length.toString()} sub={`${kwPending} mots-clés regroupés`} />
+            <KpiCard bare icon={Layers}       label="Opportunités à traiter" value={pending.length.toString()} sub={`${kwPending} mots-clés regroupés`} />
             <KpiCard bare icon={TrendingUp}   label="Gain potentiel"    value={`+${gainPending.toLocaleString("fr-FR")}`} sub="clics / mois, sans double comptage" />
             <KpiCard bare icon={Zap}          label="Quick wins"        value={quickWins.toString()} sub="proches de la page 1 et accessibles" />
-            <KpiCard bare icon={CheckCircle2} label="Traités"           value={doneCount.toString()} sub="briefs générés" />
+            <KpiCard bare icon={CheckCircle2} label="Traitées"          value={doneCount.toString()} sub="briefs générés" />
           </KpiGroup>
 
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-3">
-            <SearchInput value={search} onChange={setSearch} placeholder="Rechercher un besoin ou un mot-clé…" alwaysExpanded />
+            <SearchInput value={search} onChange={setSearch} placeholder="Rechercher une opportunité ou un mot-clé…" alwaysExpanded />
 
             <ColPill name="statut" label={statusLabel} active={!statusesAreDefault}>
               {() => (
@@ -630,16 +628,16 @@ export function RecommandationsView({
             <ResetFiltersButton show={hasActiveFilters} onReset={resetFilters} />
           </div>
 
-          {/* Besoins classés */}
+          {/* Opportunités classées */}
           <TableWide<OppGroup>
             {...tableProps}
             data={ranked}
-            emptyState={q ? `Aucun besoin ni mot-clé ne contient « ${search} ».` : "Aucun besoin avec ces filtres."}
+            emptyState={q ? `Aucune opportunité ni mot-clé ne contient « ${search} ».` : "Aucune opportunité avec ces filtres."}
             pageSize={25}
             bordered
           />
 
-          {/* Besoins à qualifier : difficulté non mesurée → bloc replié, jamais en tête de liste */}
+          {/* Opportunités à qualifier : difficulté non mesurée → bloc replié, jamais en tête de liste */}
           {toQualify.length > 0 && (
             <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
               <button
@@ -651,9 +649,9 @@ export function RecommandationsView({
                 <span className="flex items-center gap-2.5">
                   <ChevronRightIcon className={`h-4 w-4 text-[var(--text-muted)] transition-transform duration-200 ${qualifyOpen ? "rotate-90" : ""}`} />
                   <span className="type-body-strong text-[var(--text-primary)]">Difficulté non mesurée</span>
-                  <span className="type-caption text-[var(--text-muted)]">{toQualify.length} besoin{toQualify.length > 1 ? "s" : ""}</span>
+                  <span className="type-caption text-[var(--text-muted)]">{toQualify.length} opportunité{toQualify.length > 1 ? "s" : ""}</span>
                 </span>
-                <span className="hidden type-caption text-[var(--text-muted)] md:block">Non classés : ils ne remontent jamais en tête de liste</span>
+                <span className="hidden type-caption text-[var(--text-muted)] md:block">Non classées : elles ne remontent jamais en tête de liste</span>
               </button>
               {qualifyOpen && (
                 <div className="border-t border-[var(--border-subtle)]">

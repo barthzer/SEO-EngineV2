@@ -76,6 +76,9 @@ interface TableWideProps<T> {
    *  (typiquement via `onRowClick`). Ex. : détail mot-clé par mot-clé d'un groupe. */
   renderExpanded?: (row: T) => ReactNode;
   isExpanded?: (row: T) => boolean;
+  /** En-tête collé en haut de page au scroll vertical (défaut true). À désactiver
+   *  pour un tableau imbriqué (sinon son en-tête recouvre celui du tableau parent). */
+  stickyHeader?: boolean;
   className?: string;
 }
 
@@ -108,6 +111,7 @@ export function TableWide<T>({
   stickyLeft = false,
   renderExpanded,
   isExpanded,
+  stickyHeader = true,
   className = "",
 }: TableWideProps<T>) {
   /* Sort interne — clé de colonne + direction. Cycle desc → asc → off au clic header. */
@@ -184,6 +188,11 @@ export function TableWide<T>({
 
   // Règle DS : la ligne d'en-tête (colonnes/filtres) a TOUJOURS un fond `--bg-card-static`.
   const headerBgClass = "bg-[var(--bg-card-static)]";
+  const stickyHeaderClass = stickyHeader ? "sticky top-0 z-[15]" : "relative";
+  // Ligne dépliée + panneau : gris très léger commun (le sous-tableau blanc ressort).
+  const expandedBg = "bg-[var(--bg-row-expanded)]";
+  const actionFade = (expanded: boolean) =>
+    `linear-gradient(to right, transparent, var(${expanded ? "--bg-row-expanded" : "--bg-card-hover-flat"}) 45%)`;
 
   /* ════════════════════════════════════════════════════════════════════
      Mode sticky-left (opt-in) — colonne sélection + 1re colonne épinglées,
@@ -214,10 +223,11 @@ export function TableWide<T>({
     // Fond TOUJOURS opaque (le contenu défilant passe dessous) ; ombre droite au scroll.
     // `grow` : la colonne épinglée absorbe l'espace libre (colonne `flex`) au lieu
     // d'une largeur fixe — sinon sur écran large les colonnes se tassent à gauche.
-    const StickyGroup = ({ children, header, active, grow }: { children: ReactNode; header?: boolean; active?: boolean; grow?: boolean }) => (
+    const StickyGroup = ({ children, header, active, expanded, grow }: { children: ReactNode; header?: boolean; active?: boolean; expanded?: boolean; grow?: boolean }) => (
       <div
         className={`sticky left-0 z-[3] relative flex items-center gap-3 self-stretch transition-colors ${grow ? "flex-1 min-w-0" : "flex-shrink-0"} ${
           header ? headerBgClass
+            : expanded ? expandedBg
             : active ? "bg-[var(--bg-card-hover-flat)]"
               : "bg-[var(--bg-primary)] group-hover:bg-[var(--bg-card-hover-flat)]"
         }`}
@@ -239,7 +249,7 @@ export function TableWide<T>({
         <div ref={scrollRef} className="overflow-x-auto overflow-y-clip" onScroll={(e) => setScrolled(e.currentTarget.scrollLeft > 0)}>
           <div style={{ minWidth: stickyMinWidth }} className={contentWidthClass}>
             {/* Header */}
-            <div className={`sticky top-0 z-[15] flex h-10 items-center border-b border-[var(--border-subtle)] ${headerBgClass}`}>
+            <div className={`${stickyHeaderClass} flex h-10 items-center border-b border-[var(--border-subtle)] ${headerBgClass}`}>
               <StickyGroup header grow={firstCol.flex}>
                 {selectable && <Checkbox checked={!!allSelected} indeterminate={!!someSelected && !allSelected} onChange={() => onToggleAll?.(pageKeys, !!allSelected)} />}
                 <div className={`min-w-0 ${firstCol.flex ? "flex-1" : ""}`} style={firstCol.flex ? { minWidth: firstCol.width, maxWidth: firstCol.maxWidth } : { width: firstCol.width }}>{headerInner(firstCol)}</div>
@@ -264,7 +274,7 @@ export function TableWide<T>({
                 const isSel = !!selected?.has(k);
                 const expanded = !!renderExpanded && (isExpanded?.(row) ?? false);
                 const isLast = i === pageRows.length - 1;
-                const rowBg = active || expanded ? "bg-[var(--bg-card-hover-flat)]" : "bg-[var(--bg-primary)] hover:bg-[var(--bg-card-hover-flat)]";
+                const rowBg = expanded ? expandedBg : active ? "bg-[var(--bg-card-hover-flat)]" : "bg-[var(--bg-primary)] hover:bg-[var(--bg-card-hover-flat)]";
                 return (
                   <Fragment key={k}>
                   <div
@@ -275,7 +285,7 @@ export function TableWide<T>({
                     onKeyDown={onRowClick ? (e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onRowClick(row, idx); } } : undefined}
                     className={`group flex w-full items-stretch text-left transition-colors ${onRowClick ? "cursor-pointer" : ""} ${!isLast && !expanded ? "border-b border-[var(--border-subtle)]" : ""} ${rowBg}`}
                   >
-                    <StickyGroup active={active || expanded} grow={firstCol.flex}>
+                    <StickyGroup active={active} expanded={expanded} grow={firstCol.flex}>
                       {selectable && <Checkbox checked={isSel} onChange={() => onToggleRow?.(k)} />}
                       <div className={`min-w-0 self-center py-3 font-normal text-[var(--text-secondary)] ${firstCol.flex ? "flex-1" : ""}`} style={firstCol.flex ? { minWidth: firstCol.width, maxWidth: firstCol.maxWidth } : { width: firstCol.width }}>{firstCol.render(row, idx)}</div>
                     </StickyGroup>
@@ -294,7 +304,7 @@ export function TableWide<T>({
                          L'action est un overlay absolu qui déborde vers la gauche. */
                       <div className="sticky right-0 z-[2] w-0 flex-shrink-0 self-stretch">
                         <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-3 opacity-0 transition-opacity group-hover:opacity-100"
-                          style={{ width: trailingActionWidth, background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 45%)" }}
+                          style={{ width: trailingActionWidth, background: actionFade(expanded) }}
                           onClick={(e) => e.stopPropagation()}>
                           {trailingAction(row, idx)}
                         </div>
@@ -304,7 +314,7 @@ export function TableWide<T>({
                   {/* Panneau déplié (ex. détail mot-clé d'un groupe) : épinglé sur la zone
                       visible, il ne défile pas horizontalement avec les colonnes. */}
                   {expanded && (
-                    <div className={!isLast ? "border-b border-[var(--border-subtle)]" : ""}>
+                    <div className={`${expandedBg} ${!isLast ? "border-b border-[var(--border-subtle)]" : ""}`}>
                       <div className="sticky left-0" style={viewportW ? { width: viewportW } : undefined}>
                         {renderExpanded!(row)}
                       </div>
@@ -330,7 +340,7 @@ export function TableWide<T>({
   /* ════════════════════════════════════════════════════════════════════
      Mode standard (inchangé) ════════════════════════════════════════════ */
   const headerEl = (
-    <div className={`sticky top-0 z-[15] overflow-hidden border-b border-[var(--border-subtle)] ${headerBgClass} ${bordered ? "rounded-t-2xl" : ""}`}>
+    <div className={`${stickyHeaderClass} overflow-hidden border-b border-[var(--border-subtle)] ${headerBgClass} ${bordered ? "rounded-t-2xl" : ""}`}>
       <div style={bodyStyle} className="flex h-10 items-center gap-3">
         <div className="flex flex-1 items-center gap-3" style={rowPadStyles}>
           {columns.map((col) => (
@@ -359,7 +369,7 @@ export function TableWide<T>({
       const isLast = i === pageRows.length - 1;
       const wrapperClass = `group relative w-full text-left transition-colors ${
         !isLast && !expanded ? "border-b border-[var(--border-subtle)]" : ""
-      } ${active || expanded ? "bg-[var(--bg-card-hover)]" : hoverable ? "hover:bg-[var(--bg-card-hover)]" : ""}`;
+      } ${expanded ? expandedBg : active ? "bg-[var(--bg-card-hover)]" : hoverable ? "hover:bg-[var(--bg-card-hover)]" : ""}`;
       const innerClass = "flex items-center gap-3 py-3";
 
       const inner = (
@@ -382,7 +392,7 @@ export function TableWide<T>({
                (sinon la colonne flex se rétrécit et les colonnes se décalent vs l'en-tête). */
             <div className="sticky right-0 z-[2] w-0 flex-shrink-0 self-stretch">
               <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-3 opacity-0 transition-opacity group-hover:opacity-100"
-                style={{ width: trailingActionWidth, background: "linear-gradient(to right, transparent, var(--bg-card-hover-flat) 45%)" }}
+                style={{ width: trailingActionWidth, background: actionFade(expanded) }}
                 onClick={(e) => e.stopPropagation()}>
                 {trailingAction(row, (safePage - 1) * pageSize + i)}
               </div>
@@ -409,7 +419,7 @@ export function TableWide<T>({
           {rowEl}
           {/* Panneau déplié — hors du <button> de ligne (contenu interactif autorisé). */}
           {expanded && (
-            <div className={!isLast ? "border-b border-[var(--border-subtle)]" : ""}>
+            <div className={`${expandedBg} ${!isLast ? "border-b border-[var(--border-subtle)]" : ""}`}>
               {renderExpanded!(row)}
             </div>
           )}
