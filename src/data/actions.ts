@@ -8,6 +8,7 @@
 
 import { type ActionOwner, type ActionPriorityLevel } from "@/components/ActionCard";
 import { type Status } from "@/components/StatusPill";
+import { type RiskInfo } from "@/data/risk";
 
 export type ActionModule = "onpage" | "contenu" | "netlinking" | "technique" | "geo";
 
@@ -32,6 +33,9 @@ export type Opportunity = {
   ownerKey?: keyof typeof OWNERS;
   deadline?: string;
   status: Status;
+  /** Niveau de risque hérité de la recommandation d'origine (Cannibalisation, Audit
+   *  technique…), voir `src/data/risk.ts`. Absent = réversible. */
+  risk?: RiskInfo;
 };
 
 export const OPPORTUNITIES: Opportunity[] = [
@@ -121,5 +125,30 @@ export const OPPORTUNITIES: Opportunity[] = [
     rationale: "Un lien depuis un média de premier plan comme Les Échos apporte une autorité difficile à obtenir autrement et bénéficie à l'ensemble du domaine. C'est le levier le plus impactant du profil de liens.",
     steps: ["Identifier le desk économie / tech pertinent", "Préparer une donnée exclusive ou une tribune d'expert", "Pitcher l'angle GEO / IA générative", "Suivre la publication et la valeur du lien obtenu"],
     time: "2 sem", impact: "+1 RefDom très haute autorité", ownerKey: "bl", deadline: "2026-08-01",
+  },
+  {
+    id: "o13", module: "technique", priority: "mid", status: "todo",
+    title: "Rediriger /services/ vers /audit-seo/",
+    description: "Cannibalisation sur « audit seo » : /services/ capte 9 % des clics en position 14 et dilue la page principale.",
+    rationale: "Deux pages se disputent la même requête. Rediriger la page faible concentre les signaux sur /audit-seo/, qui est déjà en page 1.",
+    steps: ["Vérifier les liens internes qui pointent vers /services/", "Mettre en place la 301 vers /audit-seo/", "Mettre à jour le maillage et le sitemap", "Suivre la position sur « audit seo » pendant 4 semaines"],
+    time: "1 h", impact: "+8 clics / mois récupérés", ownerKey: "tl",
+    risk: {
+      level: "costly",
+      undo: "La page redirigée disparaît pour Google. Revenir en arrière demande de retirer la 301 et d'attendre plusieurs semaines de recrawl : une partie du signal est perdue entre-temps.",
+      evidence: "/services/ ne capte que 9 % des clics (position 14,2) et répond à la même intention que /audit-seo/.",
+    },
+  },
+  {
+    id: "o14", module: "technique", priority: "low", status: "todo",
+    title: "Désindexer les 38 pages de tags sans trafic",
+    description: "38 pages de tags n'ont reçu aucun clic en 12 mois. Elles consomment du budget de crawl et diluent la qualité perçue du site.",
+    rationale: "Retirer de l'index les pages sans valeur recentre Google sur les contenus utiles. L'opération est massive : elle se décide en connaissance de cause.",
+    time: "30 min", impact: "Budget de crawl recentré", ownerKey: "tl",
+    risk: {
+      level: "irreversible",
+      undo: "38 pages sortent de l'index d'un coup. Les réindexer ne restaure ni leurs positions ni leur historique, et Google peut mettre des mois à les reprendre.",
+      evidence: "Les 38 pages de tags n'ont reçu aucun clic et moins de 5 impressions chacune sur 12 mois (Search Console).",
+    },
   },
 ];

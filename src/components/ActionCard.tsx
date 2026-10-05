@@ -40,6 +40,8 @@ import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/Dropdow
 import { DatePopover } from "@/components/DatePopover";
 import { CommentThread } from "@/components/CommentThread";
 import { useToast } from "@/context/ToastContext";
+import { RiskBadge } from "@/components/RiskBadge";
+import { isNewDecision, isRisky, type RiskInfo } from "@/data/risk";
 
 export type { ActionPriorityLevel } from "@/components/PriorityBars";
 
@@ -292,6 +294,7 @@ export function ActionCard({
   selectable = false,
   selected = false,
   onSelectChange,
+  risk,
 }: {
   priority: ActionPriorityLevel;
   title: string;
@@ -319,6 +322,9 @@ export function ActionCard({
   selectable?: boolean;
   selected?: boolean;
   onSelectChange?: (v: boolean) => void;
+  /** Niveau de risque (voir `src/data/risk.ts`) : badge si coûteuse ou irréversible.
+   *  La confirmation est portée par le parent (useRiskGate) via `onStatusChange`. */
+  risk?: RiskInfo;
 }) {
   const { show: showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -340,6 +346,11 @@ export function ActionCard({
     "Détaillez l'action ci-dessous. Cette section sera prochainement enrichie automatiquement par l'IA en fonction du contenu de la page et des recommandations EMC.";
 
   function handleStatusChange(next: Status) {
+    // Action risquée qui devient décidée : le parent confirme puis notifie (pas de toast ici).
+    if (isRisky(risk) && isNewDecision(new Set<Status>(["in_progress", "done"]), status, next)) {
+      onStatusChange(next);
+      return;
+    }
     // Action récurrente complétée → on enregistre l'occurrence et on
     // régénère la suivante (deadline avancée d'une période, statut remis à faire).
     if (next === "done" && status !== "done" && recurrence !== "none") {
@@ -403,8 +414,9 @@ export function ActionCard({
           >
             {title}
           </p>
-          {(time || impact || recurrence !== "none") && (
+          {(time || impact || recurrence !== "none" || isRisky(risk)) && (
             <div className="mt-1 flex flex-wrap items-center gap-2 type-caption text-[var(--text-muted)]">
+              {isRisky(risk) && <RiskBadge level={risk.level} undo={risk.undo} />}
               {time && <span className="tabular-nums">⏱ {time}</span>}
               {time && impact && <span className="text-[var(--border-medium)]">·</span>}
               {impact && (

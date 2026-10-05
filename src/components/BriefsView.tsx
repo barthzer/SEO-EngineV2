@@ -87,6 +87,10 @@ import { ValidateSwitch } from "@/components/ValidateSwitch";
 import { DeltaIndicator } from "@/components/DeltaIndicator";
 import { useRouter, usePathname } from "next/navigation";
 import { Stepper } from "@/components/Stepper";
+import { RiskBadge } from "@/components/RiskBadge";
+import { useRiskGate } from "@/components/RiskConfirmModal";
+import { useToast } from "@/context/ToastContext";
+import { isNewDecision, type RiskInfo } from "@/data/risk";
 
 /* ── Column header helpers (vue URLs) ─────────────────────────────────── */
 
@@ -717,6 +721,8 @@ type Action = {
   owner?: ActionOwner;
   deadline?: string;
   recurrence?: "none" | "weekly" | "monthly" | "quarterly";
+  /** Niveau de risque de la recommandation (voir `src/data/risk.ts`). Absent = réversible. */
+  risk?: RiskInfo;
 };
 
 /** B1 — Owners de démo (cohérents avec /equipe pour les vraies photos pravatar.cc). */
@@ -750,6 +756,10 @@ function getAnalysisActions(brief: Brief): Action[] {
     { id: "cnt-3", source: "contenu", priority: "mid",  title: "Travailler la densité mot-clé (26,9 → 39,7 cible)", time: "1h",     impact: "+8 pts",      owner: DEMO_OWNERS.SM },
     { id: "cnt-4", source: "contenu", priority: "mid",  title: "Ajouter un tableau comparatif des outils content marketing", time: "1h", impact: "+SEO",   owner: DEMO_OWNERS.SM, deadline: D_LATER },
     { id: "cnt-5", source: "contenu", priority: "low",  title: "Réécrire la conclusion avec un CTA orienté conversion", time: "20 min", impact: "+conv.", owner: DEMO_OWNERS.MP },
+    { id: "cnt-6", source: "contenu", priority: "low",  title: "Fusionner l'article « stratégie de contenu B2B 2023 » dans cette page", time: "3h", impact: "+signaux", owner: DEMO_OWNERS.MP,
+      risk: { level: "irreversible",
+        undo: "L'ancien article est intégré ici puis disparaît. Son contenu d'origine et son historique de positions ne reviennent pas.",
+        evidence: "Contenu proche à 81 % entre les deux pages, et les deux se positionnent sur les mêmes 6 requêtes (Search Console)." } },
     // ── Autorité ──
     { id: "aut-1", source: "autorite", priority: "high", title: "Publier un article invité sur journalduweb.fr (DR 64)", time: "2 sem.", impact: "Haut",   owner: DEMO_OWNERS.TL, deadline: D_LATER },
     { id: "aut-2", source: "autorite", priority: "mid",  title: "Créer une infographie linkable sur les KPIs content B2B", time: "1 sem.", impact: "Moyen", owner: DEMO_OWNERS.MP },
@@ -760,6 +770,10 @@ function getAnalysisActions(brief: Brief): Action[] {
     { id: "tec-3", source: "technique", priority: "mid",  title: "Ajouter les schémas Organization et Service (JSON-LD)", time: "2h", impact: "Moyen",                       owner: DEMO_OWNERS.BL },
     { id: "tec-4", source: "technique", priority: "mid",  title: "Augmenter le nombre de mots à 3 500+ (benchmark médiane concurrents)", time: "3h", impact: "Moyen",        owner: DEMO_OWNERS.MP },
     { id: "tec-5", source: "technique", priority: "low",  title: "Soumettre l'URL dans Google Search Console pour déclencher l'indexation", time: "15 min.", impact: "Faible", owner: DEMO_OWNERS.BL, recurrence: "monthly" },
+    { id: "tec-6", source: "technique", priority: "mid",  title: "Rediriger en 301 l'ancienne URL /blog/content-marketing-2023/ vers cette page", time: "15 min", impact: "Moyen", owner: DEMO_OWNERS.BL,
+      risk: { level: "costly",
+        undo: "Une 301 est mise en cache par Google et les navigateurs : revenir en arrière demande plusieurs semaines de recrawl, avec une perte de signal entre-temps.",
+        evidence: "L'ancienne URL reçoit encore 4 backlinks et 120 impressions par mois, mais renvoie vers un contenu obsolète." } },
   ];
 }
 
@@ -976,6 +990,7 @@ function SyntheseTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               key={a.id}
               priority={a.priority}
               title={a.title}
+              risk={a.risk}
               commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact}
@@ -1110,6 +1125,7 @@ function ContenuTab({ brief, actions, getStatus, setStatus, setOwner, setDeadlin
               key={a.id}
               priority={a.priority}
               title={a.title}
+              risk={a.risk}
               commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact}
@@ -1391,6 +1407,7 @@ function AutoriteTab({ brief, actions, getStatus, setStatus, setOwner, setDeadli
               key={a.id}
               priority={a.priority}
               title={a.title}
+              risk={a.risk}
               commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact ? `Impact ${a.impact}` : undefined}
@@ -1616,6 +1633,7 @@ function TechniqueTab({ brief, actions, getStatus, setStatus, setOwner, setDeadl
               key={a.id}
               priority={a.priority}
               title={a.title}
+              risk={a.risk}
               commentTarget={{ id: a.id, label: a.title }}
               time={a.time}
               impact={a.impact ? `Impact ${a.impact}` : undefined}
@@ -1750,12 +1768,13 @@ function ActionsTab({
           { key: "source", header: "Catégorie", width: 150, render: (a) => <ActionSourceChip source={a.source} /> },
           { key: "status", header: "Statut", width: 160, render: (a) => <span className="inline-flex" onClick={(e) => e.stopPropagation()}><StatusPillDropdown status={getStatus(a.id)} onChange={(s) => setStatus(a.id, s)} /></span> },
           { key: "priority", header: "Priorité", width: 120, render: (a) => <PriorityBadge level={a.priority} /> },
+          { key: "risk", header: "Risque", width: 120, render: (a) => a.risk ? <RiskBadge level={a.risk.level} undo={a.risk.undo} /> : null },
           { key: "owner", header: "Assigné à", width: 180, render: (a) => a.owner ? <span className="inline-flex min-w-0 items-center gap-2"><OwnerAvatarSm owner={a.owner} /><span className="truncate type-body-sm text-[var(--text-primary)]">{a.owner.name}</span></span> : <span className="type-body-sm text-[var(--text-muted)]">Non assigné</span> },
           { key: "effort", header: "Effort", width: 110, render: (a) => <span className="whitespace-nowrap type-body-sm text-[var(--text-muted)]">{a.time ?? "—"}</span> },
         ]}
         data={filtered}
         rowKey={(a) => a.id}
-        minWidth={1040}
+        minWidth={1170}
         stickyLeft
         bordered
         hidePagination
@@ -1796,8 +1815,17 @@ function BriefDrawerContent({
   const rawActions = getAnalysisActions(brief);
   const [actionStatuses, setActionStatuses] = useState<Record<string, BriefStatus>>({});
   const getActionStatus = (id: string): BriefStatus => actionStatuses[id] ?? "todo";
-  const setActionStatus = (id: string, s: BriefStatus) =>
-    setActionStatuses((prev) => ({ ...prev, [id]: s }));
+  /* Action coûteuse ou irréversible : confirmation quand elle passe En cours ou Livré. */
+  const { gate, modal: riskModal } = useRiskGate();
+  const { show: showRiskToast } = useToast();
+  const setActionStatus = (id: string, s: BriefStatus) => {
+    const a = rawActions.find((x) => x.id === id);
+    const needsConfirm = isNewDecision(new Set<BriefStatus>(["in_progress", "done"]), getActionStatus(id), s);
+    gate({ risk: a?.risk, title: a?.title ?? "" }, needsConfirm, () => {
+      setActionStatuses((prev) => ({ ...prev, [id]: s }));
+      if (needsConfirm && a?.risk && a.risk.level !== "reversible") showRiskToast("Action marquée comme décidée");
+    });
+  };
 
   // B1 — édition inline owner + deadline (overrides locaux, persistance en B1b)
   const [actionOwners, setActionOwners] = useState<Record<string, ActionOwner | undefined>>({});
@@ -1956,6 +1984,7 @@ function BriefDrawerContent({
           </div>
         )}
       </div>
+      {riskModal}
     </>
   );
 }

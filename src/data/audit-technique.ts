@@ -13,15 +13,22 @@ import {
   ArrowsRightLeftIcon, LinkIcon, DocumentTextIcon, ServerIcon,
 } from "@heroicons/react/24/outline";
 import { type Status } from "@/components/StatusPill";
+import { type RiskInfo } from "@/data/risk";
 
 /* ── Data ─────────────────────────────────────────────────────────────── */
 
-export const URGENT_ISSUES = [
+/** `risk` (optionnel) : niveau de risque de la correction proposée, voir `src/data/risk.ts`. */
+export const URGENT_ISSUES: {
+  id: string; severity: string; tag: string; impactLabel: string; title: string; detail: string; url: string; date: string; risk?: RiskInfo;
+}[] = [
   { id: "403",       severity: "critique", tag: "HTTP 403 · Critique",        impactLabel: "indexation bloquée",
     title: "3 backlinks pointent vers des pages renvoyant 403",
     detail: "Du jus de lien provenant de Journal du Net, Usine Nouvelle et l'AFP arrive sur des pages refusées. Perte sèche d'autorité.",
     url: "journaldunet.com → /solutions/seo-referencement/...",
-    date: "31 mars 2026" },
+    date: "31 mars 2026",
+    risk: { level: "costly",
+      undo: "Correction proposée : rediriger en 301 les 3 pages refusées vers leur équivalent actif. Revenir en arrière demande plusieurs semaines de recrawl, avec une perte de signal entre-temps.",
+      evidence: "Les 3 URLs renvoient 403 depuis le 12 mars et leur contenu a été republié à une nouvelle adresse (même titre, même H1)." } },
   { id: "ttfb",      severity: "warning",  tag: "TTFB · Warning",              impactLabel: "~93 impressions",
     title: "2 pages dépassent 3.7s de temps de réponse",
     detail: "/formation/formation-seo/ (4.69s) et /case-studies/page/2/ (3.75s). Au-delà de 2.5s, Google déclasse en mobile-first.",
@@ -39,7 +46,9 @@ export const URGENT_ISSUES = [
     date: "31 mars 2026" },
 ];
 
-export const PRIORITY_ACTIONS = [
+export const PRIORITY_ACTIONS: {
+  id: number; title: string; sub: string; effort: string; priority: string; category: string; impact: string; fix: string; risk?: RiskInfo;
+}[] = [
   { id: 1, title: "Réécrire les 45 titres mal dimensionnés",          sub: "50-60 caractères · mot-clé + valeur ajoutée",                  effort: "3-4h",   priority: "high",   category: "On-Page",         impact: "CTR +5-15% sur les 45 pages corrigées. Délai d'effet : 2-6 semaines (Transition Rank).",          fix: "Réécrire en 50-60 caractères avec mot-clé principal + valeur ajoutée. Format : « Mot-clé | Valeur ajoutée | Marque »" },
   { id: 2, title: "Implémenter Schema Organization site-wide",        sub: "Knowledge Panel · signaux E-E-A-T",                            effort: "45 min", priority: "high",   category: "Structured Data", impact: "Knowledge Panel Google activé, signaux E-E-A-T renforcés, rich snippets améliorés.",               fix: "Ajouter JSON-LD dans le <head> : name, description, url, logo, sameAs, address, contactPoint" },
   { id: 3, title: "Réécrire les 43 meta descriptions trop longues",   sub: "140-155 caractères · CTA inclus",                              effort: "2-3h",   priority: "high",   category: "On-Page",         impact: "Snippets non tronqués, CTR +3-10%. Délai d'effet : 2-6 semaines.",                                 fix: "Inclure mot-clé + CTA en 140-155 chars. Prioriser les pages > 50 impressions/mois" },
@@ -47,6 +56,10 @@ export const PRIORITY_ACTIONS = [
   { id: 5, title: "Schema WebSite avec sitelinks searchbox",          sub: "Sitelinks SERP · navigation directe",                          effort: "30 min", priority: "medium", category: "Structured Data", impact: "Sitelinks avec search box dans Google, navigation SERP améliorée.",                              fix: "JSON-LD avec name, url, potentialAction + SearchAction pour la recherche interne" },
   { id: 6, title: "Convertir 105 images PNG en WebP",                 sub: "53% des 199 images · ~40% de poids estimé",                    effort: "2-3h",   priority: "medium", category: "Images",           impact: "~40% de réduction du poids des images PNG, LCP amélioré.",                                        fix: "Script de conversion automatique ou plugin build. Vérifier les balises <picture> pour le fallback" },
   { id: 7, title: "Identifier et mailler la page orpheline",          sub: "1 page · 0 lien entrant interne",                              effort: "30 min", priority: "low",    category: "Crawl",            impact: "PageRank distribué, crawl budget optimisé.",                                                       fix: "Lien depuis page parent, menu, ou footer selon pertinence thématique" },
+  { id: 9, title: "Passer /blog/ en redirection 301 vers /ressources/", sub: "Redirection 302 temporaire · signal non transmis",         effort: "15 min", priority: "medium", category: "Crawl",            impact: "Autorité de /blog/ transmise à /ressources/, une seule URL indexée.",                              fix: "Remplacer la 302 par une 301 côté serveur, mettre à jour le maillage interne vers /ressources/",
+    risk: { level: "costly", undo: "Une 301 est mise en cache par Google et les navigateurs : revenir en arrière demande plusieurs semaines, avec une perte de signal entre-temps.", evidence: "/blog/ redirige en 302 vers /ressources/ depuis plus de 6 mois : la redirection est de fait permanente." } },
+  { id: 10, title: "Désindexer les 38 pages de tags sans trafic",     sub: "noindex en masse · 0 clic sur 12 mois",                        effort: "30 min", priority: "low",    category: "Indexation",       impact: "Budget de crawl recentré sur les pages utiles, moins de contenu faible indexé.",                     fix: "Ajouter <meta name=\"robots\" content=\"noindex, follow\"> sur le template des pages de tags",
+    risk: { level: "irreversible", undo: "38 pages sortent de l'index d'un coup. Les réindexer ne restaure ni leurs positions ni leur historique, et Google peut mettre des mois à les reprendre.", evidence: "Les 38 pages de tags n'ont reçu aucun clic et moins de 5 impressions chacune sur 12 mois (Search Console)." } },
   { id: 8, title: "Créer un fichier /llms.txt pour les LLM",         sub: "Citations IA mieux contextualisées",                           effort: "30 min", priority: "low",    category: "AI Readiness",     impact: "Citations IA mieux contextualisées et plus fréquentes.",                                          fix: "Format markdown avec description agence, services principaux, pages clés et signaux E-E-A-T" },
 ];
 
@@ -69,12 +82,16 @@ export const CRAWLERS: { name: string; ok: boolean | null; domain: string }[] = 
   { name: "CCBot",         ok: null,  domain: "commoncrawl.org" },
 ];
 
-export const PILOT_DATA: { id: number; count: number; label: string; pct: string; impact: string; diff: string; defaultStatus: Status; date: string }[] = [
+export const PILOT_DATA: { id: number; count: number; label: string; pct: string; impact: string; diff: string; defaultStatus: Status; date: string; risk?: RiskInfo }[] = [
   { id: 0,  count: 45, label: "Balises titres avec longueur incorrecte", pct: "33.8%", impact: "moyen",      diff: "Faible",      defaultStatus: "todo", date: "31 mars 2026" },
   { id: 1,  count: 43, label: "Balises description trop longues",        pct: "32.3%", impact: "très-faible",diff: "Faible",      defaultStatus: "todo", date: "31 mars 2026" },
   { id: 2,  count: 2,  label: "Temps de réponse lent (> 1s)",           pct: "1.5%",  impact: "moyen",      diff: "Faible",      defaultStatus: "todo", date: "31 mars 2026" },
   { id: 3,  count: 1,  label: "Pages non indexables",                    pct: "0.8%",  impact: "moyen",      diff: "Haute",       defaultStatus: "todo", date: "31 mars 2026" },
   { id: 4,  count: 1,  label: "Pages orphelines (0 lien entrant)",       pct: "0.8%",  impact: "fort",       diff: "Faible",      defaultStatus: "todo", date: "31 mars 2026" },
+  { id: 12, count: 38, label: "Pages de tags à désindexer (noindex)",     pct: "28.6%", impact: "faible",     diff: "Faible",      defaultStatus: "todo", date: "31 mars 2026",
+    risk: { level: "irreversible", undo: "38 pages sortent de l'index d'un coup. Les réindexer ne restaure ni leurs positions ni leur historique.", evidence: "Aucun clic et moins de 5 impressions par page sur 12 mois (Search Console)." } },
+  { id: 13, count: 1,  label: "Redirection 302 à passer en 301 (/blog/)", pct: "0.8%",  impact: "moyen",      diff: "Faible",      defaultStatus: "todo", date: "31 mars 2026",
+    risk: { level: "costly", undo: "Une 301 est mise en cache par Google et les navigateurs : revenir en arrière demande plusieurs semaines.", evidence: "/blog/ redirige en 302 vers /ressources/ depuis plus de 6 mois." } },
   { id: 5,  count: 0,  label: "Balises titres manquantes",               pct: "0%",    impact: "très-fort",  diff: "Faible",      defaultStatus: "done", date: "15 mars 2026" },
   { id: 6,  count: 0,  label: "Balises titres dupliquées",               pct: "0%",    impact: "très-fort",  diff: "Très faible", defaultStatus: "done", date: "12 mars 2026" },
   { id: 7,  count: 0,  label: "Balises description manquantes",          pct: "0%",    impact: "faible",     diff: "Faible",      defaultStatus: "done", date: "10 mars 2026" },

@@ -9,6 +9,10 @@ import {
 import { Tooltip } from "@/components/Tooltip";
 import { StatusPillDropdown, STATUS_CONFIG, type Status } from "@/components/StatusPill";
 import { AuditActionsTable } from "@/components/analyse/AuditActionsTable";
+import { RiskBadge } from "@/components/RiskBadge";
+import { useRiskGate } from "@/components/RiskConfirmModal";
+import { isNewDecision } from "@/data/risk";
+import { useToast } from "@/context/ToastContext";
 import { Pill } from "@/components/Pill";
 import { ScoreRing } from "@/components/ScoreRing";
 import { ScoreArc } from "@/components/ScoreArc";
@@ -96,6 +100,17 @@ export function AuditTechniqueTab({ domain, onSeeActions }: { domain: string; on
   const [pilotImpactFilter, setPilotImpactFilter] = useState<Set<string>>(new Set());
 
   const getU = (id: string): Status => urgentStatus[id] ?? "todo";
+  /* Correction coûteuse ou irréversible : confirmation quand elle passe En cours ou Livré. */
+  const { gate, modal: riskModal } = useRiskGate();
+  const toast = useToast();
+  const DECIDED = new Set<Status>(["in_progress", "done"]);
+  function decide(from: Status, to: Status, content: Parameters<typeof gate>[0], apply: () => void) {
+    const needsConfirm = isNewDecision(DECIDED, from, to);
+    gate(content, needsConfirm, () => {
+      apply();
+      if (needsConfirm && content.risk && content.risk.level !== "reversible") toast.show("Correction marquée comme décidée");
+    });
+  }
   const getP = (id: number): Status => pilotStatus[id];
 
   const pilotCounts = {
@@ -347,8 +362,11 @@ export function AuditTechniqueTab({ domain, onSeeActions }: { domain: string; on
                 className={`group flex flex-col gap-2.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-5 py-5 transition-colors hover:border-[var(--border-medium)] ${status === "done" ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <Pill color={accentColor} bg={isCritique ? "var(--color-danger-bg)" : "var(--color-warning-bg)"}>{iss.tag}</Pill>
-                  <StatusPillDropdown status={status} onChange={(s) => setUrgentStatus((p) => ({ ...p, [iss.id]: s }))} />
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Pill color={accentColor} bg={isCritique ? "var(--color-danger-bg)" : "var(--color-warning-bg)"}>{iss.tag}</Pill>
+                    {iss.risk && <RiskBadge level={iss.risk.level} undo={iss.risk.undo} />}
+                  </span>
+                  <StatusPillDropdown status={status} onChange={(s) => decide(status, s, { risk: iss.risk, title: iss.title }, () => setUrgentStatus((p) => ({ ...p, [iss.id]: s })))} />
                 </div>
                 <div>
                   <p className="type-caption mb-1 font-medium">
@@ -373,7 +391,7 @@ export function AuditTechniqueTab({ domain, onSeeActions }: { domain: string; on
       </AuditSection>
 
       {/* ── 02. OPTIMISATIONS PRIORITAIRES ──────────────────────────── */}
-      <AuditSection id="tec-optimisations" icon={BoltIcon} title="Optimisations" em="prioritaires" meta="8 actions · 58% du backlog">
+      <AuditSection id="tec-optimisations" icon={BoltIcon} title="Optimisations" em="prioritaires" meta={`${PRIORITY_ACTIONS.length} actions · 58% du backlog`}>
 
         {/* Couverture GSC — même style que l'encart AI Readiness (demi-cercle + texte + pills) */}
         <div className={`mb-4 ${CARD} p-7`}>
@@ -512,12 +530,14 @@ export function AuditTechniqueTab({ domain, onSeeActions }: { domain: string; on
                     ) },
                   { key: "label", header: "Description", width: 220, flex: true,
                     render: (p) => <span className={`type-body-strong ${getP(p.id) === "done" ? "line-through text-[var(--text-muted)]" : ""}`}>{p.label}</span> },
+                  { key: "risk", header: "Risque", width: 120,
+                    render: (p) => p.risk ? <RiskBadge level={p.risk.level} undo={p.risk.undo} /> : null },
                   { key: "impact", header: "Impact", width: 90,
                     render: (p) => <span className="type-label font-medium" style={{ color: impactColor(p.impact) }}>{p.impact.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</span> },
                   { key: "diff", header: "Difficulté", width: 90,
                     render: (p) => <span className="type-label">{p.diff}</span> },
                   { key: "status", header: "Statut", width: 150,
-                    render: (p) => <StatusPillDropdown status={getP(p.id)} onChange={(s) => setPilotStatus((prev) => ({ ...prev, [p.id]: s }))} /> },
+                    render: (p) => <StatusPillDropdown status={getP(p.id)} onChange={(s) => decide(getP(p.id), s, { risk: p.risk, title: p.label }, () => setPilotStatus((prev) => ({ ...prev, [p.id]: s })))} /> },
                   { key: "date", header: "Date", width: 100, align: "right",
                     render: (p) => <span className="type-caption">{p.date}</span> },
                 ]}
@@ -576,6 +596,7 @@ export function AuditTechniqueTab({ domain, onSeeActions }: { domain: string; on
         </p>
       </AuditSection>
 
+      {riskModal}
     </div>
   );
 }

@@ -11,13 +11,13 @@ import { VariationPill } from "@/components/VariationPill";
 import { TriangleAlert, FileText, MousePointerClick, Percent } from "lucide-react";
 import { TableWide, type ColumnDef } from "@/components/TableWide";
 import { DropdownMenu, DropdownItem, DropdownHeader } from "@/components/DropdownMenu";
-import { Tooltip } from "@/components/Tooltip";
-import { Button } from "@/components/Button";
-import { ModalShell } from "@/components/analyse/modals/shared";
 import { useToast } from "@/context/ToastContext";
 import { ColHeaderInfo, TruncatedText } from "@/components/analyse/RecommandationsView";
+import { RiskBadge } from "@/components/RiskBadge";
+import { useRiskGate } from "@/components/RiskConfirmModal";
+import { isNewDecision } from "@/data/risk";
 import {
-  CANNIBAL_KWS, CANNIBAL_PAGES, CANNIBAL_HISTORY_BY_PERIOD, CANNIBAL_ACTIONS, IRREVERSIBLE_ACTIONS, DECIDED_STATUSES,
+  CANNIBAL_KWS, CANNIBAL_PAGES, CANNIBAL_HISTORY_BY_PERIOD, CANNIBAL_ACTIONS, ACTION_RISK, ACTION_UNDO, DECIDED_STATUSES,
   type CannibalSev, type CannibalStatus, type CannibalKw, type CannibalPage, type CannibalAction, type CannibalUrl,
 } from "@/data/cannibal";
 
@@ -50,33 +50,6 @@ function CannibalSevBadge({ sev }: { sev: CannibalSev }) {
   );
 }
 
-/** Pourquoi l'action est difficile à annuler (tooltip de l'indicateur de risque). */
-const RISK_DESC: Partial<Record<CannibalAction, string>> = {
-  Fusionner: "La page secondaire disparaît, son URL est redirigée en 301. Son historique de positions ne revient pas si on fait marche arrière.",
-  Supprimer: "La page est retirée du site. Ses positions et les liens qui pointent vers elle sont perdus si aucune redirection n'est prévue.",
-};
-
-/** Indicateur de risque : à côté des recommandations difficiles à annuler (fusion, suppression). */
-function RiskFlag({ action }: { action: CannibalAction }) {
-  if (!IRREVERSIBLE_ACTIONS.has(action)) return null;
-  return (
-    <Tooltip portal rich side="top" label={
-      <div className="flex flex-col gap-1">
-        <p className="font-semibold">Difficile à annuler</p>
-        <p className="opacity-75">{RISK_DESC[action]}</p>
-      </div>
-    }>
-      <span
-        aria-label="Difficile à annuler"
-        className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full"
-        style={{ color: "var(--color-warning)", backgroundColor: "var(--color-warning-bg)" }}
-      >
-        <TriangleAlert className="h-3.5 w-3.5" />
-      </span>
-    </Tooltip>
-  );
-}
-
 /** Action recommandée — dropdown DS ; les actions risquées sont signalées dans la liste. */
 function CannibalActionDropdown({ value, onChange }: { value: CannibalAction; onChange: (next: CannibalAction) => void }) {
   return (
@@ -97,49 +70,11 @@ function CannibalActionDropdown({ value, onChange }: { value: CannibalAction; on
         <DropdownItem key={a} onClick={() => onChange(a)} selected={value === a}>
           <span className="flex w-full items-center justify-between gap-3">
             {a}
-            {IRREVERSIBLE_ACTIONS.has(a) && (
-              <span className="inline-flex items-center gap-1 type-micro" style={{ color: "var(--color-warning)" }}>
-                <TriangleAlert className="h-3 w-3" />
-                Difficile à annuler
-              </span>
-            )}
+            <RiskBadge level={ACTION_RISK[a]} tooltip={false} />
           </span>
         </DropdownItem>
       ))}
     </DropdownMenu>
-  );
-}
-
-/** Confirmation quand une action risquée est marquée comme décidée. */
-function RiskConfirmModal({ kw, action, onCancel, onConfirm }: {
-  kw: CannibalKw; action: CannibalAction; onCancel: () => void; onConfirm: () => void;
-}) {
-  const [keep, ...others] = kw.urls;
-  const isMerge = action === "Fusionner";
-  return (
-    <ModalShell onClose={onCancel} maxWidth={460}>
-      <h3 className="mb-1.5 type-h3">{isMerge ? "Confirmer la fusion ?" : "Confirmer la suppression ?"}</h3>
-      <p className="mb-5 type-body-sm leading-relaxed">
-        {isMerge
-          ? <>Le contenu sera intégré à <span className="font-mono text-[var(--text-primary)]">{keep.url}</span>, puis l&apos;URL redirigée en 301. C&apos;est difficile à annuler : la page fusionnée disparaît et son historique de positions ne revient pas.</>
-          : <>C&apos;est difficile à annuler : la page est retirée du site, ses positions et les liens qui pointent vers elle sont perdus si aucune redirection n&apos;est prévue.</>}
-      </p>
-      <p className="mb-2 type-caption">{others.length > 1 ? "Pages concernées" : "Page concernée"}</p>
-      <div className="mb-6 flex flex-col divide-y divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)]">
-        {others.map((u) => (
-          <div key={u.url} className="flex items-center justify-between gap-4 px-4 py-3">
-            <span className="min-w-0 truncate font-mono text-[12px] text-[var(--text-primary)]" title={u.url}>{u.url}</span>
-            <span className="flex-shrink-0 type-caption tabular-nums text-[var(--text-secondary)]">{u.clicks} clics / mois</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button variant="secondary" size="md" onClick={onCancel}>Annuler</Button>
-        <Button variant={isMerge ? "primary" : "danger"} size="md" onClick={onConfirm}>
-          {isMerge ? "Confirmer la fusion" : "Confirmer la suppression"}
-        </Button>
-      </div>
-    </ModalShell>
   );
 }
 
@@ -294,23 +229,29 @@ export function CannibalView() {
     if (next.has(k)) next.delete(k); else next.add(k);
     return next;
   });
-  /* Changement en attente de confirmation : action risquée marquée comme décidée. */
-  const [pending, setPending] = useState<{ kw: CannibalKw; status: CannibalStatus; action: CannibalAction } | null>(null);
+  /* Confirmation quand une action coûteuse ou irréversible devient « décidée ». */
+  const { gate, modal: riskModal } = useRiskGate();
   const apply = (keyword: string, status: CannibalStatus, action: CannibalAction) =>
     setKws((prev) => prev.map((k) => (k.keyword === keyword ? { ...k, status, action } : k)));
   function change(kw: CannibalKw, status: CannibalStatus, action: CannibalAction) {
-    const alreadyDecided = DECIDED_STATUSES.has(kw.status) && action === kw.action;
-    if (IRREVERSIBLE_ACTIONS.has(action) && DECIDED_STATUSES.has(status) && !alreadyDecided) {
-      setPending({ kw, status, action });
-      return;
-    }
-    apply(kw.keyword, status, action);
-  }
-  function confirmPending() {
-    if (!pending) return;
-    apply(pending.kw.keyword, pending.status, pending.action);
-    toast.show(pending.action === "Fusionner" ? "Fusion marquée comme décidée" : "Suppression marquée comme décidée");
-    setPending(null);
+    const needsConfirm = isNewDecision(DECIDED_STATUSES, kw.status, status) || (DECIDED_STATUSES.has(status) && action !== kw.action);
+    const [keep, ...others] = kw.urls;
+    const other = others[0]?.url ?? "";
+    const title = action === "Rediriger" ? `Rediriger ${other} vers ${keep.url}`
+      : action === "Fusionner" ? `Fusionner ${other} dans ${keep.url}`
+      : `${action} : « ${kw.keyword} »`;
+    gate(
+      {
+        risk: { level: ACTION_RISK[action], undo: ACTION_UNDO[action], evidence: kw.evidence },
+        title,
+        items: others.map((u) => ({ label: u.url, meta: `${u.clicks} clics / mois` })),
+      },
+      needsConfirm,
+      () => {
+        apply(kw.keyword, status, action);
+        if (needsConfirm && ACTION_RISK[action] !== "reversible") toast.show(action === "Fusionner" ? "Fusion marquée comme décidée" : "Redirection marquée comme décidée");
+      },
+    );
   }
 
   const kwColumns: ColumnDef<CannibalKw>[] = [
@@ -345,13 +286,16 @@ export function CannibalView() {
       render: (kw) => <span className="type-label tabular-nums text-[var(--text-primary)]">{kw.volume !== null ? kw.volume.toLocaleString("fr-FR") : "Non mesuré"}</span>,
     },
     {
-      key: "action", header: "Action", width: 170,
+      key: "action", header: "Action", width: 130,
       render: (kw) => (
-        <span className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
           <CannibalActionDropdown value={kw.action} onChange={(a) => change(kw, kw.status, a)} />
-          <RiskFlag action={kw.action} />
         </span>
       ),
+    },
+    {
+      key: "risk", header: "Risque", width: 120,
+      render: (kw) => <RiskBadge level={ACTION_RISK[kw.action]} undo={ACTION_UNDO[kw.action]} />,
     },
     {
       key: "status", header: "Statut", width: 140,
@@ -458,7 +402,7 @@ export function CannibalView() {
             isExpanded={(kw) => openKeys.has(kw.keyword)}
             renderExpanded={(kw) => <ConflictUrlsDetail kw={kw} />}
             emptyState="Aucune cannibalisation détectée."
-            minWidth={1080}
+            minWidth={1170}
             stickyLeft
             bordered
             hidePagination
@@ -478,9 +422,7 @@ export function CannibalView() {
         )}
       </div>
 
-      {pending && (
-        <RiskConfirmModal kw={pending.kw} action={pending.action} onCancel={() => setPending(null)} onConfirm={confirmPending} />
-      )}
+      {riskModal}
     </div>
   );
 }

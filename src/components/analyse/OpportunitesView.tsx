@@ -40,6 +40,9 @@ import { pravatarUrl } from "@/lib/avatar";
 import { ChevronRight, ChevronLeft, ChevronDown, ArrowLeft, Calendar, Check, List, Columns3, Globe, FileText, X, Repeat, ListTodo, Hourglass, CirclePause, CircleCheck } from "lucide-react";
 import { KpiCard } from "@/components/KpiCard";
 import { KpiGroup } from "@/components/KpiGroup";
+import { RiskBadge } from "@/components/RiskBadge";
+import { useRiskGate } from "@/components/RiskConfirmModal";
+import { isNewDecision } from "@/data/risk";
 
 /* ════════════════════════════════════════════════════════════════════════
    TYPES + MOCK DATA
@@ -64,11 +67,11 @@ const PRIORITY_ORDER: ActionPriorityLevel[] = ["high", "mid", "low"];
    - ancienneté → prioriser « nouveau vs ancien » à l'arrivée sur la vue ;
    - page liée absente = action globale au site (netlinking/technique site-wide). */
 const ACTION_AGE_DAYS: Record<string, number> = {
-  o1: 1, o2: 2, o3: 11, o4: 5, o5: 1, o6: 14, o7: 20, o8: 7, o9: 3, o10: 24, o11: 9,
+  o1: 1, o2: 2, o3: 11, o4: 5, o5: 1, o6: 14, o7: 20, o8: 7, o9: 3, o10: 24, o11: 9, o13: 2, o14: 4,
 };
 const ACTION_PAGE_URL: Record<string, string> = {
   o1: "/blog", o2: "/solutions/comparatif", o4: "/tarifs", o5: "/comparatif",
-  o7: "/a-propos", o9: "/guide-visibilite-ia", o11: "/blog/refresh-2026",
+  o7: "/a-propos", o9: "/guide-visibilite-ia", o11: "/blog/refresh-2026", o13: "/services",
 };
 const fmtAge = (d: number) => (d <= 0 ? "aujourd'hui" : d === 1 ? "hier" : `il y a ${d} j`);
 const byAge = (a: Opportunity, b: Opportunity) => (ACTION_AGE_DAYS[a.id] ?? 99) - (ACTION_AGE_DAYS[b.id] ?? 99);
@@ -177,6 +180,7 @@ function OpportunityCard({
         <div className="flex min-w-0 items-center gap-2">
           <CategoryChip module={o.module} />
           <PriorityBadge level={o.priority} />
+          {o.risk && <RiskBadge level={o.risk.level} undo={o.risk.undo} />}
         </div>
         <div className="flex flex-shrink-0 items-center gap-2.5">
           {owner && <OwnerAvatar owner={owner} size={22} />}
@@ -357,7 +361,10 @@ export function OpportunityDetail({
 
           {/* Titre + sous-titre — header fixe (hors scroll) ; bordure + bande d'ombre (même dégradé que les colonnes figées du tableau, adapté vertical) au scroll. */}
           <div className="relative z-10 flex-shrink-0 border-b border-[var(--border-subtle)] px-7 pb-4 pt-1">
-            <ScopeTag pageUrl={ACTION_PAGE_URL[o.id]} />
+            <div className="flex flex-wrap items-center gap-2">
+              <ScopeTag pageUrl={ACTION_PAGE_URL[o.id]} />
+              {o.risk && <RiskBadge level={o.risk.level} undo={o.risk.undo} />}
+            </div>
             <h1 className="mt-2 type-h2">{o.title}</h1>
             <p className="mt-2 type-body leading-relaxed text-[var(--text-secondary)]">{o.description}</p>
             <span
@@ -499,7 +506,19 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
   const [dragOverCol, setDragOverCol] = useState<Status | null>(null);
   // Colonnes kanban actuellement scrollées → ombre sous l'en-tête figé.
   const [scrolledCols, setScrolledCols] = useState<Record<string, boolean>>({});
-  const moveAction = (id: string, status: Status) => setStatuses((prev) => ({ ...prev, [id]: status }));
+  /* Changement de statut : confirmation si l'action est coûteuse ou irréversible et
+     qu'elle devient décidée (En cours ou Livré). Liste, kanban et détail passent ici. */
+  const { gate, modal: riskModal } = useRiskGate();
+  const { show: showToast } = useToast();
+  const moveAction = (id: string, status: Status) => {
+    const o = OPPORTUNITIES.find((x) => x.id === id);
+    if (!o) return;
+    const needsConfirm = isNewDecision(new Set<Status>(["in_progress", "done"]), statuses[id] ?? o.status, status);
+    gate({ risk: o.risk, title: o.title }, needsConfirm, () => {
+      setStatuses((prev) => ({ ...prev, [id]: status }));
+      if (needsConfirm && o.risk && o.risk.level !== "reversible") showToast("Action marquée comme décidée");
+    });
+  };
 
   const statusOf = (o: Opportunity): Status => statuses[o.id] ?? o.status;
   const ownerOf = (o: Opportunity): ActionOwner | undefined =>
@@ -632,7 +651,7 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
       recurrence={recurrences[selected.id] ?? "none"}
       creator={OWNERS.bl}
       onToggleStep={(step) => toggleStep(selected.id, step)}
-      onStatusChange={(s) => setStatuses((prev) => ({ ...prev, [selected.id]: s }))}
+      onStatusChange={(s) => moveAction(selected.id, s)}
       onOwnerChange={(next) => setOwners((prev) => ({ ...prev, [selected.id]: next }))}
       onDeadlineChange={(d) => setDeadlines((prev) => ({ ...prev, [selected.id]: d }))}
       onNarrativeChange={(v) => setNarratives((prev) => ({ ...prev, [selected.id]: v }))}
@@ -777,6 +796,7 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
                 { key: "module", header: "Catégorie", width: 150, render: (o) => <CategoryChip module={o.module} /> },
                 { key: "status", header: "Statut", width: 160, render: (o) => <span className="inline-flex" onClick={(e) => e.stopPropagation()}><StatusPillDropdown status={statusOf(o)} onChange={(s) => moveAction(o.id, s)} /></span> },
                 { key: "priority", header: "Priorité", width: 120, render: (o) => <PriorityBadge level={o.priority} /> },
+                { key: "risk", header: "Risque", width: 120, render: (o) => o.risk ? <RiskBadge level={o.risk.level} undo={o.risk.undo} /> : null },
                 { key: "scope", header: "Portée", width: 150, render: (o) => <ScopeTag pageUrl={ACTION_PAGE_URL[o.id]} /> },
                 { key: "owner", header: "Assigné à", width: 180, render: (o) => { const ow = ownerOf(o); return ow ? <span className="inline-flex min-w-0 items-center gap-2"><OwnerAvatar owner={ow} size={22} /><span className="truncate type-label text-[var(--text-primary)]">{ow.name}</span></span> : <span className="type-label text-[var(--text-muted)]">Non assigné</span>; } },
                 { key: "age", header: "Créée", width: 120, render: (o) => <span className="whitespace-nowrap type-caption text-[var(--text-muted)]">{fmtAge(ACTION_AGE_DAYS[o.id] ?? 30)}</span> },
@@ -785,7 +805,7 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
               rowKey={(o) => o.id}
               onRowClick={(o) => setSelectedId(o.id)}
               isRowActive={(o) => o.id === selectedId}
-              minWidth={1080}
+              minWidth={1210}
               stickyLeft
               bordered
               hidePagination
@@ -852,6 +872,7 @@ export function OpportunitesView({ domain, initialModule }: { domain: string; in
           )}
 
       {detailModal}
+      {riskModal}
     </div>
   );
 }

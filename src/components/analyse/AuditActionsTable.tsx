@@ -9,6 +9,8 @@
 import { TableWide } from "@/components/TableWide";
 import { PriorityBadge, type ActionPriorityLevel } from "@/components/PriorityBars";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { RiskBadge } from "@/components/RiskBadge";
+import { type RiskInfo } from "@/data/risk";
 
 export type AuditAction = {
   id: number;
@@ -17,6 +19,8 @@ export type AuditAction = {
   category: string;
   priority: string; // "high" | "medium" | "low" (source parfois typée string)
   effort: string;
+  /** Niveau de risque de la correction (badge si coûteuse ou irréversible). */
+  risk?: RiskInfo;
 };
 
 function toLevel(p: string): ActionPriorityLevel {
@@ -64,6 +68,7 @@ export function AuditActionsTable({ actions, onSeeActions }: { actions: AuditAct
               ) },
             { key: "category", header: "Catégorie", width: 170, render: (a) => <CategoryChip label={a.category} /> },
             { key: "priority", header: "Priorité", width: 110, render: (a) => <PriorityBadge level={toLevel(a.priority)} /> },
+            ...(actions.some((a) => a.risk) ? [{ key: "risk", header: "Risque", width: 120, render: (a: AuditAction) => a.risk ? <RiskBadge level={a.risk.level} undo={a.risk.undo} /> : null }] : []),
             { key: "effort", header: "Effort", width: 90, align: "right", render: (a) => <span className="type-label tabular-nums text-[var(--text-primary)]">{a.effort}</span> },
           ]}
         />
