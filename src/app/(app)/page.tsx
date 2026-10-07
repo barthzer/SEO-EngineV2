@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useModalTransition } from "@/hooks/useModalTransition";
 import Link from "next/link";
 import { useDrawer } from "@/context/DrawerContext";
-import { SeoEngineLogo } from "@/components/SeoEngineLogo";
 import { Button } from "@/components/Button";
 import { FilterTabs } from "@/components/FilterTabs";
 import { EmptyState } from "@/components/EmptyState";
@@ -18,12 +16,10 @@ import {
   PlusIcon,
   GlobeAltIcon,
   FolderOpenIcon,
-  MagnifyingGlassIcon,
-  ChevronDownIcon,
   Squares2X2Icon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
-import { Stepper } from "@/components/Stepper";
+import { NewProjectModal } from "@/components/new-project/NewProjectModal";
 import { ScoreGauges } from "@/components/ScoreGauges";
 import { CockpitSection } from "@/components/home/CockpitSection";
 
@@ -299,137 +295,6 @@ function AnalysisCard({
   );
 }
 
-/* ── Project creation modal (2 steps) ───────────────────────────────── */
-
-const FREQ_OPTIONS = [
-  { value: "quotidienne",    label: "Quotidienne" },
-  { value: "hebdomadaire",   label: "Hebdomadaire" },
-  { value: "mensuelle",      label: "Mensuelle" },
-  { value: "trimestrielle",  label: "Trimestrielle" },
-  { value: "manuelle",       label: "Manuelle" },
-];
-
-function AnalyseModal({
-  onClose,
-  onAnalyse,
-}: {
-  onClose: () => void;
-  onAnalyse: (domain: string) => void;
-}) {
-  const [step, setStep]       = useState<1 | 2>(1);
-  const [domain, setDomain]   = useState("");
-  const [freq, setFreq]       = useState("mensuelle");
-  const dialogRef             = useRef<HTMLDivElement>(null);
-  const { phase, requestClose } = useModalTransition(onClose);
-
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Tab" && dialogRef.current) {
-        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-          'button, input, select, a[href], [tabindex]:not([tabindex="-1"])',
-        );
-        const first = focusable[0];
-        const last  = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      previouslyFocused?.focus();
-    };
-  }, []);
-
-  function handleCreate() {
-    if (domain.trim()) { onAnalyse(domain.trim()); requestClose(); }
-  }
-
-  const overlayClass = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
-  const modalClass   = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
-
-  return (
-    <div
-      role="presentation"
-      className={`t-modal-overlay ${overlayClass} fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm`}
-      onClick={(e) => e.target === e.currentTarget && requestClose()}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        className={`t-modal ${modalClass} w-full max-w-lg rounded-2xl bg-[var(--modal-bg)] p-8 shadow-[var(--shadow-floating)]`}
-      >
-        <Stepper steps={2} current={step} onClose={requestClose} />
-
-        {/* Logo + title */}
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-5 flex h-11 w-11 items-center justify-center bg-accent-primary" style={{ borderRadius: "30%" }}>
-            <SeoEngineLogo className="h-6 w-6 text-white" />
-          </div>
-          <h2 id="modal-title" className="type-h2">
-            {step === 1 ? "Nouveau projet" : "Fréquence d'analyse"}
-          </h2>
-          <p className="mt-1.5 type-body-sm">
-            {step === 1 ? "Entrez l'URL du domaine à analyser" : "À quelle cadence relancer l'analyse ?"}
-          </p>
-
-        </div>
-
-        {/* Step 1 — URL */}
-        {step === 1 && (
-          <div className="flex items-center rounded-full border border-[var(--border-subtle)] bg-[var(--card-inner-bg)] py-1.5 pl-5 pr-1.5 transition-colors focus-within:border-[var(--border-medium)] focus-within:bg-[var(--bg-card)]">
-            <MagnifyingGlassIcon className="mr-3 h-5 w-5 flex-shrink-0 text-[var(--text-muted)]" />
-            <input
-              type="text"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && domain.trim() && setStep(2)}
-              placeholder="exemple.com"
-              autoFocus
-              className="flex-1 bg-transparent text-[15px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-input)]"
-            />
-            <Button
-              onClick={() => setStep(2)}
-              disabled={!domain.trim()}
-              size="lg"
-              className="ml-2 flex-shrink-0"
-            >
-              Continuer
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2 — Frequency */}
-        {step === 2 && (
-          <div className="flex flex-col gap-4">
-            <DropdownMenu
-              matchTrigger
-              trigger={
-                <button className="flex w-full items-center justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-inner-bg)] px-5 py-3.5 text-[15px] text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-medium)] hover:bg-[var(--bg-card)]">
-                  <span>{FREQ_OPTIONS.find((o) => o.value === freq)?.label ?? "Fréquence"}</span>
-                  <ChevronDownIcon className="h-4 w-4 text-[var(--text-muted)]" />
-                </button>
-              }
-            >
-              {FREQ_OPTIONS.map((o) => (
-                <DropdownItem key={o.value} onClick={() => setFreq(o.value)}>
-                  <span className={freq === o.value ? "font-semibold text-[var(--text-primary)]" : ""}>{o.label}</span>
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-            <Button onClick={handleCreate} size="lg" className="w-full justify-center">
-              Créer le projet
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function DashboardPage() {
@@ -447,7 +312,15 @@ export default function DashboardPage() {
     return true;
   });
 
-  function handleAnalyse(domain: string) {
+  // « Nouveau projet » depuis le sélecteur de projet ou la palette (/?new=1).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") !== "1") return;
+    const id = requestAnimationFrame(() => setModalOpen(true));
+    router.replace("/");
+    return () => cancelAnimationFrame(id);
+  }, [router]);
+
+  function handleAnalyse(domain: string, gscConnected = false) {
     const exists = analyses.find((a) => a.domain === domain);
     if (!exists) {
       setAnalyses((prev) => [
@@ -455,7 +328,7 @@ export default function DashboardPage() {
           id: Date.now(),
           domain,
           updatedAt: "2026-04-29",
-          gscConnected: false,
+          gscConnected,
           scoreTechnique: Math.floor(Math.random() * 40 + 55),
           scoreContenu: Math.floor(Math.random() * 40 + 55),
           scoreNetlinking: Math.floor(Math.random() * 40 + 55),
@@ -536,9 +409,9 @@ export default function DashboardPage() {
 
       {/* Modals */}
       {modalOpen && (
-        <AnalyseModal
+        <NewProjectModal
           onClose={() => setModalOpen(false)}
-          onAnalyse={handleAnalyse}
+          onCreate={(p) => handleAnalyse(p.domain, !!p.gscProperty)}
         />
       )}
 

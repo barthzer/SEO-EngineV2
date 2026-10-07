@@ -5,7 +5,8 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 interface StepperProps {
   steps: number;
   current: number;
-  onClose: () => void;
+  /** Optionnel : sans `onClose`, pas de bouton de fermeture (ex. modale qui le porte ailleurs). */
+  onClose?: () => void;
 }
 
 export function Stepper({ steps, current, onClose }: StepperProps) {
@@ -21,12 +22,12 @@ export function Stepper({ steps, current, onClose }: StepperProps) {
           />
         ))}
       </div>
-      <button
+      {onClose && <button
         onClick={onClose}
         className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)]"
       >
         <XMarkIcon className="h-5 w-5" />
-      </button>
+      </button>}
     </div>
   );
 }
