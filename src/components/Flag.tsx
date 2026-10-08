@@ -1,13 +1,14 @@
 /**
  * Drapeau circulaire — norme DS unique (remplace les drapeaux emoji 🇫🇷 partout).
  *
- * S'appuie sur les SVG « circle-flags » vendorisés dans `/public/flags/{iso}.svg`
- * (cercle parfait, rendu net, aucune dépendance réseau). Accepte un code pays OU
+ * S'appuie sur la bibliothèque npm `circle-flags` (tous les pays, cercle parfait) :
+ * ses SVG sont copiés dans `/public/flags/{iso}.svg` par `scripts/copy-flags.mjs`
+ * (avant `dev` et `build`, après `npm install`). Aucune dépendance réseau. Accepte un code pays OU
  * un code langue (ex. "FR", "fr", "en", "UK") — la table normalise vers l'ISO du
  * fichier. Si le fichier manque, le drapeau est masqué proprement (onError).
  *
- * Pour ajouter un pays : déposer `public/flags/{iso}.svg` et, si besoin, mapper son
- * code applicatif vers l'ISO ci-dessous.
+ * Tous les codes ISO 3166-1 sont disponibles. Mapper ci-dessous seulement les codes
+ * applicatifs qui diffèrent de l'ISO (langues, « uk »…).
  */
 
 /** Code applicatif (pays ou langue) → code ISO du fichier SVG. */

@@ -4,7 +4,9 @@
   "private": true,
   "description": "Design system foundation reusable across AWI projects (tokens, theming, style-guide).",
   "scripts": {
+    "predev": "node scripts/copy-flags.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-flags.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -12,7 +14,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file=.env.local src/db/seed.ts"
+    "db:seed": "tsx --env-file=.env.local src/db/seed.ts",
+    "postinstall": "node scripts/copy-flags.mjs"
   },
   "dependencies": {
     "@assistant-ui/react": "^0.15.5",
@@ -21,6 +24,7 @@
     "@heroicons/react": "^2.2.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
+    "circle-flags": "^2.8.3",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.14.0",
     "next": "16.2.2",

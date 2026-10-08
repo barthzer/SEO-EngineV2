@@ -22,9 +22,11 @@ import { Button } from "@/components/Button";
 import { Pill } from "@/components/Pill";
 import { Stepper } from "@/components/Stepper";
 import { GoogleLogo } from "@/components/GoogleLogo";
+import { SearchInput } from "@/components/SearchInput";
+import { Callout } from "@/components/Callout";
 import { IsoDomain, IsoChecking, IsoRedirect, IsoFrequency, IsoSearchConsole } from "@/components/new-project/IsoIllustrations";
 import {
-  checkDomain, listGscProperties, propertyMatches, normalizeDomain,
+  checkDomain, listGscProperties, propertyMatches, propertyHost, bestProperty, normalizeDomain,
   type DomainCheck, type GscProperty,
 } from "@/data/new-project";
 
@@ -105,6 +107,105 @@ function VisualPanel({ visual, onClose }: { visual: { key: string; node: ReactNo
   );
 }
 
+/* ── Connexion Google ─────────────────────────────────────────────────── */
+
+/** CTA « Se connecter avec Google » qui se transforme en pastille « Compte Google
+ *  connecté » : largeur, hauteur, couleurs et marge s'animent (même élément). */
+function GoogleConnectButton({ state, onConnect }: { state: "idle" | "connecting" | "connected"; onConnect: () => void }) {
+  const connected = state === "connected";
+  return (
+    <button
+      type="button"
+      onClick={state === "idle" ? onConnect : undefined}
+      disabled={state !== "idle"}
+      aria-live="polite"
+      className={`flex flex-shrink-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border font-medium transition-all duration-500 ease-out ${
+        connected ? "cursor-default" : state === "idle" ? "hover:bg-[var(--bg-secondary)]" : "cursor-wait"
+      }`}
+      style={connected
+        ? { width: 236, height: 32, fontSize: 13, color: "var(--color-success)", backgroundColor: "var(--color-success-bg)", borderColor: "transparent" }
+        : { width: "100%", height: 44, fontSize: 16, color: "var(--text-primary)", backgroundColor: "transparent", borderColor: "var(--border-medium)" }}
+    >
+      {state === "connecting" ? <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" /> : <GoogleLogo className={`flex-shrink-0 transition-all duration-500 ${connected ? "h-3.5 w-3.5" : "h-[18px] w-[18px]"}`} />}
+      {connected ? "Compte Google connecté" : state === "connecting" ? "Connexion à Google…" : "Se connecter avec Google"}
+      {connected && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+    </button>
+  );
+}
+
+/* ── Choix de la propriété Search Console ────────────────────────────── */
+
+/** Liste pensée pour un compte d'agence (dizaines de propriétés) :
+ *  - les propriétés du domaine du projet en tête, la meilleure présélectionnée ;
+ *  - une recherche ;
+ *  - une liste qui défile dans son propre cadre (les boutons de la modale restent visibles) ;
+ *  - un avertissement si la propriété choisie appartient à un autre domaine. */
+function PropertyPicker({ properties, domain, query, onQuery, selected, onSelect }: {
+  properties: GscProperty[]; domain: string; query: string; onQuery: (q: string) => void;
+  selected: string | null; onSelect: (siteUrl: string) => void;
+}) {
+  const best = bestProperty(properties, domain);
+  const q = query.trim().toLowerCase();
+  const visible = properties.filter((p) => !q || p.siteUrl.toLowerCase().includes(q));
+  const byName = (a: GscProperty, b: GscProperty) => propertyHost(a).localeCompare(propertyHost(b)) || a.kind.localeCompare(b.kind);
+  const matching = visible.filter((p) => propertyMatches(p, domain))
+    .sort((a, b) => Number(b.siteUrl === best?.siteUrl) - Number(a.siteUrl === best?.siteUrl) || byName(a, b));
+  const others = visible.filter((p) => !propertyMatches(p, domain)).sort(byName);
+  const selectedProp = properties.find((p) => p.siteUrl === selected);
+  const foreign = !!selectedProp && !propertyMatches(selectedProp, domain);
+
+  const row = (p: GscProperty) => {
+    const restricted = p.permission === "restricted";
+    return (
+      <OptionRow
+        key={p.siteUrl}
+        selected={selected === p.siteUrl}
+        disabled={restricted}
+        onSelect={() => onSelect(p.siteUrl)}
+        title={propertyHost(p)}
+        meta={p.siteUrl === best?.siteUrl ? RECO_PILL : undefined}
+        desc={restricted
+          ? "Accès restreint : demandez un accès complet au propriétaire"
+          : p.kind === "domain" ? "Domaine entier · tous les sous-domaines" : `Préfixe d'URL · ${p.siteUrl}`}
+      />
+    );
+  };
+
+  // Pas de marge basse sur l'encart : c'est la liste qui porte l'espace sous son dernier
+  // élément (le contenu défile jusqu'au bord au lieu d'être coupé par un padding).
+  return (
+    <div className="mt-4 flex min-h-0 flex-col rounded-2xl border border-[var(--border-subtle)] px-4 pt-4">
+      <p className="mb-3 type-body-strong">
+        Choisissez la propriété du projet
+        <span className="ml-1.5 font-normal text-[var(--text-muted)]">{properties.length} sur ce compte</span>
+      </p>
+      <SearchInput value={query} onChange={onQuery} placeholder="Rechercher une propriété…" alwaysExpanded fullWidth className="flex-shrink-0" />
+      <div role="radiogroup" aria-label="Propriété Search Console" className="mt-3 max-h-[236px] overflow-y-auto pb-4 pr-1">
+        {matching.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="type-caption">Correspondent à {domain}</p>
+            {matching.map(row)}
+          </div>
+        )}
+        {others.length > 0 && (
+          <div className={`flex flex-col gap-2 ${matching.length > 0 ? "mt-4" : ""}`}>
+            <p className="type-caption">Autres propriétés du compte ({others.length})</p>
+            {others.map(row)}
+          </div>
+        )}
+        {visible.length === 0 && (
+          <p className="py-6 text-center type-body-sm text-[var(--text-muted)]">Aucune propriété ne contient « {query} ».</p>
+        )}
+      </div>
+      {foreign && selectedProp && (
+        <Callout variant="warning" className="mb-4">
+          <strong>{propertyHost(selectedProp)}</strong> n&apos;est pas le domaine du projet ({domain}). Les clics et impressions seraient ceux d&apos;un autre site.
+        </Callout>
+      )}
+    </div>
+  );
+}
+
 /* ── Modale ──────────────────────────────────────────────────────────── */
 
 export function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (p: NewProjectPayload) => void }) {
@@ -121,6 +222,7 @@ export function NewProjectModal({ onClose, onCreate }: { onClose: () => void; on
   // Étape 3 — Search Console
   const [gsc, setGsc] = useState<GscState>({ state: "idle" });
   const [property, setProperty] = useState<string | null>(null);
+  const [propQuery, setPropQuery] = useState("");
 
   const result = check.state === "done" ? check.result : null;
   const verified = result?.ok ? result : null;
@@ -151,8 +253,8 @@ export function NewProjectModal({ onClose, onCreate }: { onClose: () => void; on
     setGsc({ state: "connecting" });
     const properties = await listGscProperties(projectDomain);
     setGsc({ state: "connected", properties });
-    const match = properties.find((p) => p.permission !== "restricted" && propertyMatches(p, projectDomain));
-    setProperty(match?.siteUrl ?? null);
+    setPropQuery("");
+    setProperty(bestProperty(properties, projectDomain)?.siteUrl ?? null);
   }
 
   function create(withGsc: boolean) {
@@ -302,62 +404,49 @@ export function NewProjectModal({ onClose, onCreate }: { onClose: () => void; on
 
             {/* Étape 3 — Search Console (facultative) */}
             {step === 3 && (
-              <div className="mt-7 flex flex-col">
-                <ul className="flex flex-col gap-2.5">
-                  {[
-                    "Clics, impressions et positions réels de vos pages",
-                    "Opportunités calculées sur les requêtes qui vous amènent du trafic",
-                    "Pages fantômes et cannibalisation détectées automatiquement",
-                  ].map((b) => (
-                    <li key={b} className="flex items-start gap-2.5 type-body-sm text-[var(--text-primary)]">
-                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary-soft)]">
-                        <Check className="h-3 w-3 text-[var(--accent-primary)]" />
-                      </span>
-                      {b}
-                    </li>
-                  ))}
-                </ul>
+              <div className="mt-7 flex min-h-0 flex-col">
+                {/* Bénéfices : se replient en douceur une fois connecté (la place va à la liste). */}
+                <div
+                  className="grid transition-[grid-template-rows,opacity] duration-500 ease-out"
+                  style={{ gridTemplateRows: gsc.state === "connected" ? "0fr" : "1fr", opacity: gsc.state === "connected" ? 0 : 1 }}
+                  aria-hidden={gsc.state === "connected"}
+                >
+                  <div className="overflow-hidden">
+                    <ul className="flex flex-col gap-2.5 pb-7">
+                      {/* Uniquement des bénéfices déjà disponibles dans l'outil (pas de promesse à venir). */}
+                      {[
+                        "Clics, impressions et positions réels de vos pages",
+                        "Gains vérifiés sur vos vraies impressions, pas sur des estimations",
+                        "Une alerte en cas de chute de clics ou de positions",
+                        "La page existante repérée avant de créer un nouveau contenu",
+                      ].map((b) => (
+                        <li key={b} className="flex items-start gap-2.5 type-body-sm text-[var(--text-primary)]">
+                          <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent-primary-soft)]">
+                            <Check className="h-3 w-3 text-[var(--accent-primary)]" />
+                          </span>
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
-                {/* Le CTA devient l'état « connecté » : même emplacement, style pill verte. */}
-                {gsc.state !== "connected" ? (
-                  <Button variant="secondary" size="lg" className="mt-7 w-full" onClick={connectGoogle} disabled={gsc.state === "connecting"}>
-                    {gsc.state === "connecting" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleLogo className="h-[18px] w-[18px]" />}
-                    {gsc.state === "connecting" ? "Connexion à Google…" : "Se connecter avec Google"}
-                  </Button>
-                ) : (
-                  <div
-                    role="status"
-                    className="mt-7 flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-[16px] font-medium"
-                    style={{ color: "var(--color-success)", backgroundColor: "var(--color-success-bg)" }}
-                  >
-                    <GoogleLogo className="h-[18px] w-[18px]" />
-                    Compte Google connecté
-                    <Check className="h-4 w-4" />
-                  </div>
-                )}
+                {/* Un seul élément : le CTA pleine largeur se réduit en pastille verte calée à gauche. */}
+                <GoogleConnectButton state={gsc.state} onConnect={connectGoogle} />
+
                 {gsc.state === "connected" && (
-                  <div className="mt-5">
-                    <p className="mb-2 type-caption">Choisissez la propriété du projet</p>
-                    <div role="radiogroup" aria-label="Propriété Search Console" className="flex flex-col gap-2">
-                      {gsc.properties.map((p) => {
-                        const restricted = p.permission === "restricted";
-                        const matches = propertyMatches(p, projectDomain);
-                        return (
-                          <OptionRow
-                            key={p.siteUrl}
-                            selected={property === p.siteUrl}
-                            disabled={restricted}
-                            onSelect={() => setProperty(p.siteUrl)}
-                            title={<span className="font-mono text-[13px]">{p.siteUrl}</span>}
-                            meta={matches && !restricted ? <Pill color="var(--accent-primary)" bg="var(--accent-primary-soft)">Correspond au projet</Pill> : undefined}
-                            desc={restricted ? "Accès restreint : demandez un accès complet au propriétaire" : p.kind === "domain" ? "Propriété de domaine · tous les sous-domaines" : "Propriété avec préfixe d'URL"}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <PropertyPicker
+                    properties={gsc.properties}
+                    domain={projectDomain}
+                    query={propQuery}
+                    onQuery={setPropQuery}
+                    selected={property}
+                    onSelect={setProperty}
+                  />
                 )}
-                <p className="mt-3 type-caption">Vous pourrez aussi la connecter plus tard depuis les paramètres du projet.</p>
+                {gsc.state !== "connected" && (
+                  <p className="mt-3 type-caption">Vous pourrez aussi la connecter plus tard depuis les paramètres du projet.</p>
+                )}
               </div>
             )}
           </div>

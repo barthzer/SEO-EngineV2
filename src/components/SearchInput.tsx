@@ -10,6 +10,8 @@ interface Props {
   expandedWidth?: number;
   /** When true, the input is always full-width — no expand-on-click behavior. */
   alwaysExpanded?: boolean;
+  /** Avec `alwaysExpanded` : occupe toute la largeur disponible (pas de plafond à 360 px). */
+  fullWidth?: boolean;
   className?: string;
 }
 
@@ -19,6 +21,7 @@ export function SearchInput({
   placeholder = "Rechercher…",
   expandedWidth = 220,
   alwaysExpanded = false,
+  fullWidth = false,
   className = "",
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -43,7 +46,7 @@ export function SearchInput({
   }
 
   const widthStyle: React.CSSProperties = alwaysExpanded
-    ? { width: "100%", maxWidth: 360 }
+    ? { width: "100%", maxWidth: fullWidth ? undefined : 360 }
     : {
         width: isActive ? `${expandedWidth + 56}px` : "40px",
         transitionTimingFunction: "var(--ease-expo)",

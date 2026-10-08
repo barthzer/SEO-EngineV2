@@ -11,6 +11,7 @@ import { useChat } from "@/context/ChatContext";
 import { ChatAiIcon } from "@/components/chat/ChatWidget";
 import { Button } from "@/components/Button";
 import { useToast } from "@/context/ToastContext";
+import { ProjectSetupDock } from "@/components/new-project/ProjectSetupDock";
 import { Tooltip, ChartTooltip } from "@/components/Tooltip";
 import { AnimateIn } from "@/components/AnimateIn";
 import { NumberInput } from "@/components/NumberInput";
@@ -842,6 +843,9 @@ export default function AnalysePage({ params }: { params: Promise<{ domain: stri
         }}
       />
     )}
+
+    {/* Projet tout juste créé : confirmations pendant l'étude (panneau flottant, non bloquant). */}
+    {searchParams.get("setup") === "1" && <ProjectSetupDock domain={decodedDomain} />}
 
     {importModalOpen && <ImportModal onClose={() => setImportModalOpen(false)} />}
     {urlModal === "import-csv" && <ImportCSVModal onClose={() => setUrlModal(null)} />}

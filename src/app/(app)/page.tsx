@@ -341,7 +341,8 @@ export default function DashboardPage() {
         ...prev,
       ]);
     }
-    router.push(`/analyse/${encodeURIComponent(domain)}`);
+    // `setup=1` : ouvre le panneau de confirmation pendant que l'étude tourne.
+    router.push(`/analyse/${encodeURIComponent(domain)}?setup=1`);
   }
 
   return (

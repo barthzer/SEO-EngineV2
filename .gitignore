@@ -29,3 +29,6 @@ yarn-error.log*
 .idea/
 .vscode/
 .claude/
+
+# Drapeaux copiés depuis circle-flags (scripts/copy-flags.mjs)
+/public/flags/

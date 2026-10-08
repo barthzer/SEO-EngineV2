@@ -69,18 +69,45 @@ export async function checkDomain(raw: string): Promise<DomainCheck> {
   return { ok: true, input, finalDomain: input, redirected: false, hops: [], status: 200, https: true };
 }
 
-/** MOCK — propriétés Search Console du compte Google connecté. */
+/* Propriétés d'autres clients sur le même compte Google (cas réel : un consultant
+   d'agence gère des dizaines de propriétés). */
+const OTHER_CLIENTS = [
+  "leboncoin.fr", "doctolib.fr", "backmarket.com", "sephora.fr", "fnac.com", "decathlon.fr",
+  "lafourchette.com", "boulanger.com", "veepee.fr", "blablacar.fr", "mano-mano.fr", "cdiscount.com",
+  "lemonde.fr", "kiabi.com", "darty.com", "leroymerlin.fr", "seloger.com", "lequipe.fr",
+  "airbnb.fr", "booking.com", "meetic.fr", "monoprix.fr", "carrefour.fr", "ikea.com",
+];
+
+/** MOCK — propriétés Search Console du compte Google connecté (non triées, comme l'API). */
 export async function listGscProperties(finalDomain: string): Promise<GscProperty[]> {
   await new Promise((r) => setTimeout(r, 1400));
-  return [
-    { siteUrl: `sc-domain:${finalDomain}`, kind: "domain", permission: "owner" },
+  const others: GscProperty[] = OTHER_CLIENTS.flatMap((d, i): GscProperty[] => [
+    { siteUrl: `sc-domain:${d}`, kind: "domain", permission: i % 7 === 3 ? "restricted" : "owner" },
+    ...(i % 3 === 0 ? [{ siteUrl: `https://www.${d}/`, kind: "prefix" as const, permission: "full" as const }] : []),
+  ]);
+  const own: GscProperty[] = [
     { siteUrl: `https://www.${finalDomain}/`, kind: "prefix", permission: "full" },
-    { siteUrl: "sc-domain:autre-client.fr", kind: "domain", permission: "restricted" },
+    { siteUrl: `sc-domain:${finalDomain}`, kind: "domain", permission: "owner" },
+    { siteUrl: `https://blog.${finalDomain}/`, kind: "prefix", permission: "full" },
   ];
+  // Les propriétés du projet arrivent mélangées aux autres, le front les remonte.
+  return [...others.slice(0, 9), own[0], ...others.slice(9, 20), own[1], ...others.slice(20), own[2]];
 }
 
-/** Vrai si la propriété couvre le domaine du projet. */
+/** Hôte lisible d'une propriété (sans `sc-domain:`, protocole ni slash final). */
+export function propertyHost(p: GscProperty): string {
+  return p.siteUrl.replace(/^sc-domain:/, "").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+}
+
+/** Vrai si la propriété couvre le domaine du projet (domaine, www ou sous-domaine). */
 export function propertyMatches(p: GscProperty, domain: string): boolean {
-  const host = p.siteUrl.replace(/^sc-domain:/, "").replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
-  return host === domain;
+  const host = propertyHost(p).replace(/^www\./, "");
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
+/** Meilleure propriété pour le projet : de domaine d'abord, puis préfixe www, accès lisible. */
+export function bestProperty(props: GscProperty[], domain: string): GscProperty | undefined {
+  const usable = props.filter((p) => p.permission !== "restricted" && propertyMatches(p, domain));
+  const rank = (p: GscProperty) => (p.kind === "domain" ? 0 : propertyHost(p) === `www.${domain}` ? 1 : 2);
+  return [...usable].sort((a, b) => rank(a) - rank(b))[0];
 }
