@@ -58,29 +58,42 @@ const PANEL_W = "min(400px, calc(100vw - 40px))";
 const PANEL_INNER_W = "calc(min(400px, calc(100vw - 40px)) - 2px)";
 const PILL_H = 52;
 
+/** Fond du bandeau : visuel de l'onboarding (cadré au centre, zone bleue). */
+const BANNER_BG = { backgroundColor: "#3D4FFF", backgroundImage: "url('/onboarding-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center" } as const;
+
 /* ── Briques ─────────────────────────────────────────────────────────── */
 
-/** Progression de l'étude : anneau bleu ; terminée, pastille verte pleine avec coche blanche. */
-function ProgressRing({ pct, size = 32 }: { pct: number; size?: number }) {
+/** Progression de l'étude. Anneau bleu sur fond blanc, ou blanc sur le bandeau (`onImage`,
+ *  avec le % au centre si `showPct`). Terminée : pastille verte pleine, coche blanche. */
+function ProgressRing({ pct, size = 32, onImage = false, showPct = false }: { pct: number; size?: number; onImage?: boolean; showPct?: boolean }) {
+  // Sur le bandeau : rond blanc plein, coche verte.
+  if (pct >= 100 && onImage) {
+    return (
+      <span className="flex flex-shrink-0 items-center justify-center rounded-full bg-white" style={{ width: size, height: size }}>
+        <Check className="text-[var(--color-success)]" style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={2.8} />
+      </span>
+    );
+  }
   if (pct >= 100) {
     return (
-      <span className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-success)]" style={{ width: size, height: size }}>
+      <span className="flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-success)]" style={{ width: size, height: size, transition: "width 300ms ease, height 300ms ease" }}>
         <Check className="text-white" style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={2.6} />
       </span>
     );
   }
-  const r = (size - 4) / 2;
-  const c = 2 * Math.PI * r;
+  const stroke = size >= 48 ? 5 : 3;
+  const r = (size - stroke - 1) / 2;
   return (
     <span className="relative flex flex-shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-subtle)" strokeWidth={3} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={onImage ? "rgba(255,255,255,0.28)" : "var(--border-subtle)"} strokeWidth={stroke} />
         <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--accent-primary)" strokeWidth={3} strokeLinecap="round"
-          strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)}
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={onImage ? "#FFFFFF" : "var(--accent-primary)"} strokeWidth={stroke} strokeLinecap="round"
+          pathLength={100} strokeDasharray={100} strokeDashoffset={100 - pct}
           style={{ transition: "stroke-dashoffset 600ms ease" }}
         />
       </svg>
+      {showPct && <span className="absolute text-[15px] font-semibold text-white">{pct}%</span>}
     </span>
   );
 }
@@ -512,20 +525,23 @@ export function ProjectSetupDock({ domain }: { domain: string }) {
         style={{ width: PANEL_INNER_W, ...fade(isPanel, 140) }}
         aria-hidden={!isPanel}
       >
-        {/* En-tête : progression de l'étude + « Réduire ». Dans une étape, il se compacte
-            (anneau + %) pour laisser toute l'attention au formulaire. */}
+        {/* Bandeau (fond de l'onboarding) : progression + titre + « Réduire ».
+            Dans une étape, il se rétracte en fine bande pour laisser la place au formulaire. */}
         {(() => {
           const compact = view === "profile" || view === "activity" || view === "competitors";
           return (
-            <header className={`mb-3 flex items-center gap-3 border-b border-[var(--border-subtle)] px-5 transition-[padding] duration-300 ${compact ? "py-2" : "py-3.5"}`}>
-              <ProgressRing pct={pct} size={compact ? 22 : 36} />
-              <div className="min-w-0 flex-1">
+            <header
+              className="relative m-2 mb-3 flex items-center gap-4 overflow-hidden rounded-xl pl-4 pr-12 text-white"
+              style={{ ...BANNER_BG, height: compact ? 48 : 116, transition: "height 320ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+            >
+              <ProgressRing pct={pct} size={compact ? 24 : 64} onImage showPct={!compact} />
+              <div key={compact ? "c" : "f"} className="t-tab-enter min-w-0 flex-1">
                 {compact ? (
-                  <p className="type-body-sm">{studyDone ? "Étude terminée" : `Étude en cours · ${pct} %`}</p>
+                  <p className="text-[14px] font-medium text-white">{studyDone ? "Étude terminée" : `Étude en cours · ${pct} %`}</p>
                 ) : (
                   <>
-                    <p className="type-body-strong">{studyDone ? "Étude terminée" : `Votre projet se prépare · ${pct} %`}</p>
-                    <p className="type-body-sm">{studyDone ? `${domain} est prêt` : `${phase} · environ ${minutesLeft} min`}</p>
+                    <p className="text-[20px] font-semibold leading-tight tracking-tight text-white">{studyDone ? "Étude terminée" : "Votre projet se prépare"}</p>
+                    <p className="mt-1 text-[14px] leading-snug text-white/85">{studyDone ? `${domain} est prêt` : `${phase} · environ ${minutesLeft} min`}</p>
                   </>
                 )}
               </div>
@@ -533,7 +549,8 @@ export function ProjectSetupDock({ domain }: { domain: string }) {
                 type="button"
                 onClick={collapse}
                 aria-label="Réduire"
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+                className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-white transition-[background-color,top] duration-300 hover:bg-white/15"
+                style={{ top: compact ? 8 : 12 }}
               >
                 <ChevronDown className="h-4 w-4" />
               </button>

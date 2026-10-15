@@ -24,7 +24,7 @@ import { Stepper } from "@/components/Stepper";
 import { GoogleLogo } from "@/components/GoogleLogo";
 import { SearchInput } from "@/components/SearchInput";
 import { Callout } from "@/components/Callout";
-import { IsoDomain, IsoChecking, IsoRedirect, IsoFrequency, IsoSearchConsole } from "@/components/new-project/IsoIllustrations";
+import { IsoDomain, IsoRedirect, IsoFrequency, IsoSearchConsole } from "@/components/new-project/IsoIllustrations";
 import {
   checkDomain, listGscProperties, propertyMatches, propertyHost, bestProperty, normalizeDomain,
   type DomainCheck, type GscProperty,
@@ -266,7 +266,8 @@ export function NewProjectModal({ onClose, onCreate }: { onClose: () => void; on
   const visual = (() => {
     if (step === 2) return { key: "freq", node: <IsoFrequency /> };
     if (step === 3) return { key: "gsc", node: <IsoSearchConsole /> };
-    if (checking) return { key: "checking", node: <IsoChecking /> };
+    // Même clé que la page de l'étape 1 : pas de remontage, c'est la même page qui s'anime.
+    if (checking) return { key: "domain", node: <IsoDomain scanning /> };
     if (redirected && verified) return { key: "redirect", node: <IsoRedirect from={verified.input} to={verified.finalDomain} /> };
     return { key: "domain", node: <IsoDomain /> };
   })();

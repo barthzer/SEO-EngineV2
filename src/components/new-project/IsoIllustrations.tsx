@@ -225,14 +225,14 @@ function WebPage({ W, H, url, dim, children }: { W: number; H: number; url?: str
       <rect x={48 * k} y={13 * k} width={W - 64 * k} height={12 * k} rx={6 * k} fill="#FFFFFF" {...olFine} />
       {url && <text x={55 * k} y={21.6 * k} fontSize={7.5 * k} fontWeight={600} fill={INK}>{url}</text>}
       {!children && W < 120 && (
-        <g opacity={dim ? 0.45 : 1}>
+        <g style={{ opacity: dim ? 0.45 : 1, transition: "opacity 300ms ease" }}>
           <rect x={20 * k} y={44 * k} width={W * 0.55} height={11 * k} rx={2.5 * k} fill={INK} opacity={0.85} />
           <rect x={20 * k} y={62 * k} width={W * 0.5} height={4 * k} rx={2 * k} fill={SOFT} />
           <rect x={20 * k} y={74 * k} width={40 * k} height={14 * k} rx={7 * k} fill={ACCENT} />
         </g>
       )}
       {!children && W >= 120 && (
-        <g opacity={dim ? 0.45 : 1}>
+        <g style={{ opacity: dim ? 0.45 : 1, transition: "opacity 300ms ease" }}>
           <rect x={22 * k} y={44 * k} width={84 * k} height={11 * k} rx={2.5 * k} fill={INK} opacity={0.85} />
           <rect x={22 * k} y={64 * k} width={90 * k} height={4.5 * k} rx={2.25 * k} fill={SOFT} />
           <rect x={22 * k} y={74 * k} width={76 * k} height={4.5 * k} rx={2.25 * k} fill={SOFT} />
@@ -252,21 +252,11 @@ function WebPage({ W, H, url, dim, children }: { W: number; H: number; url?: str
 const PAGE = panelLeft(0, 200, 10, 10, 150, 14);
 const PAGE_FRAME = "translate(137.7 200)";
 
-export function IsoDomain() {
-  return (
-    <Scene label="Une page web, le site à analyser" frame={PAGE_FRAME}>
-      <g>
-        <RSlab s={PAGE} />
-        <OnFace s={PAGE}><WebPage W={PAGE.W} H={PAGE.H} /></OnFace>
-      </g>
-    </Scene>
-  );
-}
-
-/** Étape 1, pendant la vérification : la même page, balayée par un scan.
+/** Étape 1 : la page web. Pendant la vérification (`scanning`), c'est LA MÊME page qui
+ *  s'anime (pas de remontage ni de transition) : son contenu s'estompe et un scan la balaie.
  *  La traînée en dégradé suit la vitesse du scan : elle s'allonge quand il file,
  *  s'efface au point de retour puis renaît de l'autre côté (pas de bascule brusque). */
-export function IsoChecking() {
+export function IsoDomain({ scanning = false }: { scanning?: boolean }) {
   const p = useLoopPhase(2600, 0.3);
   const uid = useId().replace(/:/g, "");
   const y = 40 + 92 * (0.5 - 0.5 * Math.cos(TAU * p)); // aller-retour, 1 cycle
@@ -274,7 +264,7 @@ export function IsoChecking() {
   const down = Math.max(0, v), up = Math.max(0, -v);
   const len = (speed: number) => 6 + 34 * speed;
   return (
-    <Scene label="GSE vérifie que le lien répond et suit ses redirections" frame={PAGE_FRAME}>
+    <Scene label={scanning ? "GSE vérifie que le lien répond et suit ses redirections" : "Une page web, le site à analyser"} frame={PAGE_FRAME}>
       <defs>
         <linearGradient id={`trail-above-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={ACCENT} stopOpacity={0} />
@@ -288,14 +278,22 @@ export function IsoChecking() {
       <g>
         <RSlab s={PAGE} />
         <OnFace s={PAGE}>
-          <WebPage W={PAGE.W} H={PAGE.H} dim />
-          <rect x={8} width={184} y={y - len(down)} height={len(down)} opacity={down} fill={`url(#trail-above-${uid})`} />
-          <rect x={8} width={184} y={y} height={len(up)} opacity={up} fill={`url(#trail-below-${uid})`} />
-          <rect x={8} y={y - 0.8} width={184} height={1.6} rx={0.8} fill={ACCENT} />
+          <WebPage W={PAGE.W} H={PAGE.H} dim={scanning} />
+          {/* Scan : apparaît en fondu sur la page, sans la remplacer */}
+          <g style={{ opacity: scanning ? 1 : 0, transition: "opacity 300ms ease" }}>
+            <rect x={8} width={184} y={y - len(down)} height={len(down)} opacity={down} fill={`url(#trail-above-${uid})`} />
+            <rect x={8} width={184} y={y} height={len(up)} opacity={up} fill={`url(#trail-below-${uid})`} />
+            <rect x={8} y={y - 0.8} width={184} height={1.6} rx={0.8} fill={ACCENT} />
+          </g>
         </OnFace>
       </g>
     </Scene>
   );
+}
+
+/** Raccourci : la page de l'étape 1 en cours de vérification. */
+export function IsoChecking() {
+  return <IsoDomain scanning />;
 }
 
 /** Étape 1, redirection détectée : la page saisie renvoie vers la page finale. */
